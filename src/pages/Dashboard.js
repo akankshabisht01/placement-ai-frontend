@@ -1305,7 +1305,7 @@ const Dashboard = () => {
         throw new Error('Mobile number not found. Please complete your profile first.');
       }
       
-      const response = await fetch(process.env.REACT_APP_N8N_RESUME_ANALYSIS_WEBHOOK || 'https://n8n23-80hw.onrender.com/webhook-test/e52661f1-2a51-40ec-90c6-35edb5eb00e2', {
+      const response = await fetch(process.env.REACT_APP_N8N_RESUME_ANALYSIS_WEBHOOK || 'https://n8n23-80hw.onrender.com/webhook/e52661f1-2a51-40ec-90c6-35edb5eb00e2', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -2319,8 +2319,8 @@ const Dashboard = () => {
       // Get backend URL
       const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
       
-      // Call the N8N webhook directly
-      const monthlyTestWebhook = 'https://n8n23-80hw.onrender.com/webhook-test/Monthly_test';
+      // Call the N8N webhook (production URL)
+      const monthlyTestWebhook = 'https://n8n23-80hw.onrender.com/webhook/Monthly_test';
       
       const response = await fetch(monthlyTestWebhook, {
         method: 'POST',
@@ -2689,7 +2689,7 @@ const Dashboard = () => {
       
       setProgressTrackingMessage(`Generating Month ${monthNumber} Analysis (Attempt ${testAttempt})... This may take 30-60 seconds.`);
 
-      const monthlyAnalysisWebhook = 'https://n8n23-80hw.onrender.com/webhook-test/monthly_analysis';
+      const monthlyAnalysisWebhook = 'https://n8n23-80hw.onrender.com/webhook/monthly_analysis';
       
       const payload = {
         mobile: mobile,
