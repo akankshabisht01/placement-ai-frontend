@@ -5100,15 +5100,19 @@ const Dashboard = () => {
                             let pollCount = 0;
                             const maxPolls = 60; // Poll for up to 2 minutes (60 * 2 seconds)
                             
+                            // Get current week info for checking
+                            const weekToCheck = currentWeekInfo.week;
+                            const monthToCheck = currentWeekInfo.month;
+                            
                             weeklyTestPollRef.current = setInterval(async () => {
                               pollCount++;
                               
                               try {
-                                // Check if test exists in week_test collection
+                                // Check if test exists in week_test collection for this specific week/month
                                 const checkResponse = await fetch(`${backendUrl}/api/check-weekly-test`, {
                                   method: 'POST',
                                   headers: { 'Content-Type': 'application/json' },
-                                  body: JSON.stringify({ mobile })
+                                  body: JSON.stringify({ mobile, week: weekToCheck, month: monthToCheck })
                                 });
                                 
                                 const checkData = await checkResponse.json();
