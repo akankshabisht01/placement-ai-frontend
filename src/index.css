@@ -1,0 +1,2792 @@
+/* Aurora Theme - Cooler, neon aurora ribbons with glass cards */
+.aurora {
+  --aurora-bg: #0b1326;
+  --aurora-surface: rgba(18, 30, 58, 0.85);
+  --aurora-accent: #7cf8e4;
+  --aurora-accent-2: #9e7bff;
+  --aurora-accent-3: #3dd5ff;
+  --aurora-text-primary: #e8f4ff;
+  --aurora-text-secondary: #a5b9d7;
+  --aurora-border: #1e2f55;
+  --aurora-shadow: 0 24px 70px rgba(61, 213, 255, 0.18);
+  --aurora-glass: rgba(255, 255, 255, 0.07);
+  --aurora-blur: blur(18px);
+  --aurora-radius: 1.75rem;
+  --aurora-font: 'Montserrat', 'Inter', system-ui, sans-serif;
+}
+
+/* Solaris Theme - Burnt-sunset dunes with retro warmth */
+.solaris {
+  --solaris-bg: #ffe1c4;
+  --solaris-surface: rgba(255, 241, 218, 0.95);
+  --solaris-accent: #ff7b3f;
+  --solaris-accent-2: #ff4f5a;
+  --solaris-accent-3: #ffd166;
+  --solaris-text-primary: #311200;
+  --solaris-text-secondary: #7a3411;
+  --solaris-border: #ffb78a;
+  --solaris-shadow: 0 24px 70px rgba(255, 115, 63, 0.22);
+  --solaris-radius: 1rem;
+  --solaris-font: 'Fredoka One', 'Comic Sans MS', cursive, sans-serif;
+}
+
+/* Aurora helpers - neon aurora ribbons, glassmorphism */
+.aurora-root {
+  background-color: var(--aurora-bg) !important;
+  background-image:
+    radial-gradient(120% 120% at 20% 20%, rgba(124, 248, 228, 0.25), transparent 45%),
+    radial-gradient(100% 120% at 80% 0%, rgba(158, 123, 255, 0.2), transparent 40%),
+    linear-gradient(145deg, #0b1326 0%, #0a0f1e 45%, #0b1326 100%);
+  color: var(--aurora-text-primary) !important;
+  font-family: var(--aurora-font) !important;
+}
+.aurora-section {
+  background: linear-gradient(150deg, rgba(18, 30, 58, 0.9) 15%, rgba(28, 47, 82, 0.8) 60%, rgba(61, 213, 255, 0.08) 100%) !important;
+  border-radius: var(--aurora-radius) !important;
+  box-shadow: var(--aurora-shadow) !important;
+  backdrop-filter: saturate(140%) var(--aurora-blur) !important;
+  border: 1.5px solid rgba(61, 213, 255, 0.35) !important;
+  position: relative;
+  overflow: hidden;
+}
+.aurora-section::before {
+  content: '';
+  position: absolute;
+  inset: -30%;
+  background: radial-gradient(circle at 30% 20%, rgba(124, 248, 228, 0.14), transparent 35%),
+    radial-gradient(circle at 70% 60%, rgba(158, 123, 255, 0.18), transparent 40%),
+    linear-gradient(120deg, rgba(61, 213, 255, 0.18), rgba(124, 248, 228, 0.08));
+  filter: blur(60px);
+  pointer-events: none;
+}
+.aurora-cta-primary {
+  background: linear-gradient(110deg, var(--aurora-accent) 0%, var(--aurora-accent-3) 40%, var(--aurora-accent-2) 100%) !important;
+  color: #051226 !important;
+  border: 1px solid rgba(158, 123, 255, 0.5) !important;
+  box-shadow: 0 12px 38px rgba(61, 213, 255, 0.25) !important;
+  border-radius: 9999px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.06em !important;
+}
+.aurora-cta-secondary {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border: 1.5px solid rgba(124, 248, 228, 0.6) !important;
+  color: var(--aurora-accent) !important;
+  border-radius: 9999px !important;
+  font-weight: 600 !important;
+  box-shadow: inset 0 0 0 1px rgba(158, 123, 255, 0.25);
+}
+.aurora-accent-text {
+  background: linear-gradient(135deg, var(--aurora-accent-3), var(--aurora-accent-2));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-family: var(--aurora-font) !important;
+  letter-spacing: 0.05em !important;
+}
+.aurora-text-primary {
+  color: var(--aurora-text-primary) !important;
+  font-family: var(--aurora-font) !important;
+}
+.aurora-text-secondary {
+  color: var(--aurora-text-secondary) !important;
+  font-family: var(--aurora-font) !important;
+}
+
+/* Solaris helpers - burnt sunrise, grain, and chunky borders */
+.solaris-root {
+  background-color: var(--solaris-bg) !important;
+  background-image:
+    radial-gradient(80% 80% at 20% 15%, rgba(255, 127, 63, 0.32), transparent 38%),
+    radial-gradient(85% 70% at 85% 8%, rgba(255, 215, 102, 0.3), transparent 45%),
+    linear-gradient(180deg, #ffe1c4 0%, #ffd4a1 52%, #fff3dd 100%),
+    repeating-linear-gradient(115deg, rgba(255, 143, 94, 0.08) 0 14px, transparent 14px 28px);
+  color: var(--solaris-text-primary) !important;
+  font-family: var(--solaris-font) !important;
+}
+.solaris-section {
+  background: linear-gradient(175deg, rgba(255, 241, 218, 0.97) 0%, rgba(255, 207, 160, 0.9) 55%, rgba(255, 127, 63, 0.14) 100%) !important;
+  border-radius: var(--solaris-radius) !important;
+  box-shadow: var(--solaris-shadow) !important;
+  border: 2.5px solid rgba(255, 127, 63, 0.55) !important;
+  position: relative;
+  overflow: hidden;
+}
+.solaris-section::before {
+  content: '';
+  position: absolute;
+  inset: -25%;
+  background: conic-gradient(from 12deg, rgba(255, 209, 102, 0.45), rgba(255, 90, 76, 0.18), rgba(255, 209, 102, 0.12), rgba(255, 209, 102, 0.45));
+  mix-blend-mode: multiply;
+  opacity: 0.75;
+  pointer-events: none;
+}
+.solaris-section::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160' viewBox='0 0 160 160'%3E%3Cfilter id='grain'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23grain)' opacity='0.08'/%3E%3C/svg%3E");
+  opacity: 0.58;
+  pointer-events: none;
+}
+.solaris-cta-primary {
+  background: linear-gradient(120deg, var(--solaris-accent) 0%, var(--solaris-accent-3) 45%, var(--solaris-accent-2) 100%) !important;
+  color: #3f1b00 !important;
+  border: 2px solid rgba(255, 95, 109, 0.55) !important;
+  box-shadow: 0 12px 34px rgba(255, 133, 63, 0.28) !important;
+  border-radius: 1rem !important;
+  font-family: var(--solaris-font) !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.08em !important;
+}
+.solaris-cta-secondary {
+  background: rgba(255, 247, 234, 0.85) !important;
+  border: 2px dashed rgba(255, 154, 60, 0.8) !important;
+  color: var(--solaris-text-primary) !important;
+  border-radius: 1rem !important;
+  font-family: var(--solaris-font) !important;
+  font-weight: 650 !important;
+}
+.solaris-accent-text {
+  background: linear-gradient(130deg, var(--solaris-accent), var(--solaris-accent-2));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-family: var(--solaris-font) !important;
+  letter-spacing: 0.08em !important;
+}
+.solaris-text-primary {
+  color: var(--solaris-text-primary) !important;
+  font-family: var(--solaris-font) !important;
+}
+.solaris-text-secondary {
+  color: var(--solaris-text-secondary) !important;
+  font-family: var(--solaris-font) !important;
+}
+
+/* Global shell + main helpers so every page inherits theme styling */
+.page-shell {
+  min-height: 100vh;
+  transition: background 300ms ease, color 300ms ease;
+}
+.page-main {
+  flex: 1;
+  transition: background 300ms ease, color 300ms ease;
+}
+
+.light-shell {
+  background: linear-gradient(to bottom right, #fff7ed, #ffedd5, #fef3c7);
+  color: #78350f;
+}
+.light-main {
+  background: linear-gradient(to bottom right, #fffaf0, #ffedd5);
+}
+
+.dark-shell {
+  background: radial-gradient(circle at 20% 20%, rgba(236, 72, 153, 0.05), transparent 35%),
+    radial-gradient(circle at 80% 10%, rgba(99, 102, 241, 0.05), transparent 30%),
+    #0f172a;
+  color: #e5e7eb;
+}
+.dark-main {
+  background: linear-gradient(180deg, rgba(17, 24, 39, 0.95) 0%, rgba(26, 22, 37, 0.92) 40%, rgba(17, 24, 39, 0.95) 100%);
+}
+
+.midnight-shell {
+  background: radial-gradient(120% 120% at 20% 10%, rgba(76, 29, 149, 0.25), transparent 40%),
+    radial-gradient(90% 90% at 80% 5%, rgba(59, 130, 246, 0.18), transparent 35%),
+    #0a0a14;
+  color: #e2e8f0;
+}
+.midnight-main {
+  background: linear-gradient(180deg, rgba(10, 10, 20, 0.95) 0%, rgba(20, 18, 35, 0.92) 50%, rgba(10, 10, 20, 0.95) 100%);
+}
+
+.aloof-shell {
+  background: radial-gradient(140% 140% at 10% 10%, rgba(255, 255, 255, 0.65), transparent 35%),
+    radial-gradient(120% 120% at 90% 0%, rgba(214, 237, 255, 0.6), transparent 40%),
+    linear-gradient(135deg, #f7f9fb 0%, #eef2f7 50%, #f7f9fb 100%);
+  color: #0f172a;
+}
+.aloof-main {
+  background: linear-gradient(180deg, rgba(247, 249, 251, 0.9) 0%, rgba(236, 242, 247, 0.95) 100%);
+}
+
+.aurora-shell {
+  background: radial-gradient(120% 120% at 20% 20%, rgba(124, 248, 228, 0.28), transparent 45%),
+    radial-gradient(100% 120% at 80% 0%, rgba(158, 123, 255, 0.22), transparent 42%),
+    linear-gradient(150deg, #0b1326 0%, #0a0f1e 55%, #0b1326 100%);
+  color: var(--aurora-text-primary);
+}
+.aurora-main {
+  background: linear-gradient(180deg, rgba(11, 19, 38, 0.96) 0%, rgba(14, 25, 48, 0.92) 45%, rgba(11, 19, 38, 0.96) 100%);
+}
+
+.solaris-shell {
+  background: radial-gradient(80% 80% at 20% 15%, rgba(255, 127, 63, 0.32), transparent 38%),
+    radial-gradient(85% 70% at 85% 8%, rgba(255, 215, 102, 0.32), transparent 45%),
+    linear-gradient(180deg, #ffe1c4 0%, #ffd4a1 52%, #fff3dd 100%),
+    repeating-linear-gradient(115deg, rgba(255, 143, 94, 0.08) 0 14px, transparent 14px 28px);
+  color: var(--solaris-text-primary);
+}
+.solaris-main {
+  background: linear-gradient(180deg, rgba(255, 241, 218, 0.98) 0%, rgba(255, 210, 170, 0.92) 55%, rgba(255, 241, 218, 0.98) 100%);
+}
+/* Import extra fonts for themes */
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Fredoka+One&display=swap');
+/* Import Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+/* Tailwind CSS Base Styles */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    font-size: 16px;
+  }
+  
+  body {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    color: #1f2937;
+    background: transparent;
+    line-height: 1.6;
+    letter-spacing: -0.01em;
+  }
+
+  /* Typography improvements for readability */
+  h1, h2, h3, h4, h5, h6 {
+    line-height: 1.3;
+    letter-spacing: -0.02em;
+    font-weight: 700;
+  }
+
+  h1 {
+    font-size: 2.5rem;
+    line-height: 1.2;
+  }
+
+  h2 {
+    font-size: 2rem;
+    line-height: 1.25;
+  }
+
+  h3 {
+    font-size: 1.5rem;
+  }
+
+  h4 {
+    font-size: 1.25rem;
+  }
+
+  p {
+    line-height: 1.7;
+    margin-bottom: 1rem;
+  }
+
+  /* Better text rendering */
+  * {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Improve readability for small text */
+  small,
+  .text-sm {
+    line-height: 1.5;
+  }
+
+  /* Better link readability */
+  a {
+    text-decoration-skip-ink: auto;
+  }
+
+  /* Light mode overscroll background */
+  html {
+    background: linear-gradient(to bottom right, #fffbeb, #fff7ed, #fef3c7);
+  }
+
+  /* Dark mode backgrounds */
+  html.dark {
+    background: #1a1625 !important;
+  }
+
+  .dark body {
+    background: transparent !important;
+  }
+
+  /* Aurora theme overscroll background */
+  html.aurora {
+    background: #000000 !important;
+  }
+
+  .aurora body {
+    background: transparent !important;
+  }
+
+  /* Dark mode improved text readability */
+  .dark {
+    color: #E5E7EB !important;
+  }
+
+  .dark h1,
+  .dark h2,
+  .dark h3,
+  .dark h4,
+  .dark h5,
+  .dark h6 {
+    color: #F9FAFB !important;
+    letter-spacing: -0.02em !important;
+  }
+
+  .dark p {
+    color: #D1D5DB !important;
+    line-height: 1.75 !important;
+  }
+
+  .dark .text-gray-300 {
+    color: #D1D5DB !important;
+  }
+
+  .dark .text-gray-400 {
+    color: #9CA3AF !important;
+  }
+
+  .dark .text-gray-500 {
+    color: #6B7280 !important;
+  }
+  
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  /* Custom Scrollbar Styling */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: #e5e7eb;
+    border-radius: 4px;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: #9ca3af;
+    border-radius: 4px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: #6b7280;
+  }
+
+  /* Dark Mode Scrollbar */
+  .dark ::-webkit-scrollbar-track,
+  :root.dark ::-webkit-scrollbar-track {
+    background: #1a1625;
+  }
+
+  .dark ::-webkit-scrollbar-thumb,
+  :root.dark ::-webkit-scrollbar-thumb {
+    background: #2d1f3d;
+  }
+
+  .dark ::-webkit-scrollbar-thumb:hover,
+  :root.dark ::-webkit-scrollbar-thumb:hover {
+    background: #ec4899;
+  }
+
+  /* Firefox Scrollbar */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: #9ca3af #e5e7eb;
+  }
+
+  .dark *,
+  :root.dark * {
+    scrollbar-color: #2d1f3d #1a1625;
+  }
+
+  /* Aloof file input styling (override bright file button) */
+  .aloof input[type="file"] {
+    color: var(--aloof-text-secondary) !important;
+  }
+
+  .aloof input[type="file"]::file-selector-button,
+  .aloof input[type="file"]::-webkit-file-upload-button {
+    background: var(--aloof-surface) !important;
+    color: var(--aloof-accent) !important;
+    border: 1px solid var(--aloof-border) !important;
+    padding: 0.35rem 0.9rem !important;
+    border-radius: 9999px !important;
+    font-weight: 600 !important;
+  }
+
+  .aloof input[type="file"]::file-selector-button:hover,
+  .aloof input[type="file"]::-webkit-file-upload-button:hover {
+    background: linear-gradient(180deg, rgba(107,155,107,0.04), var(--aloof-surface)) !important;
+  }
+
+  /* Dark mode date/time input styling */
+  .dark input[type="date"],
+  .dark input[type="time"],
+  .dark input[type="datetime-local"] {
+    color-scheme: dark;
+  }
+
+  .dark input[type="date"]::-webkit-calendar-picker-indicator,
+  .dark input[type="time"]::-webkit-calendar-picker-indicator,
+  .dark input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+    filter: invert(1);
+  }
+
+  /* Dark mode select styling */
+  .dark select {
+    color-scheme: dark;
+  }
+
+  .dark select option {
+    background-color: #1e1a2e;
+    color: #ffffff;
+  }
+}
+
+/* Midnight Theme - Pure black/white/gray aesthetic */
+  .midnight {
+    --midnight-bg: #000000;
+    --midnight-bg-secondary: #0a0a0a;
+    --midnight-bg-tertiary: #121212;
+    --midnight-surface: #1a1a1a;
+    --midnight-border: #2a2a2a;
+    --midnight-text-primary: #ffffff;
+    --midnight-text-secondary: #a0a0a0;
+    --midnight-text-tertiary: #707070;
+    --midnight-accent: #404040;
+  }
+
+  /* Aloof Theme - Ink on paper aesthetic for comfortable reading */
+  .aloof {
+    --aloof-bg: #F9F7F1; /* Warm off-white / Antique White */
+    --aloof-bg-secondary: #F5F3ED; /* Slightly darker warm paper */
+    --aloof-bg-tertiary: #EFEEE8;
+    --aloof-surface: #FDFBF7; /* Brightest surface - warm paper */
+    --aloof-border: #D8D6D0;
+    --aloof-border-light: #E8E6E0;
+    --aloof-text-primary: #2D2D2D; /* Main text - dark charcoal */
+    --aloof-text-secondary: #4A4A4A; /* Secondary text */
+    --aloof-text-tertiary: #6B6B6B; /* Muted text */
+    --aloof-text-muted: #8A8A8A; /* Very muted */
+    --aloof-accent: #6B9B6B; /* Deeper sage green */
+    --aloof-accent-hover: #5A8A5A;
+    --aloof-accent-light: #A8C9A8;
+  }
+
+  /* Midnight background colors */
+  .midnight,
+  .midnight body,
+  html.midnight {
+    background-color: var(--midnight-bg) !important;
+    color: var(--midnight-text-primary) !important;
+  }
+
+  /* Midnight all backgrounds */
+  .midnight .bg-white {
+    background-color: var(--midnight-bg) !important;
+  }
+
+  .midnight .dark\:bg-tech-dark {
+    background-color: var(--midnight-bg) !important;
+  }
+
+  .midnight .bg-gray-50,
+  .midnight .bg-gray-100 {
+    background-color: var(--midnight-bg-secondary) !important;
+  }
+
+  .midnight .dark\:bg-tech-gray-800,
+  .midnight .dark\:bg-gray-800,
+  .midnight .dark\:bg-gray-700 {
+    background-color: var(--midnight-bg-secondary) !important;
+  }
+
+  /* Midnight card backgrounds */
+  .midnight [class*="bg-gradient"],
+  .midnight .bg-gradient-to-r,
+  .midnight .bg-gradient-to-br,
+  .midnight .bg-gradient-to-bl,
+  .midnight .bg-gradient-to-t,
+  .midnight .bg-gradient-to-b {
+    background: var(--midnight-surface) !important;
+  }
+
+  /* Midnight text on gradient */
+  .midnight .bg-clip-text,
+  .midnight .text-transparent {
+    background: linear-gradient(to right, #ffffff, #e0e0e0) !important;
+    background-clip: text !important;
+    -webkit-background-clip: text !important;
+    -webkit-text-fill-color: transparent !important;
+  }
+
+  /* Midnight scrollbar */
+  .midnight ::-webkit-scrollbar-track,
+  :root.midnight ::-webkit-scrollbar-track {
+    background: #000000;
+  }
+
+  .midnight ::-webkit-scrollbar-thumb,
+  :root.midnight ::-webkit-scrollbar-thumb {
+    background: #2a2a2a;
+  }
+
+  .midnight ::-webkit-scrollbar-thumb:hover,
+  :root.midnight ::-webkit-scrollbar-thumb:hover {
+    background: #404040;
+  }
+
+  .midnight * {
+    scrollbar-color: #2a2a2a #000000;
+  }
+
+  /* Midnight text colors - comprehensive */
+  .midnight,
+  .midnight * {
+    color: var(--midnight-text-primary);
+  }
+
+  .midnight [class*="text-gray"] {
+    color: var(--midnight-text-secondary) !important;
+  }
+
+  .midnight .dark\:text-gray-300,
+  .midnight .dark\:text-gray-400 {
+    color: var(--midnight-text-secondary) !important;
+  }
+
+  .midnight [class*="text-amber"],
+  .midnight [class*="text-pink"],
+  .midnight [class*="text-orange"],
+  .midnight [class*="text-purple"],
+  .midnight [class*="text-blue"],
+  .midnight [class*="text-green"] {
+    color: var(--midnight-text-primary) !important;
+  }
+
+  /* Midnight enhanced typography for better readability */
+  .midnight body {
+    line-height: 1.7 !important;
+  }
+
+  .midnight h1,
+  .midnight h2,
+  .midnight h3 {
+    color: #FFFFFF !important;
+    letter-spacing: -0.02em !important;
+    line-height: 1.25 !important;
+  }
+
+  .midnight h4,
+  .midnight h5,
+  .midnight h6 {
+    color: #F0F0F0 !important;
+  }
+
+  .midnight p {
+    color: var(--midnight-text-secondary) !important;
+    line-height: 1.75 !important;
+  }
+
+  .midnight .text-sm,
+  .midnight .text-xs {
+    line-height: 1.6 !important;
+  }
+
+  /* Aloof Theme Styling - Warm paper with ink aesthetic */
+  .aloof,
+  .aloof body,
+  html.aloof {
+    background: linear-gradient(to bottom, var(--aloof-bg), var(--aloof-bg-secondary)) !important;
+    color: var(--aloof-text-primary) !important;
+  }
+
+  /* Aloof removes dark mode styling */
+  .aloof .dark\:bg-\[\#1a1625\],
+  .aloof .dark\:bg-\[\#2d1f3d\],
+  .aloof .dark\:bg-\[\#1e1a2e\],
+  .aloof .dark\:bg-tech-dark,
+  .aloof .dark\:bg-gray-900,
+  .aloof .dark\:bg-gray-800 {
+    background-color: var(--aloof-surface) !important;
+  }
+
+  /* Aloof main container backgrounds */
+  .aloof .min-h-screen.bg-gradient-to-br {
+    background: linear-gradient(to bottom right, var(--aloof-bg), var(--aloof-bg-secondary)) !important;
+  }
+
+  .aloof .from-amber-50,
+  .aloof .via-orange-50,
+  .aloof .to-yellow-50,
+  .aloof .dark\:from-\[\#1a1625\],
+  .aloof .dark\:via-\[\#2d1f3d\],
+  .aloof .dark\:to-\[\#1a1625\] {
+    --tw-gradient-from: var(--aloof-bg) !important;
+    --tw-gradient-via: var(--aloof-bg-secondary) !important;
+    --tw-gradient-to: var(--aloof-bg-secondary) !important;
+  }
+
+  /* Aloof backgrounds - paper-like surfaces */
+  .aloof .bg-white,
+  .aloof .dark\:bg-white {
+    background-color: var(--aloof-surface) !important;
+    box-shadow: 0 1px 3px rgba(45, 45, 45, 0.06) !important;
+  }
+
+  .aloof .bg-gray-50,
+  .aloof .bg-gray-100,
+  .aloof .bg-amber-50,
+  .aloof .bg-orange-50,
+  .aloof .bg-yellow-50,
+  .aloof .dark\:bg-gray-50 {
+    background-color: var(--aloof-bg-secondary) !important;
+  }
+
+  .aloof .bg-amber-50\/80,
+  .aloof .dark\:bg-\[\#1a1625\]\/80 {
+    background-color: var(--aloof-surface) !important;
+    opacity: 0.95 !important;
+  }
+
+  .aloof .bg-gray-800,
+  .aloof .bg-gray-900,
+  .aloof .dark\:bg-gray-800,
+  .aloof .dark\:bg-gray-900,
+  .aloof .dark\:bg-\[\#1e1a2e\],
+  .aloof .dark\:bg-\[\#2d1f3d\] {
+    background-color: var(--aloof-bg-tertiary) !important;
+  }
+
+  /* Aloof hide dark mode specific elements */
+  .aloof .hidden.dark\:block,
+  .aloof .dark\:hidden {
+    display: none !important;
+  }
+
+  .aloof .dark\:hidden {
+    display: block !important;
+  }
+
+  /* Aloof make visible light mode elements */
+  .aloof .dark\:hidden:not(.hidden) {
+    display: block !important;
+  }
+
+  /* Aloof decorative blur orbs - remove or make subtle */
+  .aloof .blur-3xl,
+  .aloof .blur-2xl {
+    opacity: 0 !important;
+  }
+
+  /* Aloof floating shapes - make paper-like */
+  .aloof .from-amber-200\/30,
+  .aloof .to-orange-300\/30,
+  .aloof .from-yellow-200\/30,
+  .aloof .to-amber-300\/30,
+  .aloof .from-orange-200\/20,
+  .aloof .to-amber-200\/20,
+  .aloof .from-pink-500\/20,
+  .aloof .via-orange-500\/10,
+  .aloof .from-purple-500\/20,
+  .aloof .via-pink-500\/10,
+  .aloof .from-orange-500\/15,
+  .aloof .via-yellow-500\/10 {
+    background: transparent !important;
+  }
+
+  /* Aloof card backgrounds - replace gradients with elegant paper cards */
+  .aloof [class*="bg-gradient-to-r"],
+  .aloof [class*="bg-gradient-to-br"],
+  .aloof [class*="bg-gradient-to-bl"],
+  .aloof [class*="bg-gradient-to-t"],
+  .aloof [class*="bg-gradient-to-b"],
+  .aloof .bg-gradient-to-br {
+    background: var(--aloof-surface) !important;
+    border: 1px solid var(--aloof-border-light) !important;
+    box-shadow: 0 2px 4px rgba(45, 45, 45, 0.04), 0 1px 2px rgba(45, 45, 45, 0.02) !important;
+  }
+
+  /* Aloof stat cards and containers */
+  .aloof .from-amber-500,
+  .aloof .to-orange-500,
+  .aloof .via-orange-500,
+  .aloof .to-yellow-500,
+  .aloof .from-pink-500,
+  .aloof .to-purple-500,
+  .aloof .via-pink-500,
+  .aloof .to-indigo-500,
+  .aloof .dark\:from-pink-500,
+  .aloof .dark\:to-purple-500,
+  .aloof .dark\:via-orange-500 {
+    background: var(--aloof-accent) !important;
+  }
+
+  /* Aloof progress bars */
+  .aloof .from-amber-600,
+  .aloof .via-orange-600,
+  .aloof .to-yellow-600,
+  .aloof .from-purple-600,
+  .aloof .via-pink-600,
+  .aloof .to-indigo-600 {
+    background: linear-gradient(to right, var(--aloof-accent), var(--aloof-accent-hover)) !important;
+  }
+
+  /* Aloof colored backgrounds - convert to sage green */
+  .aloof .bg-amber-500\/20,
+  .aloof .bg-orange-500\/20,
+  .aloof .bg-yellow-500\/20,
+  .aloof .from-amber-500\/20,
+  .aloof .via-orange-500\/20,
+  .aloof .to-yellow-500\/20,
+  .aloof .from-purple-500\/20,
+  .aloof .via-pink-500\/20,
+  .aloof .to-indigo-500\/20 {
+    background-color: rgba(107, 155, 107, 0.1) !important;
+  }
+
+  /* Aloof icon containers */
+  .aloof .from-amber-400,
+  .aloof .to-orange-500,
+  .aloof .from-pink-500,
+  .aloof .to-purple-500 {
+    background: var(--aloof-accent) !important;
+  }
+
+  /* Aloof stat card backgrounds */
+  .aloof .from-amber-50\/80,
+  .aloof .to-orange-50\/80,
+  .aloof .from-purple-900\/20,
+  .aloof .to-pink-900\/20 {
+    background: var(--aloof-surface) !important;
+    opacity: 1 !important;
+  }
+
+  /* Aloof text on gradient/transparent backgrounds - sage green ink */
+  .aloof .bg-clip-text,
+  .aloof .text-transparent {
+    background: linear-gradient(135deg, var(--aloof-accent), var(--aloof-accent-hover)) !important;
+    background-clip: text !important;
+    -webkit-background-clip: text !important;
+    -webkit-text-fill-color: transparent !important;
+  }
+
+  /* Aloof scrollbar - sage green accent */
+  .aloof ::-webkit-scrollbar-track,
+  :root.aloof ::-webkit-scrollbar-track {
+    background: var(--aloof-bg-secondary);
+  }
+
+  .aloof ::-webkit-scrollbar-thumb,
+  :root.aloof ::-webkit-scrollbar-thumb {
+    background: var(--aloof-accent-light);
+    border-radius: 4px;
+  }
+
+  .aloof ::-webkit-scrollbar-thumb:hover,
+  :root.aloof ::-webkit-scrollbar-thumb:hover {
+    background: var(--aloof-accent);
+  }
+
+  .aloof * {
+    scrollbar-color: var(--aloof-accent-light) var(--aloof-bg-secondary);
+  }
+
+  /* Aloof text colors - charcoal ink hierarchy */
+  .aloof h1,
+  .aloof h2,
+  .aloof h3,
+  .aloof h4,
+  .aloof h5,
+  .aloof h6 {
+    color: var(--aloof-text-primary) !important;
+  }
+
+  .aloof p,
+  .aloof span:not([class*="bg-clip-text"]),
+  .aloof div:not([class*="bg-gradient"]) {
+    color: var(--aloof-text-primary) !important;
+  }
+
+  .aloof .text-white,
+  .aloof .text-gray-900,
+  .aloof .dark\:text-white,
+  .aloof .dark\:text-gray-100,
+  .aloof .dark\:text-gray-200 {
+    color: var(--aloof-text-primary) !important;
+  }
+
+  .aloof .text-gray-700,
+  .aloof .text-gray-800,
+  .aloof .dark\:text-gray-300 {
+    color: var(--aloof-text-secondary) !important;
+  }
+
+  .aloof .text-gray-500,
+  .aloof .text-gray-600,
+  .aloof .dark\:text-gray-400,
+  .aloof .dark\:text-tech-gray-300 {
+    color: var(--aloof-text-tertiary) !important;
+  }
+
+  .aloof .text-gray-400,
+  .aloof .dark\:text-gray-500,
+  .aloof .dark\:text-tech-gray-400 {
+    color: var(--aloof-text-muted) !important;
+  }
+
+  /* Aloof colored text - all become sage green */
+  .aloof .text-amber-100,
+  .aloof .text-amber-200,
+  .aloof .text-amber-300,
+  .aloof .text-amber-400,
+  .aloof .text-amber-500,
+  .aloof .text-amber-600,
+  .aloof .text-amber-700,
+  .aloof .text-amber-800,
+  .aloof .dark\:text-pink-200,
+  .aloof .dark\:text-pink-300,
+  .aloof .dark\:text-pink-400 {
+    color: var(--aloof-text-secondary) !important;
+  }
+
+  /* Aloof text on colored backgrounds - ensure white/cream text */
+  .aloof .bg-gradient-to-r .text-white,
+  .aloof .bg-gradient-to-br .text-white,
+  .aloof .bg-amber-500 .text-white,
+  .aloof .bg-amber-600 .text-white,
+  .aloof .bg-orange-500 .text-white,
+  .aloof .bg-orange-600 .text-white,
+  .aloof [class*="bg-gradient"] .text-white,
+  .aloof [class*="from-amber"] .text-white,
+  .aloof [class*="from-orange"] .text-white,
+  .aloof [class*="from-pink"] .text-white {
+    color: var(--aloof-surface) !important;
+  }
+
+  /* Aloof ensure readability on sage green backgrounds */
+  .aloof .bg-gradient-to-r span,
+  .aloof .bg-gradient-to-br span,
+  .aloof [class*="bg-gradient"] span:not([class*="bg-clip-text"]) {
+    color: var(--aloof-surface) !important;
+  }
+
+  /* Aloof icon text on colored backgrounds */
+  .aloof .bg-amber-600 span,
+  .aloof .bg-orange-500 span,
+  .aloof [class*="from-amber-"] span,
+  .aloof [class*="from-orange-"] span {
+    color: var(--aloof-surface) !important;
+  }
+
+  /* Aloof button text visibility */
+  .aloof button[class*="bg-gradient"] *,
+  .aloof button[class*="from-amber"] *,
+  .aloof button[class*="from-orange"] * {
+    color: var(--aloof-surface) !important;
+  }
+
+  /* Aloof card text on light backgrounds */
+  .aloof .bg-amber-50 *:not([class*="bg-gradient"]):not([class*="text-amber"]),
+  .aloof .bg-orange-50 *:not([class*="bg-gradient"]):not([class*="text-orange"]),
+  .aloof .from-amber-50 *:not([class*="bg-gradient"]),
+  .aloof .to-orange-50 *:not([class*="bg-gradient"]) {
+    color: var(--aloof-text-primary) !important;
+  }
+
+  /* Aloof accent colors - sage green for interactive elements */
+  .aloof [class*="text-amber"]:not(.bg-clip-text),
+  .aloof [class*="text-pink"]:not(.bg-clip-text),
+  .aloof [class*="text-orange"]:not(.bg-clip-text),
+  .aloof [class*="text-purple"]:not(.bg-clip-text),
+  .aloof [class*="text-blue"]:not(.bg-clip-text),
+  .aloof [class*="text-green"]:not(.bg-clip-text) {
+    color: var(--aloof-accent) !important;
+  }
+
+  .aloof [class*="bg-amber"]:not([class*="bg-gradient"]),
+  .aloof [class*="bg-pink"]:not([class*="bg-gradient"]),
+  .aloof [class*="bg-orange"]:not([class*="bg-gradient"]),
+  .aloof [class*="bg-purple"]:not([class*="bg-gradient"]),
+  .aloof [class*="bg-blue"]:not([class*="bg-gradient"]),
+  .aloof [class*="bg-green"]:not([class*="bg-gradient"]) {
+    background-color: var(--aloof-accent) !important;
+    color: var(--aloof-surface) !important;
+  }
+
+  /* Aloof borders - subtle ink lines */
+  .aloof [class*="border-amber"],
+  .aloof [class*="border-pink"],
+  .aloof [class*="border-orange"],
+  .aloof [class*="border-purple"],
+  .aloof [class*="border-blue"],
+  .aloof [class*="border-green"],
+  .aloof .dark\:border-pink-500,
+  .aloof .dark\:border-purple-500,
+  .aloof .border-amber-200\/50,
+  .aloof .dark\:border-pink-500\/20,
+  .aloof .dark\:border-pink-500\/30 {
+    border-color: var(--aloof-border) !important;
+  }
+
+  .aloof [class*="border-gray"],
+  .aloof .border-gray-200,
+  .aloof .border-gray-300,
+  .aloof .dark\:border-gray-700,
+  .aloof .dark\:border-gray-800 {
+    border-color: var(--aloof-border-light) !important;
+  }
+
+  .aloof .border,
+  .aloof .border-b,
+  .aloof .border-t,
+  .aloof [class*="border-t"],
+  .aloof [class*="border-b"],
+  .aloof [class*="border-l"],
+  .aloof [class*="border-r"] {
+    border-color: var(--aloof-border-light) !important;
+  }
+
+  /* Aloof buttons and interactive elements */
+  .aloof button {
+    transition: all 0.2s ease !important;
+  }
+
+  .aloof button:not(:disabled):hover {
+    background-color: var(--aloof-accent) !important;
+    color: var(--aloof-surface) !important;
+    border-color: var(--aloof-accent) !important;
+    box-shadow: 0 2px 8px rgba(107, 155, 107, 0.2) !important;
+  }
+
+  .aloof a:hover {
+    color: var(--aloof-accent-hover) !important;
+  }
+
+  /* Aloof input fields - paper texture */
+  .aloof input,
+  .aloof textarea,
+  .aloof select {
+    background-color: var(--aloof-surface) !important;
+    color: var(--aloof-text-primary) !important;
+    border-color: var(--aloof-border) !important;
+  }
+
+  .aloof input:focus,
+  .aloof textarea:focus,
+  .aloof select:focus {
+    border-color: var(--aloof-accent) !important;
+    box-shadow: 0 0 0 3px rgba(107, 155, 107, 0.1) !important;
+  }
+
+  /* Aloof shadows - soft, paper-like depth */
+  .aloof [class*="shadow-glow"],
+  .aloof .dark\:shadow-2xl,
+  .aloof .dark\:shadow-xl,
+  .aloof .dark\:shadow-pink-500 {
+    box-shadow: 0 2px 8px rgba(45, 45, 45, 0.06), 0 1px 4px rgba(45, 45, 45, 0.03) !important;
+  }
+
+  .aloof [class*="shadow-lg"],
+  .aloof .shadow-lg {
+    box-shadow: 0 4px 12px rgba(45, 45, 45, 0.08), 0 2px 4px rgba(45, 45, 45, 0.04) !important;
+  }
+
+  .aloof [class*="shadow-xl"],
+  .aloof .shadow-xl {
+    box-shadow: 0 8px 24px rgba(45, 45, 45, 0.1), 0 4px 8px rgba(45, 45, 45, 0.05) !important;
+  }
+
+  .aloof [class*="shadow-2xl"],
+  .aloof .shadow-2xl {
+    box-shadow: 0 12px 32px rgba(45, 45, 45, 0.12), 0 6px 12px rgba(45, 45, 45, 0.06) !important;
+  }
+
+  .aloof [class*="shadow-md"],
+  .aloof [class*="shadow"],
+  .aloof .shadow {
+    box-shadow: 0 2px 8px rgba(45, 45, 45, 0.06), 0 1px 4px rgba(45, 45, 45, 0.03) !important;
+  }
+
+  /* Aloof navbar/header - clean paper header */
+  .aloof nav,
+  .aloof header {
+    background-color: var(--aloof-surface) !important;
+    border-bottom: 1px solid var(--aloof-border) !important;
+  }
+
+  /* Aloof backdrop blur - softer effect */
+  .aloof [class*="backdrop-blur"],
+  .aloof .backdrop-blur-md,
+  .aloof .backdrop-blur-sm,
+  .aloof .backdrop-blur-xl {
+    backdrop-filter: blur(8px) !important;
+    background-color: rgba(253, 251, 247, 0.85) !important;
+  }
+
+  /* Aloof opacity fixes */
+  .aloof .opacity-\[0\.15\],
+  .aloof .dark\:opacity-\[0\.05\],
+  .aloof .opacity-50,
+  .aloof .dark\:opacity-20 {
+    opacity: 0.08 !important;
+  }
+
+  /* Aloof SVG and decorative elements */
+  .aloof svg path,
+  .aloof svg circle,
+  .aloof svg polygon {
+    stroke: var(--aloof-border) !important;
+    fill: var(--aloof-accent-light) !important;
+  }
+
+  /* Aloof remove neon effects */
+  .aloof [class*="blur-"],
+  .aloof .blur-sm,
+  .aloof .blur-md,
+  .aloof .blur-xl,
+  .aloof .blur-2xl,
+  .aloof .blur-3xl {
+    filter: none !important;
+  }
+
+  /* Aloof focus rings - sage green */
+  .aloof *:focus-visible {
+    outline: 2px solid var(--aloof-accent) !important;
+    outline-offset: 2px !important;
+  }
+
+  /* Aloof disabled state */
+  .aloof :disabled,
+  .aloof [disabled] {
+    opacity: 0.5 !important;
+    cursor: not-allowed !important;
+  }
+
+  /* Aloof selection color - sage green highlight */
+  .aloof ::selection {
+    background-color: var(--aloof-accent-light) !important;
+    color: var(--aloof-text-primary) !important;
+  }
+
+  .aloof ::-moz-selection {
+    background-color: var(--aloof-accent-light) !important;
+    color: var(--aloof-text-primary) !important;
+  }
+
+  /* Aloof tab indicators and underlines */
+  .aloof .opacity-100,
+  .aloof .opacity-0 {
+    background: var(--aloof-accent) !important;
+  }
+
+  /* Aloof charts and data visualization */
+  .aloof canvas {
+    filter: grayscale(0.2) !important;
+  }
+
+  /* Aloof badges and pills */
+  .aloof .rounded-full.bg-gradient-to-br,
+  .aloof .rounded-full.bg-gradient-to-r {
+    background: var(--aloof-accent) !important;
+  }
+
+  /* Aloof notification dots */
+  .aloof .w-3.h-3.bg-gradient-to-r,
+  .aloof .w-3.h-3.bg-gradient-to-br {
+    background: var(--aloof-accent) !important;
+  }
+
+  /* Aloof roadmap and timeline elements */
+  .aloof .from-amber-600,
+  .aloof .to-orange-600,
+  .aloof .from-purple-600,
+  .aloof .to-pink-600 {
+    background: var(--aloof-accent) !important;
+  }
+
+  /* Aloof specific Dashboard fixes */
+  .aloof .bg-gradient-to-r.from-amber-500.to-orange-500,
+  .aloof .bg-gradient-to-r.from-pink-500.via-orange-500.to-purple-500 {
+    background: var(--aloof-accent) !important;
+    color: var(--aloof-surface) !important;
+  }
+
+  /* Aloof ensure all children have proper contrast on sage green */
+  .aloof .bg-gradient-to-r.from-amber-500.to-orange-500 *,
+  .aloof .bg-gradient-to-r.from-pink-500.via-orange-500.to-purple-500 * {
+    color: var(--aloof-surface) !important;
+  }
+
+  /* Aloof stats and numbers visibility */
+  .aloof .text-4xl,
+  .aloof .text-3xl,
+  .aloof .text-2xl {
+    font-weight: 700 !important;
+  }
+
+  /* Aloof headings on paper backgrounds */
+  .aloof .bg-white h1,
+  .aloof .bg-white h2,
+  .aloof .bg-white h3,
+  .aloof .bg-white h4,
+  .aloof .from-amber-50 h3,
+  .aloof .to-orange-50 h3 {
+    color: var(--aloof-text-primary) !important;
+  }
+
+  /* Aloof section headers with gradient text */
+  .aloof h2[class*="bg-gradient"],
+  .aloof h3[class*="bg-gradient"],
+  .aloof .bg-clip-text.text-transparent {
+    background: linear-gradient(135deg, var(--aloof-text-primary), var(--aloof-accent)) !important;
+    -webkit-background-clip: text !important;
+    background-clip: text !important;
+    -webkit-text-fill-color: transparent !important;
+  }
+
+  /* Aloof Weekly Test card text */
+  .aloof .from-amber-500.via-orange-500.to-yellow-500 *,
+  .aloof .dark\:from-\[\#1e1a2e\].dark\:via-\[\#2d1f3d\].dark\:to-\[\#1e1a2e\] * {
+    color: var(--aloof-text-primary) !important;
+  }
+
+  /* Aloof recommendation boxes text */
+  .aloof .from-amber-50.to-orange-50 *,
+  .aloof .from-purple-900\/20.to-pink-900\/20 * {
+    color: var(--aloof-text-primary) !important;
+  }
+
+  /* Aloof percentage and stat numbers */
+  .aloof .text-5xl,
+  .aloof .text-6xl {
+    color: var(--aloof-text-primary) !important;
+    font-weight: 800 !important;
+  }
+
+  /* Aloof muted labels below stats */
+  .aloof .text-xs.text-gray-500,
+  .aloof .text-xs.text-gray-600,
+  .aloof .text-sm.text-gray-500 {
+    color: var(--aloof-text-tertiary) !important;
+  }
+
+  /* ============================================
+     ALOOF NAVBAR FIXES
+     ============================================ */
+
+  /* Aloof Navbar background and borders */
+  .aloof nav {
+    background: var(--aloof-surface) !important;
+    border-bottom: 1px solid var(--aloof-border) !important;
+    box-shadow: 0 1px 3px rgba(45, 45, 45, 0.05) !important;
+  }
+
+  .aloof nav.bg-white\/95,
+  .aloof nav[class*="backdrop-blur"] {
+    background: rgba(249, 247, 241, 0.95) !important;
+    backdrop-filter: blur(12px) !important;
+  }
+
+  /* Aloof logo gradient - use accent color */
+  .aloof nav .bg-gradient-to-r.bg-clip-text {
+    background: linear-gradient(135deg, var(--aloof-accent), var(--aloof-text-primary)) !important;
+    -webkit-background-clip: text !important;
+    background-clip: text !important;
+  }
+
+  /* Aloof PRO badge */
+  .aloof nav [class*="bg-gradient-to-r"][class*="text-white"],
+  .aloof nav .shadow-md.text-white {
+    background: var(--aloof-accent) !important;
+    color: var(--aloof-surface) !important;
+    box-shadow: 0 2px 6px rgba(107, 155, 107, 0.25) !important;
+  }
+
+  /* CRITICAL: Reset ALL nav items first */
+  .aloof nav a,
+  .aloof nav button,
+  .aloof nav a *,
+  .aloof nav button * {
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+  }
+
+/* Aloof nav default - clean, unobtrusive links */
+  .aloof nav a {
+    background: transparent !important;
+    color: var(--aloof-text-primary) !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0.45rem 0.75rem !important;
+  }
+  
+  .aloof nav a span,
+  .aloof nav a svg {
+    color: var(--aloof-text-primary) !important;
+  }
+  
+  /* Hover state - subtle rounded outline */
+  .aloof nav a:hover {
+    background: rgba(107, 155, 107, 0.04) !important;
+    color: var(--aloof-accent) !important;
+    border-radius: 0.375rem !important;
+    border: 1px solid rgba(107, 155, 107, 0.08) !important;
+  }
+  
+  .aloof nav a:hover span,
+  .aloof nav a:hover svg {
+    color: var(--aloof-accent) !important;
+  }
+  
+  /* Active state driven by NavLink aria-current - small underline instead of pill */
+  .aloof nav a[aria-current="page"] {
+    background: transparent !important;
+    color: var(--aloof-accent) !important;
+    border: none !important;
+    padding: 0.45rem 0.75rem !important;
+    box-shadow: inset 0 -3px 0 var(--aloof-accent) !important;
+    border-radius: 0.25rem !important;
+  }
+  
+  .aloof nav a[aria-current="page"] span,
+  .aloof nav a[aria-current="page"] svg {
+    color: var(--aloof-accent) !important;
+  }
+
+  /* Remove focus outlines and frames */
+  .aloof nav a:focus,
+  .aloof nav a:focus-visible,
+  .aloof nav button:focus,
+  .aloof nav button:focus-visible,
+  .aloof nav a *:focus,
+  .aloof nav button *:focus {
+    outline: none !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+
+  /* Force inner link containers transparent */
+  .aloof nav a > div,
+  .aloof nav a > span,
+  .aloof nav a > svg {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+  /* Aloof theme dropdown button */
+  .aloof nav button[aria-label*="Toggle theme"],
+  .aloof nav .bg-tech-gray-100,
+  .aloof nav button[class*="bg-tech-gray"] {
+    background: var(--aloof-surface) !important;
+    color: var(--aloof-text-primary) !important;
+    border: 1px solid var(--aloof-border) !important;
+  }
+
+  .aloof nav button[aria-label*="Toggle theme"] svg,
+  .aloof nav button svg {
+    color: var(--aloof-text-primary) !important;
+  }
+
+  .aloof nav button[aria-label*="Toggle theme"]:hover,
+  .aloof nav button[class*="bg-tech-gray"]:hover {
+    background: rgba(107, 155, 107, 0.08) !important;
+    color: var(--aloof-accent) !important;
+    border-color: rgba(107, 155, 107, 0.35) !important;
+  }
+
+  .aloof nav button[aria-label*="Toggle theme"]:hover svg,
+  .aloof nav button[class*="bg-tech-gray"]:hover svg {
+    color: var(--aloof-accent) !important;
+  }
+
+  /* Aloof dropdown menu container */
+  .aloof nav div[class*="shadow-lg"] {
+    background: var(--aloof-surface) !important;
+    border: 1px solid var(--aloof-border) !important;
+    box-shadow: 0 4px 16px rgba(45, 45, 45, 0.12) !important;
+  }
+
+  /* Aloof dropdown menu items */
+  .aloof nav div[class*="shadow-lg"] button {
+    color: var(--aloof-text-primary) !important;
+    background: transparent !important;
+    border: none !important;
+  }
+
+  .aloof nav div[class*="shadow-lg"] button:hover {
+    background: rgba(107, 155, 107, 0.08) !important;
+    color: var(--aloof-accent) !important;
+  }
+
+  /* Aloof dropdown active theme buttons */
+  .aloof nav div[class*="shadow-lg"] button[class*="bg-gradient"],
+  .aloof nav div[class*="shadow-lg"] button.bg-\[\#8FBC8F\],
+  .aloof nav div[class*="shadow-lg"] button.bg-black {
+    background: var(--aloof-accent) !important;
+    color: var(--aloof-surface) !important;
+  }
+
+  /* Aloof mobile menu */
+  .aloof nav div[class*="from-amber-50"] {
+    background: linear-gradient(to bottom, var(--aloof-surface), var(--aloof-bg)) !important;
+    border-top: 1px solid var(--aloof-border) !important;
+  }
+
+  /* Aloof mobile menu items */
+  .aloof nav div[class*="from-amber-50"] a {
+    color: var(--aloof-text-primary) !important;
+    border: none !important;
+  }
+
+  .aloof nav div[class*="from-amber-50"] a:hover {
+    background: rgba(107, 155, 107, 0.08) !important;
+    color: var(--aloof-accent) !important;
+  }
+
+  .aloof nav div[class*="from-amber-50"] a[class*="bg-gradient"],
+  .aloof nav div[class*="from-amber-50"] a[class*="shadow"] {
+    background: var(--aloof-accent) !important;
+    color: var(--aloof-surface) !important;
+  }
+
+  /* ============================================
+     ALOOF HOMEPAGE FIXES
+     ============================================ */
+
+  /* Aloof main backgrounds - warm paper */
+  .aloof .bg-gradient-to-br,
+  .aloof .bg-gradient-to-b {
+    background: var(--aloof-bg) !important;
+  }
+
+  /* Aloof hero section */
+  .aloof section[class*="from-amber"] {
+    background: var(--aloof-bg) !important;
+  }
+
+  /* Aloof hide all decorative floating elements */
+  .aloof .animate-float,
+  .aloof .animate-float-up,
+  .aloof .animate-float-slow,
+  .aloof .animate-pulse-soft,
+  .aloof .animate-pulse-slow,
+  .aloof .animate-bounce-subtle,
+  .aloof [class*="blur-3xl"] {
+    display: none !important;
+  }
+
+  /* Aloof badge backgrounds */
+  .aloof .bg-white\/80,
+  .aloof [class*="bg-gradient-to-r"][class*="from-amber-100"],
+  .aloof [class*="bg-gradient-to-r"][class*="from-purple"] {
+    background: var(--aloof-surface) !important;
+    border-color: var(--aloof-border) !important;
+    color: var(--aloof-accent) !important;
+  }
+
+  /* Aloof main headlines */
+  .aloof h1,
+  .aloof h2,
+  .aloof h3 {
+    color: var(--aloof-text-primary) !important;
+  }
+
+  /* Aloof gradient text in headings */
+  .aloof h1 span[class*="bg-gradient"],
+  .aloof h2 span[class*="bg-gradient"],
+  .aloof h1 .bg-clip-text,
+  .aloof h2 .bg-clip-text {
+    background: linear-gradient(135deg, var(--aloof-accent), var(--aloof-text-primary)) !important;
+    -webkit-background-clip: text !important;
+    background-clip: text !important;
+    -webkit-text-fill-color: transparent !important;
+  }
+
+  /* Aloof paragraph text */
+  .aloof p {
+    color: var(--aloof-text-secondary) !important;
+  }
+
+  /* Aloof CTA buttons */
+  .aloof a[class*="bg-gradient-to-r"],
+  .aloof button[class*="bg-gradient-to-r"] {
+    background: var(--aloof-accent) !important;
+    color: var(--aloof-surface) !important;
+    box-shadow: 0 2px 8px rgba(107, 155, 107, 0.2) !important;
+  }
+
+  .aloof a[class*="bg-gradient-to-r"]:hover,
+  .aloof button[class*="bg-gradient-to-r"]:hover {
+    box-shadow: 0 4px 16px rgba(107, 155, 107, 0.3) !important;
+  }
+
+  /* Aloof secondary buttons (outlined) */
+  .aloof a[class*="bg-white"][class*="border"],
+  .aloof button[class*="bg-white"][class*="border"] {
+    background: var(--aloof-surface) !important;
+    border-color: var(--aloof-accent) !important;
+    color: var(--aloof-accent) !important;
+  }
+
+  .aloof a[class*="bg-white"][class*="border"]:hover {
+    background: rgba(107, 155, 107, 0.05) !important;
+  }
+
+  /* Aloof stats cards */
+  .aloof .bg-white\/60,
+  .aloof [class*="bg-white"][class*="backdrop-blur"] {
+    background: var(--aloof-surface) !important;
+    border-color: var(--aloof-border) !important;
+  }
+
+  /* Aloof stats numbers */
+  .aloof .bg-clip-text.text-transparent {
+    background: var(--aloof-accent) !important;
+    -webkit-background-clip: text !important;
+    background-clip: text !important;
+    -webkit-text-fill-color: transparent !important;
+  }
+
+  /* Aloof "How It Works" section cards */
+  .aloof .bg-white {
+    background: var(--aloof-surface) !important;
+    border-color: var(--aloof-border) !important;
+  }
+
+  /* Map amber text to Aloof secondary where applicable */
+  .aloof .text-amber-700,
+  .aloof .text-amber-600,
+  .aloof .text-amber-900 {
+    color: var(--aloof-text-secondary) !important;
+  }
+
+  /* Map amber backgrounds to paper surface */
+  .aloof [class*="bg-amber"],
+  .aloof [class*="from-amber"],
+  .aloof [class*="to-amber"] {
+    background: transparent !important;
+    background-color: transparent !important;
+  }
+
+  /* Predict form specific overrides */
+  .aloof .bg-gray-100 {
+    background: var(--aloof-surface) !important;
+    border-color: var(--aloof-border) !important;
+  }
+
+  .aloof .text-orange-700,
+  .aloof .text-orange-600,
+  .aloof .text-orange-800 {
+    color: var(--aloof-accent) !important;
+  }
+
+  .aloof .border-orange-500,
+  .aloof .border-l-4.border-orange-500 {
+    border-color: var(--aloof-accent) !important;
+  }
+
+  .aloof .form-input,
+  .aloof input,
+  .aloof textarea,
+  .aloof select {
+    background: var(--aloof-surface) !important;
+    color: var(--aloof-text-primary) !important;
+    border: 1px solid var(--aloof-border) !important;
+    box-shadow: none !important;
+  }
+
+  /* Focus ring mapping for orange-based classes */
+  .aloof .focus\:ring-orange-500:focus,
+  .aloof .focus\:ring-orange-500:focus-visible,
+  .aloof input:focus,
+  .aloof select:focus,
+  .aloof textarea:focus {
+    box-shadow: 0 0 0 4px rgba(107,155,107,0.06) !important;
+    border-color: var(--aloof-accent) !important;
+    outline: none !important;
+  }
+
+  /* Border-top orange -> aloof accent */
+  .aloof .border-t-4.border-orange-500 {
+    border-top-color: var(--aloof-accent) !important;
+  }
+
+  .aloof .h-5.w-5.text-orange-600,
+  .aloof .text-orange-600 {
+    color: var(--aloof-accent) !important;
+  }
+
+  .aloof .bg-gradient-to-r.from-amber-500,
+  .aloof .bg-gradient-to-r.from-amber-600,
+  .aloof .bg-gradient-to-r.from-amber-700 {
+    background: linear-gradient(90deg, var(--aloof-accent-light), var(--aloof-accent)) !important;
+    color: var(--aloof-surface) !important;
+  }
+
+  .aloof .bg-gradient-to-r.from-gray-600,
+  .aloof .bg-gradient-to-r.from-gray-700 {
+    background: linear-gradient(90deg, #6b9b6b, #5a8a5a) !important;
+    color: var(--aloof-surface) !important;
+  }
+
+  .aloof-upload-overlay {
+    background: linear-gradient(135deg, rgba(107,155,107,0.06), var(--aloof-surface)) !important;
+    border: 1px solid var(--aloof-border) !important;
+    color: var(--aloof-text-primary) !important;
+  }
+
+  .aloof .bg-white:hover {
+    box-shadow: 0 4px 12px rgba(45, 45, 45, 0.08) !important;
+  }
+
+  /* Aloof step number badges */
+  .aloof [class*="from-amber-500"],
+  .aloof [class*="from-purple-500"],
+  .aloof [class*="from-pink-500"] {
+    background: var(--aloof-accent) !important;
+    color: var(--aloof-surface) !important;
+  }
+
+  /* Aloof domain cards */
+  .aloof a[class*="group"] > div {
+    background: var(--aloof-surface) !important;
+    border-color: var(--aloof-border) !important;
+  }
+
+  .aloof a[class*="group"]:hover > div {
+    border-color: var(--aloof-accent) !important;
+    box-shadow: 0 4px 12px rgba(107, 155, 107, 0.15) !important;
+  }
+
+  /* Aloof domain card icon containers */
+  .aloof [class*="from-primary-50"],
+  .aloof [class*="from-purple-50"],
+  .aloof [class*="from-green-50"],
+  .aloof [class*="from-cyan-50"] {
+    background: rgba(107, 155, 107, 0.1) !important;
+    border-color: rgba(107, 155, 107, 0.2) !important;
+  }
+
+  /* Aloof domain card icons */
+  .aloof [class*="group"] svg {
+    color: var(--aloof-accent) !important;
+  }
+
+  /* Aloof statistics section - override orange background */
+  .aloof section[class*="from-orange-600"],
+  .aloof section[class*="via-orange-700"] {
+    background: var(--aloof-accent) !important;
+    color: var(--aloof-surface) !important;
+  }
+
+  /* Aloof statistics cards */
+  .aloof section[class*="from-orange"] .bg-orange-800\/30,
+  .aloof section[class*="from-orange"] [class*="backdrop-blur"] {
+    background: rgba(249, 247, 241, 0.15) !important;
+    border-color: rgba(249, 247, 241, 0.2) !important;
+  }
+
+  .aloof section[class*="from-orange"] .bg-orange-800\/30:hover {
+    background: rgba(249, 247, 241, 0.2) !important;
+  }
+
+  /* Aloof stats text on sage green background */
+  .aloof section[class*="from-orange"] * {
+    color: var(--aloof-surface) !important;
+  }
+
+  /* Aloof CTA section */
+  .aloof section[class*="from-orange-100"] {
+    background: linear-gradient(to bottom, var(--aloof-surface), var(--aloof-bg)) !important;
+  }
+
+  /* Aloof CTA card */
+  .aloof section[class*="from-orange-100"] [class*="from-orange-600"] {
+    background: var(--aloof-accent) !important;
+  }
+
+  /* Aloof all text on CTA card */
+  .aloof section [class*="from-orange-600"] * {
+    color: var(--aloof-surface) !important;
+  }
+
+  /* Aloof CTA buttons on sage green */
+  .aloof section [class*="from-orange-600"] a.bg-white,
+  .aloof section [class*="from-orange-600"] button.bg-white {
+    background: var(--aloof-surface) !important;
+    color: var(--aloof-accent) !important;
+  }
+
+  .aloof section [class*="from-orange-600"] a[class*="bg-white\/20"] {
+    background: rgba(249, 247, 241, 0.2) !important;
+    border-color: rgba(249, 247, 241, 0.4) !important;
+    color: var(--aloof-surface) !important;
+  }
+
+  /* Aloof helper classes used by components */
+  .aloof-root {
+    background: var(--aloof-bg) !important;
+  }
+
+  .aloof-section {
+    background: var(--aloof-bg) !important;
+  }
+
+  /* Left side domain/navigation cards - soft paper style */
+  .aloof a.group > div,
+  .aloof .rounded-2xl {
+    background: var(--aloof-surface) !important;
+    border: 1px solid var(--aloof-border) !important;
+    color: var(--aloof-text-primary) !important;
+    box-shadow: none !important;
+  }
+
+  .aloof a.group:hover > div,
+  .aloof .rounded-2xl:hover {
+    border-color: var(--aloof-accent) !important;
+    background: linear-gradient(180deg, rgba(107,155,107,0.03), var(--aloof-surface)) !important;
+  }
+
+  .aloof a.group svg,
+  .aloof .rounded-2xl svg {
+    color: var(--aloof-accent) !important;
+  }
+
+  .aloof-accent-text {
+    background: linear-gradient(135deg, var(--aloof-accent), var(--aloof-text-primary)) !important;
+    -webkit-background-clip: text !important;
+    background-clip: text !important;
+    -webkit-text-fill-color: transparent !important;
+  }
+
+  .aloof-text-secondary {
+    color: var(--aloof-text-secondary) !important;
+  }
+
+  .aloof-cta-primary {
+    background: var(--aloof-accent) !important;
+    color: var(--aloof-surface) !important;
+    border: none !important;
+    box-shadow: 0 6px 18px rgba(107,155,107,0.12) !important;
+  }
+
+  .aloof-cta-secondary {
+    background: var(--aloof-surface) !important;
+    border: 1px solid var(--aloof-border) !important;
+    color: var(--aloof-accent) !important;
+  }
+
+  .aloof-stat-number {
+    color: var(--aloof-text-primary) !important;
+    background: transparent !important;
+    -webkit-text-fill-color: unset !important;
+    background-clip: unset !important;
+  }
+
+  /* Aloof statistics section */
+  .aloof-stats-section {
+    background: linear-gradient(180deg, rgba(249,247,241,1), rgba(241,245,239,1)) !important;
+    color: var(--aloof-text-primary) !important;
+  }
+
+  .aloof-stats-section .bg-orange-800\/30,
+  .aloof-stats-section [class*="backdrop-blur"] {
+    background: var(--aloof-surface) !important;
+    border: 1px solid var(--aloof-border) !important;
+    color: var(--aloof-text-primary) !important;
+  }
+
+  .aloof-stats-section .text-orange-100\/80 {
+    color: var(--aloof-text-secondary) !important;
+  }
+
+  /* Aloof Weekly Test card */
+  .aloof .from-amber-500.via-orange-500.to-yellow-500,
+  .aloof .dark\:from-\[\#1e1a2e\].dark\:via-\[\#2d1f3d\].dark\:to-\[\#1e1a2e\] {
+    background: var(--aloof-surface) !important;
+    border: 1px solid var(--aloof-border) !important;
+  }
+
+  /* Aloof recommendation boxes */
+  .aloof .from-amber-50.to-orange-50,
+  .aloof .from-purple-900\/20.to-pink-900\/20 {
+    background: var(--aloof-bg-secondary) !important;
+  }
+
+  /* Aloof enhanced typography for optimal reading */
+  .aloof body {
+    line-height: 1.75 !important;
+    letter-spacing: -0.005em !important;
+  }
+
+  /* Aloof avatar and icon backgrounds */
+  .aloof .bg-amber-600,
+  .aloof .bg-amber-500,
+  .aloof .bg-orange-500,
+  .aloof .bg-orange-600,
+  .aloof .dark\:bg-gradient-to-br {
+    background: var(--aloof-accent) !important;
+  }
+
+  .aloof .border-amber-700,
+  .aloof .border-orange-700 {
+    border-color: var(--aloof-accent-hover) !important;
+  }
+
+  /* Aloof rings and focus states */
+  .aloof .ring-amber-500,
+  .aloof .ring-orange-500,
+  .aloof .dark\:ring-pink-500,
+  .aloof .focus\:ring-amber-500,
+  .aloof .focus\:ring-pink-500 {
+    --tw-ring-color: var(--aloof-accent) !important;
+  }
+
+  /* Aloof hover states */
+  .aloof .hover\:bg-amber-50,
+  .aloof .hover\:bg-amber-100,
+  .aloof .hover\:bg-amber-200\/50,
+  .aloof .dark\:hover\:bg-pink-500\/10,
+  .aloof .dark\:hover\:bg-pink-500\/20,
+  .aloof .hover\:bg-white\/10 {
+    background-color: var(--aloof-bg-tertiary) !important;
+  }
+
+  .aloof .hover\:text-amber-600,
+  .aloof .hover\:text-amber-700,
+  .aloof .hover\:text-orange-600,
+  .aloof .dark\:hover\:text-pink-300,
+  .aloof .dark\:hover\:text-pink-400 {
+    color: var(--aloof-accent-hover) !important;
+  }
+
+  .aloof h1,
+  .aloof h2,
+  .aloof h3,
+  .aloof h4,
+  .aloof h5,
+  .aloof h6 {
+    letter-spacing: -0.025em !important;
+    font-weight: 600 !important;
+    line-height: 1.3 !important;
+  }
+
+  .aloof p {
+    line-height: 1.8 !important;
+    font-size: 1rem !important;
+    margin-bottom: 1.25rem !important;
+  }
+
+  .aloof .text-sm {
+    font-size: 0.9375rem !important;
+    line-height: 1.6 !important;
+  }
+
+  .aloof .text-xs {
+    font-size: 0.875rem !important;
+    line-height: 1.5 !important;
+  }
+
+  .aloof .text-lg {
+    font-size: 1.125rem !important;
+    line-height: 1.7 !important;
+  }
+
+  .aloof .text-xl {
+    font-size: 1.25rem !important;
+    line-height: 1.6 !important;
+  }
+
+  .aloof .text-2xl {
+    font-size: 1.5rem !important;
+    line-height: 1.4 !important;
+  }
+
+  .aloof .text-3xl {
+    font-size: 1.875rem !important;
+    line-height: 1.3 !important;
+  }
+
+  .aloof .text-4xl {
+    font-size: 2.25rem !important;
+    line-height: 1.2 !important;
+  }
+
+  /* Aloof better spacing for content blocks */
+  .aloof .space-y-4 > * + * {
+    margin-top: 1.25rem !important;
+  }
+
+  .aloof .space-y-6 > * + * {
+    margin-top: 1.75rem !important;
+  }
+
+  /* Aloof maximum width for comfortable reading */
+  .aloof .max-w-prose {
+    max-width: 68ch !important;
+  }
+
+  /* Aloof list styling for better readability */
+  .aloof ul,
+  .aloof ol {
+    line-height: 1.8 !important;
+    padding-left: 1.5rem !important;
+  }
+
+  .aloof li {
+    margin-bottom: 0.5rem !important;
+  }
+
+  /* Aloof code and monospace text */
+  .aloof code,
+  .aloof pre {
+    font-family: 'SF Mono', 'Monaco', 'Cascadia Code', 'Consolas', monospace !important;
+    background-color: var(--aloof-bg-tertiary) !important;
+    border: 1px solid var(--aloof-border-light) !important;
+  }
+
+  .aloof code {
+    padding: 0.125rem 0.375rem !important;
+    border-radius: 0.25rem !important;
+    font-size: 0.9em !important;
+  }
+
+  .aloof pre {
+    padding: 1rem !important;
+    border-radius: 0.5rem !important;
+    overflow-x: auto !important;
+    line-height: 1.6 !important;
+  }
+
+  /* Aloof modals and overlays */
+  .aloof .bg-white\/95,
+  .aloof .dark\:bg-\[\#1e1a2e\]\/95 {
+    background-color: rgba(253, 251, 247, 0.98) !important;
+  }
+
+  /* Aloof backdrop overlays */
+  .aloof .bg-black\/50,
+  .aloof .bg-black\/60 {
+    background-color: rgba(45, 45, 45, 0.3) !important;
+  }
+
+  /* Aloof shimmer effects - make subtle */
+  .aloof .animate-shimmer {
+    background: linear-gradient(90deg, var(--aloof-accent-light) 0%, var(--aloof-accent) 50%, var(--aloof-accent-light) 100%) !important;
+    background-size: 200% 100% !important;
+  }
+
+  /* Aloof pulse animations - subtle paper effect */
+  .aloof .animate-pulse {
+    animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite !important;
+  }
+
+  @keyframes aloof-pulse {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.9;
+    }
+  }
+
+  /* Aloof spin animations - keep for loaders */
+  .aloof .animate-spin {
+    border-color: var(--aloof-accent-light) !important;
+    border-top-color: var(--aloof-accent) !important;
+  }
+
+  /* Aloof bounce animations - subtle */
+  .aloof .animate-bounce {
+    animation: bounce 2s ease-in-out infinite !important;
+  }
+
+  /* Roadmap Background Pattern */
+  .roadmap-background {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .roadmap-background::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: 
+      /* Vertical lines */
+      linear-gradient(90deg, rgba(168, 85, 247, 0.03) 1px, transparent 1px),
+      /* Horizontal lines */
+      linear-gradient(0deg, rgba(168, 85, 247, 0.03) 1px, transparent 1px),
+      /* Diagonal connections - top-left to bottom-right */
+      repeating-linear-gradient(45deg, transparent, transparent 80px, rgba(219, 39, 119, 0.015) 80px, rgba(219, 39, 119, 0.015) 81px),
+      /* Diagonal connections - top-right to bottom-left */
+      repeating-linear-gradient(-45deg, transparent, transparent 80px, rgba(219, 39, 119, 0.015) 80px, rgba(219, 39, 119, 0.015) 81px);
+    background-size: 40px 40px, 40px 40px, 100% 100%, 100% 100%;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Dark mode roadmap background */
+  .dark .roadmap-background::before {
+    background-image: 
+      linear-gradient(90deg, rgba(236, 72, 153, 0.05) 1px, transparent 1px),
+      linear-gradient(0deg, rgba(236, 72, 153, 0.05) 1px, transparent 1px),
+      repeating-linear-gradient(45deg, transparent, transparent 80px, rgba(168, 85, 247, 0.03) 80px, rgba(168, 85, 247, 0.03) 81px),
+      repeating-linear-gradient(-45deg, transparent, transparent 80px, rgba(168, 85, 247, 0.03) 80px, rgba(168, 85, 247, 0.03) 81px);
+    background-size: 40px 40px, 40px 40px, 100% 100%, 100% 100%;
+  }
+
+  /* Midnight roadmap background */
+  .midnight .roadmap-background::before {
+    background-image: 
+      linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+      linear-gradient(0deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+      repeating-linear-gradient(45deg, transparent, transparent 80px, rgba(255, 255, 255, 0.01) 80px, rgba(255, 255, 255, 0.01) 81px),
+      repeating-linear-gradient(-45deg, transparent, transparent 80px, rgba(255, 255, 255, 0.01) 80px, rgba(255, 255, 255, 0.01) 81px);
+    background-size: 40px 40px, 40px 40px, 100% 100%, 100% 100%;
+  }
+
+  /* Node dots pattern for roadmap feel */
+  .roadmap-background::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: radial-gradient(circle, rgba(168, 85, 247, 0.08) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .dark .roadmap-background::after {
+    background-image: radial-gradient(circle, rgba(236, 72, 153, 0.12) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+
+  .midnight .roadmap-background::after {
+    background-image: radial-gradient(circle, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+
+  /* Ensure content stays above background */
+  .roadmap-background > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  .midnight .dark\:text-pink-400 {
+    color: var(--midnight-text-primary) !important;
+  }
+
+  .midnight .text-white {
+    color: #ffffff !important;
+  }
+
+  /* Midnight borders */
+  .midnight [class*="border"],
+  .midnight .border,
+  .midnight .border-t,
+  .midnight .border-b,
+  .midnight .border-l,
+  .midnight .border-r,
+  .midnight [class*="border-amber"],
+  .midnight [class*="border-pink"] {
+    border-color: var(--midnight-border) !important;
+  }
+
+  .midnight .dark\:border-pink-500 {
+    border-color: var(--midnight-border) !important;
+  }
+
+  /* Midnight hover and focus states */
+  .midnight [class*="hover:bg-amber"]:hover,
+  .midnight [class*="hover:bg-pink"]:hover,
+  .midnight [class*="hover:bg-orange"]:hover {
+    background-color: var(--midnight-bg-tertiary) !important;
+  }
+
+  .midnight .dark\:hover\:bg-pink-500:hover,
+  .midnight .dark\:hover\:bg-tech-gray-800:hover {
+    background-color: var(--midnight-bg-tertiary) !important;
+  }
+
+  .midnight [class*="hover:text-amber"]:hover,
+  .midnight [class*="hover:text-pink"]:hover {
+    color: var(--midnight-text-secondary) !important;
+  }
+
+  .midnight .dark\:hover\:text-pink-400:hover {
+    color: var(--midnight-text-secondary) !important;
+  }
+
+  .midnight [class*="focus:ring"] {
+    --tw-ring-color: var(--midnight-accent) !important;
+  }
+
+  .midnight .dark\:focus\:ring-pink-500 {
+    --tw-ring-color: var(--midnight-accent) !important;
+  }
+
+  /* Midnight shadows */
+  .midnight [class*="shadow"],
+  .midnight .shadow-soft,
+  .midnight .shadow-md,
+  .midnight .shadow-lg,
+  .midnight [class*="shadow-pink"],
+  .midnight [class*="shadow-amber"] {
+    box-shadow: 0 4px 6px -1px rgba(255, 255, 255, 0.05), 0 2px 4px -1px rgba(255, 255, 255, 0.03) !important;
+  }
+
+  .midnight .dark\:shadow-pink-500 {
+    box-shadow: 0 4px 6px -1px rgba(255, 255, 255, 0.05), 0 2px 4px -1px rgba(255, 255, 255, 0.03) !important;
+  }
+
+  /* Midnight buttons and interactive elements */
+  .midnight button,
+  .midnight .btn-primary,
+  .midnight .btn-secondary {
+    background-color: var(--midnight-surface) !important;
+    border-color: var(--midnight-border) !important;
+    color: var(--midnight-text-primary) !important;
+  }
+
+  .midnight button:hover,
+  .midnight .btn-primary:hover,
+  .midnight .btn-secondary:hover {
+    background-color: var(--midnight-accent) !important;
+  }
+
+  /* Midnight cards and surfaces */
+  .midnight .rounded-lg,
+  .midnight .rounded-xl,
+  .midnight [class*="rounded"] {
+    border: 1px solid var(--midnight-border);
+  }
+
+  /* Midnight backdrop blur elements */
+  .midnight [class*="backdrop-blur"] {
+    background-color: rgba(0, 0, 0, 0.95) !important;
+  }
+
+  /* Midnight input fields */
+  .midnight input[type="date"],
+  .midnight input[type="time"],
+  .midnight input[type="datetime-local"],
+  .midnight input[type="text"],
+  .midnight input[type="email"],
+  .midnight input[type="password"],
+  .midnight input[type="number"],
+  .midnight textarea,
+  .midnight select {
+    background-color: var(--midnight-bg-secondary) !important;
+    border-color: var(--midnight-border) !important;
+    color: var(--midnight-text-primary) !important;
+  }
+
+  .midnight input::placeholder,
+  .midnight textarea::placeholder {
+    color: var(--midnight-text-tertiary) !important;
+  }
+
+  .midnight input:focus,
+  .midnight textarea:focus,
+  .midnight select:focus {
+    border-color: var(--midnight-accent) !important;
+    background-color: var(--midnight-bg-tertiary) !important;
+  }
+
+  /* Midnight date/time picker */
+  .midnight input[type="date"]::-webkit-calendar-picker-indicator,
+  .midnight input[type="time"]::-webkit-calendar-picker-indicator,
+  .midnight input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+    filter: invert(1);
+  }
+
+  /* Midnight select options */
+  .midnight select option {
+    background-color: var(--midnight-bg-secondary);
+    color: var(--midnight-text-primary);
+  }
+
+  /* Midnight links */
+  .midnight a {
+    color: var(--midnight-text-primary);
+  }
+
+  .midnight a:hover {
+    color: var(--midnight-text-secondary);
+  }
+
+  /* Midnight active/selected states */
+  .midnight [aria-current="page"],
+  .midnight .active {
+    background-color: var(--midnight-accent) !important;
+    color: #ffffff !important;
+  }
+
+  /* Midnight disabled states */
+  .midnight [disabled],
+  .midnight .disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  /* Remove all colored backgrounds in midnight */
+  .midnight [class*="bg-amber"],
+  .midnight [class*="bg-pink"],
+  .midnight [class*="bg-orange"],
+  .midnight [class*="bg-purple"],
+  .midnight [class*="bg-blue"],
+  .midnight [class*="bg-green"],
+  .midnight [class*="bg-red"],
+  .midnight [class*="bg-yellow"],
+  .midnight [class*="bg-indigo"],
+  .midnight [class*="bg-teal"],
+  .midnight [class*="bg-cyan"],
+  .midnight [class*="bg-violet"],
+  .midnight [class*="bg-fuchsia"],
+  .midnight [class*="bg-rose"],
+  .midnight [class*="bg-emerald"],
+  .midnight [class*="bg-lime"] {
+    background-color: var(--midnight-surface) !important;
+  }
+
+  /* Midnight month/week sections - roadmap page */
+  .midnight [class*="border-purple"],
+  .midnight [class*="border-pink"],
+  .midnight [class*="border-indigo"],
+  .midnight [class*="border-teal"],
+  .midnight [class*="border-cyan"],
+  .midnight [class*="border-blue"],
+  .midnight [class*="border-violet"],
+  .midnight [class*="border-fuchsia"],
+  .midnight [class*="border-rose"],
+  .midnight [class*="border-emerald"],
+  .midnight [class*="border-lime"] {
+    border-color: var(--midnight-border) !important;
+  }
+
+  /* Midnight badge colors */
+  .midnight [class*="bg-purple-600"],
+  .midnight [class*="bg-purple-700"],
+  .midnight [class*="bg-pink-600"],
+  .midnight [class*="bg-pink-700"],
+  .midnight [class*="bg-indigo-600"],
+  .midnight [class*="bg-teal-600"],
+  .midnight [class*="bg-cyan-600"],
+  .midnight [class*="bg-blue-600"],
+  .midnight [class*="bg-violet-600"],
+  .midnight [class*="bg-fuchsia-600"],
+  .midnight [class*="bg-rose-600"],
+  .midnight [class*="bg-emerald-600"],
+  .midnight [class*="bg-lime-600"] {
+    background-color: var(--midnight-accent) !important;
+  }
+
+  /* Midnight text colors for roadmap */
+  .midnight [class*="text-purple-"],
+  .midnight [class*="text-pink-"],
+  .midnight [class*="text-indigo-"],
+  .midnight [class*="text-teal-"],
+  .midnight [class*="text-cyan-"],
+  .midnight [class*="text-blue-"],
+  .midnight [class*="text-violet-"],
+  .midnight [class*="text-fuchsia-"],
+  .midnight [class*="text-rose-"],
+  .midnight [class*="text-emerald-"],
+  .midnight [class*="text-lime-"] {
+    color: var(--midnight-text-primary) !important;
+  }
+
+  /* Midnight prose colors */
+  .midnight .prose {
+    color: var(--midnight-text-primary);
+  }
+
+  .midnight .prose h1,
+  .midnight .prose h2,
+  .midnight .prose h3,
+  .midnight .prose h4,
+  .midnight .prose h5,
+  .midnight .prose h6 {
+    color: var(--midnight-text-primary);
+  }
+
+  .midnight .prose strong {
+    color: var(--midnight-text-primary);
+  }
+
+  .midnight .prose a {
+    color: var(--midnight-text-primary);
+  }
+
+  .midnight .prose code {
+    background-color: var(--midnight-bg-tertiary);
+    color: var(--midnight-text-primary);
+  }
+
+  /* Midnight file input styling */
+  .midnight input[type="file"] {
+    background-color: var(--midnight-bg-secondary);
+    border-color: var(--midnight-border);
+    color: var(--midnight-text-primary);
+  }
+
+  .midnight input[type="file"]::file-selector-button {
+    background-color: var(--midnight-accent);
+    border-color: var(--midnight-border);
+    color: var(--midnight-text-primary);
+  }
+
+  .midnight input[type="file"]::file-selector-button:hover {
+    background-color: var(--midnight-bg-tertiary);
+  }
+
+  /* Midnight label styling */
+  .midnight label {
+    color: var(--midnight-text-primary);
+  }
+
+  /* Midnight radio and checkbox */
+  .midnight input[type="radio"],
+  .midnight input[type="checkbox"] {
+    border-color: var(--midnight-border);
+    background-color: var(--midnight-bg-secondary);
+  }
+
+  .midnight input[type="radio"]:checked,
+  .midnight input[type="checkbox"]:checked {
+    background-color: var(--midnight-accent);
+    border-color: var(--midnight-accent);
+  }
+
+  /* Midnight table styling */
+  .midnight table {
+    border-color: var(--midnight-border);
+  }
+
+  .midnight th,
+  .midnight td {
+    border-color: var(--midnight-border);
+    color: var(--midnight-text-primary);
+  }
+
+  .midnight thead {
+    background-color: var(--midnight-bg-secondary);
+  }
+
+  .midnight tbody tr:hover {
+    background-color: var(--midnight-bg-tertiary);
+  }
+
+  /* Midnight modal/dialog */
+  .midnight [role="dialog"],
+  .midnight .modal {
+    background-color: var(--midnight-bg);
+    border-color: var(--midnight-border);
+  }
+
+  /* Midnight tooltips */
+  .midnight [role="tooltip"],
+  .midnight .tooltip {
+    background-color: var(--midnight-surface);
+    border-color: var(--midnight-border);
+    color: var(--midnight-text-primary);
+  }
+
+  /* Midnight badges and pills */
+  .midnight .badge,
+  .midnight .pill,
+  .midnight [class*="rounded-full"] {
+    background-color: var(--midnight-surface);
+    border-color: var(--midnight-border);
+  }
+
+  /* Midnight alerts */
+  .midnight .alert,
+  .midnight [class*="alert-"] {
+    background-color: var(--midnight-surface);
+    border-color: var(--midnight-border);
+    color: var(--midnight-text-primary);
+  }
+
+  /* Midnight progress bars */
+  .midnight progress,
+  .midnight [class*="progress"] {
+    background-color: var(--midnight-bg-secondary);
+  }
+
+  .midnight progress::-webkit-progress-bar {
+    background-color: var(--midnight-bg-secondary);
+  }
+
+  .midnight progress::-webkit-progress-value {
+    background-color: var(--midnight-accent);
+  }
+
+  .midnight progress::-moz-progress-bar {
+    background-color: var(--midnight-accent);
+  }
+
+  /* Midnight spinner/loader */
+  .midnight .spinner,
+  .midnight .loader,
+  .midnight [class*="animate-spin"] {
+    border-color: var(--midnight-border);
+    border-top-color: var(--midnight-text-primary);
+  }
+
+  /* Midnight dividers */
+  .midnight hr,
+  .midnight [class*="divide-"] {
+    border-color: var(--midnight-border);
+  }
+
+  /* Midnight code blocks */
+  .midnight pre,
+  .midnight code {
+    background-color: var(--midnight-bg-secondary);
+    color: var(--midnight-text-primary);
+    border-color: var(--midnight-border);
+  }
+
+  /* Midnight placeholder text visibility */
+  .midnight ::placeholder {
+    color: var(--midnight-text-tertiary) !important;
+    opacity: 1;
+  }
+
+  /* Midnight SVG icons */
+  .midnight svg {
+    color: inherit;
+  }
+
+  /* Midnight list styling */
+  .midnight ul,
+  .midnight ol {
+    color: var(--midnight-text-primary);
+  }
+
+  .midnight li {
+    color: var(--midnight-text-primary);
+  }
+
+  /* Midnight heading colors */
+  .midnight h1,
+  .midnight h2,
+  .midnight h3,
+  .midnight h4,
+  .midnight h5,
+  .midnight h6 {
+    color: var(--midnight-text-primary) !important;
+  }
+
+  /* Midnight paragraph text */
+  .midnight p {
+    color: var(--midnight-text-primary);
+  }
+
+  /* Midnight span text */
+  .midnight span {
+    color: inherit;
+  }
+
+  /* Override any gradient text in midnight */
+  .midnight [class*="gradient"],
+  .midnight .bg-clip-text {
+    background: linear-gradient(to right, #ffffff, #e0e0e0) !important;
+    -webkit-background-clip: text !important;
+    background-clip: text !important;
+  }
+
+  /* Midnight nav items */
+  .midnight nav a,
+  .midnight nav button {
+    color: var(--midnight-text-primary);
+  }
+
+  /* Midnight footer */
+  .midnight footer {
+    background-color: var(--midnight-bg);
+    border-color: var(--midnight-border);
+    color: var(--midnight-text-primary);
+  }
+
+  /* Midnight form labels and legends */
+  .midnight legend,
+  .midnight fieldset {
+    border-color: var(--midnight-border);
+    color: var(--midnight-text-primary);
+  }
+
+  /* Midnight specific overrides for inline styles */
+  .midnight [style*="background"] {
+    background-color: var(--midnight-surface) !important;
+  }
+
+  /* Midnight opacity fixes */
+  .midnight .opacity-50,
+  .midnight .opacity-60,
+  .midnight .opacity-70 {
+    opacity: 0.7;
+  }
+
+  /* Midnight ring colors */
+  .midnight [class*="ring-"],
+  .midnight [class*="focus:ring"] {
+    --tw-ring-color: var(--midnight-accent) !important;
+  }
+
+  /* Midnight outline colors */
+  .midnight [class*="outline-"] {
+    outline-color: var(--midnight-border) !important;
+  }
+
+  /* Midnight slider/range input */
+  .midnight input[type="range"] {
+    background-color: var(--midnight-bg-secondary);
+  }
+
+  .midnight input[type="range"]::-webkit-slider-thumb {
+    background-color: var(--midnight-accent);
+  }
+
+  .midnight input[type="range"]::-moz-range-thumb {
+    background-color: var(--midnight-accent);
+  }
+
+  /* Midnight dropdown menus */
+  .midnight .dropdown,
+  .midnight [role="menu"],
+  .midnight [role="listbox"] {
+    background-color: var(--midnight-bg);
+    border-color: var(--midnight-border);
+  }
+
+  .midnight [role="menuitem"],
+  .midnight [role="option"] {
+    color: var(--midnight-text-primary);
+  }
+
+  .midnight [role="menuitem"]:hover,
+  .midnight [role="option"]:hover {
+    background-color: var(--midnight-bg-tertiary);
+  }
+
+  /* Midnight tabs */
+  .midnight [role="tab"] {
+    color: var(--midnight-text-secondary);
+    border-color: var(--midnight-border);
+  }
+
+  .midnight [role="tab"][aria-selected="true"] {
+    background-color: var(--midnight-accent);
+    color: var(--midnight-text-primary);
+    border-color: var(--midnight-accent);
+  }
+
+  /* Midnight accordion */
+  .midnight [class*="accordion"] {
+    border-color: var(--midnight-border);
+    background-color: var(--midnight-surface);
+  }
+
+  /* Midnight card hover effects */
+  .midnight [class*="hover:shadow"]:hover {
+    box-shadow: 0 4px 6px -1px rgba(255, 255, 255, 0.1), 0 2px 4px -1px rgba(255, 255, 255, 0.06) !important;
+  }
+
+  /* Midnight selection highlight */
+  .midnight ::selection {
+    background-color: var(--midnight-accent);
+    color: var(--midnight-text-primary);
+  }
+
+  .midnight ::-moz-selection {
+    background-color: var(--midnight-accent);
+    color: var(--midnight-text-primary);
+  }
+
+  /* Midnight autofill styling */
+  .midnight input:-webkit-autofill,
+  .midnight input:-webkit-autofill:hover,
+  .midnight input:-webkit-autofill:focus,
+  .midnight textarea:-webkit-autofill,
+  .midnight textarea:-webkit-autofill:hover,
+  .midnight textarea:-webkit-autofill:focus,
+  .midnight select:-webkit-autofill,
+  .midnight select:-webkit-autofill:hover,
+  .midnight select:-webkit-autofill:focus {
+    -webkit-text-fill-color: var(--midnight-text-primary);
+    -webkit-box-shadow: 0 0 0px 1000px var(--midnight-bg-secondary) inset;
+    box-shadow: 0 0 0px 1000px var(--midnight-bg-secondary) inset;
+    transition: background-color 5000s ease-in-out 0s;
+  }
+
+  /* Midnight specific color overrides */
+  .midnight .text-success,
+  .midnight .text-error,
+  .midnight .text-warning,
+  .midnight .text-info {
+    color: var(--midnight-text-primary) !important;
+  }
+
+  .midnight .bg-success,
+  .midnight .bg-error,
+  .midnight .bg-warning,
+  .midnight .bg-info {
+    background-color: var(--midnight-surface) !important;
+  }
+
+  /* Midnight remove colored hover backgrounds */
+  .midnight [class*="hover:bg-"]:not([class*="hover:bg-gray"]):hover {
+    background-color: var(--midnight-bg-tertiary) !important;
+  }
+
+  /* Midnight specific utility overrides */
+  .midnight .text-black {
+    color: var(--midnight-text-primary) !important;
+  }
+
+  .midnight .bg-black {
+    background-color: var(--midnight-bg) !important;
+  }
+
+  /* Midnight loading states */
+  .midnight [class*="animate-pulse"] {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: .7;
+    }
+  }
+}
+
+@layer components {
+  .btn-primary {
+    background-color: #8225b5;
+    color: white;
+    font-weight: 600;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    transition: all 0.3s ease;
+    border: none;
+    cursor: pointer;
+  }
+  
+  .btn-primary:hover {
+    background-color: #4338ca;
+  }
+  
+  .btn-secondary {
+    background-color: #4b5563;
+    color: white;
+    font-weight: 600;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    transition: all 0.3s ease;
+    border: none;
+    cursor: pointer;
+  }
+  
+  .btn-secondary:hover {
+    background-color: #374151;
+  }
+  
+  .form-input {
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.5rem;
+    outline: none;
+    transition: all 0.3s ease;
+    font-weight: 500;
+    background-color: #f3f4f6;
+  }
+  
+  :root.dark .form-input {
+    background-color: #1e1a2e;
+    color: #ffffff;
+  }
+  
+  .form-input:focus {
+    box-shadow: 0 0 0 3px rgba(236, 72, 153, 0.15);
+  }
+  
+  :root.dark .form-input:focus {
+    box-shadow: 0 0 0 3px rgba(236, 72, 153, 0.25);
+  }
+  
+  .card {
+    background-color: white;
+    border-radius: 0.75rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    padding: 1.5rem;
+    transition: all 0.3s ease;
+  }
+  
+  :root.dark .card {
+    background-color: #1e1a2e;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+  }
+}
+
+@layer utilities {
+  .text-gradient {
+    background: linear-gradient(to right, #6366f1, #a855f7);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  
+  .gradient-bg {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  }
+  
+  .gradient-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  }
+  
+  .gradient-secondary {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  }
+  
+  .gradient-success {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  }
+  
+  .gradient-warning {
+    background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+  }
+  
+  .gradient-info {
+    background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+  }
+  
+  .glass-effect {
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+  }
+  
+  .hover-lift {
+    transition: all 0.3s ease;
+  }
+  
+  .hover-lift:hover {
+    transform: scale(1.05);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  }
+  
+  .animate-fade-in {
+    animation: fadeIn 0.6s ease-out forwards;
+  }
+  
+  .animate-slide-up {
+    animation: slideUp 0.6s ease-out forwards;
+  }
+  
+  .animate-bounce-in {
+    animation: bounceIn 0.8s ease-out forwards;
+  }
+  
+  .text-shadow {
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+  
+  .nav-fixed {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+  }
+  
+  .section-padding {
+    padding: 2rem 1rem;
+  }
+  
+  @media (min-width: 768px) {
+    .section-padding {
+      padding: 4rem 2rem;
+    }
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes bounceIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+  70% {
+    transform: scale(0.9);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.6s ease-out forwards;
+}
