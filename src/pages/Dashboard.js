@@ -1888,6 +1888,71 @@ const Dashboard = () => {
         return;
       }
       
+      // STEP 2.5-PREV: If analysis does NOT exist for current week,
+      // check if PREVIOUS week's analysis exists and timer is still running
+      // This handles the case where user just completed Week N analysis and moved to Week N+1
+      if (!hasAnalysisForThisWeek && week > 1) {
+        const prevWeek = week - 1;
+        const prevMonth = month; // Assuming same month for simplicity (can be enhanced later)
+        
+        console.log(`🔍 Checking previous Week ${prevWeek} analysis timer status...`);
+        
+        // Check if previous week's analysis exists
+        let hasPrevWeekAnalysis = false;
+        if (analysisData.success && analysisData.data && analysisData.data.months && Array.isArray(analysisData.data.months)) {
+          for (const monthData of analysisData.data.months) {
+            if (monthData.month === prevMonth && monthData.weeks && Array.isArray(monthData.weeks)) {
+              for (const weekData of monthData.weeks) {
+                if (weekData.week === prevWeek) {
+                  hasPrevWeekAnalysis = true;
+                  console.log(`✅ Previous Week ${prevWeek} analysis exists`);
+                  break;
+                }
+              }
+            }
+            if (hasPrevWeekAnalysis) break;
+          }
+        }
+        
+        if (hasPrevWeekAnalysis) {
+          // Check timer status for previous week's analysis
+          try {
+            const timerResponse = await fetch(`${backendUrl}/api/weekly-analysis-timer-status/${mobile}/${prevWeek}/${prevMonth}`);
+            const timerData = await timerResponse.json();
+            
+            if (timerData.success && timerData.data) {
+              const { timer_remaining, can_generate_next, next_action, is_month_end_week, timer_duration } = timerData.data;
+              
+              console.log(`⏱️ Previous week timer status: remaining=${timer_remaining}s, can_generate=${can_generate_next}`);
+              
+              if (!can_generate_next && timer_remaining > 0) {
+                // Timer is still active - show timer countdown and block Generation
+                if (!postAnalysisTimerRef.current) {
+                  console.log(`⏳ Starting previous week post-analysis timer: ${timer_remaining}s remaining`);
+                  setPostAnalysisTimerRemaining(timer_remaining);
+                  setPostAnalysisTimerDuration(timer_duration);
+                  setPostAnalysisNextAction(next_action);
+                  setPostAnalysisIsMonthEnd(is_month_end_week);
+                  setPostAnalysisIsRoadmapTimer(false);
+                  setPostAnalysisTimerActive(true);
+                  
+                  // Reset other states
+                  setWeeklyTestGenerated(false);
+                  setWeeklyTestHasAnalysis(false);
+                  setShowTimerModal(false);
+                  setTimerCompleted(false);
+                  setCheckingTestGeneration(false);
+                  return;
+                }
+              }
+              // If timer completed, continue to check if test exists
+            }
+          } catch (timerErr) {
+            console.error('Error checking previous week timer status:', timerErr);
+          }
+        }
+      }
+      
       // STEP 2.5A-ROADMAP: For Week 1, Month 1 - check if roadmap timer is still active
       // This is the very first week, so there's no previous week analysis - timer starts after roadmap generation
       if (week === 1 && month === 1) {
