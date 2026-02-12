@@ -490,9 +490,9 @@ export const isBasicProject = (projectTitle, projectDescription, domain) => {
   const combinedText = `${title} ${description}`;
   
   // Check against all basic project categories
-  for (const [category, basicProjects] of Object.entries(BASIC_PROJECTS)) {
+  for (const [, basicProjects] of Object.entries(BASIC_PROJECTS)) {
     for (const basicProject of basicProjects) {
-      const basicKeywords = basicProject.toLowerCase().split(/[\s\-\(\)]/);
+      const basicKeywords = basicProject.toLowerCase().split(/[\s\-()]/); // eslint-disable-line no-useless-escape
       const hasBasicKeywords = basicKeywords.every(keyword => 
         keyword.length === 0 || combinedText.includes(keyword)
       );
@@ -889,6 +889,7 @@ const SPEC_DOMAIN_ROLES = {
   'Backend Development': ['Backend Developer','API Developer','Cloud Backend Engineer','Database Engineer','DevOps Engineer']
 };
 
+// eslint-disable-next-line no-unused-vars
 const generateFallbackRoles = (domain) => {
   if (domain.toLowerCase().includes('data')) return ['Data Analyst', 'Data Engineer', 'Business Analyst'];
   else if (domain.toLowerCase().includes('software')) return ['Software Developer', 'Full Stack Developer', 'Backend Developer'];

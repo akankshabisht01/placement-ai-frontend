@@ -1,12 +1,11 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../contexts/ThemeContext';
 import { getThemeClasses } from '../utils/themeHelpers';
 import LoadingWithFacts, { LoadingFactsInline } from '../components/LoadingWithFacts';
 
 const WeeklyTest = () => {
   const navigate = useNavigate();
-  const location = useLocation();
   const { theme } = useTheme();
   const themeClasses = getThemeClasses(theme);
   const [loading, setLoading] = useState(true);
@@ -17,6 +16,7 @@ const WeeklyTest = () => {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+  // eslint-disable-next-line no-unused-vars
   const [showFeedback, setShowFeedback] = useState(false);
   const [testCompleted, setTestCompleted] = useState(false);
   
@@ -31,15 +31,14 @@ const WeeklyTest = () => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showFullscreenWarning, setShowFullscreenWarning] = useState(false);
   const [fullscreenExitCount, setFullscreenExitCount] = useState(0);
-  const testContainerRef = useRef(null);
   
   // Camera and microphone for proctoring
   const [cameraStream, setCameraStream] = useState(null);
   const [microphoneStream, setMicrophoneStream] = useState(null);
   const [cameraError, setCameraError] = useState(null);
   const [microphoneError, setMicrophoneError] = useState(null);
-  const [cameraPermissionGranted, setCameraPermissionGranted] = useState(false);
-  const [microphonePermissionGranted, setMicrophonePermissionGranted] = useState(false);
+  const [, setCameraPermissionGranted] = useState(false);
+  const [, setMicrophonePermissionGranted] = useState(false);
   const [showPermissionModal, setShowPermissionModal] = useState(false);
   const [permissionDeniedMessage, setPermissionDeniedMessage] = useState('');
   const [requestingPermissions, setRequestingPermissions] = useState(false);

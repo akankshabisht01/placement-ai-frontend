@@ -4,43 +4,28 @@
  */
 
 export const getThemeClasses = (theme) => {
-  const classes = {
-    // Page backgrounds
+  // Default classes structure for reference (used as fallback)
+  // eslint-disable-next-line no-unused-vars
+  const defaultClasses = {
     pageBackground: '',
-    
-    // Card/Container backgrounds
     cardBackground: '',
     cardBorder: '',
     cardHover: '',
-    
-    // Text colors
     textPrimary: '',
     textSecondary: '',
     textAccent: '',
-    
-    // Button styles
     buttonPrimary: '',
     buttonSecondary: '',
     buttonHover: '',
-    
-    // Input styles
     inputBackground: '',
     inputBorder: '',
     inputFocus: '',
     inputText: '',
-    
-    // Badge/Tag styles
     badgeBackground: '',
     badgeText: '',
-    
-    // Gradient text
     gradientText: '',
-    
-    // Section backgrounds
     sectionBackground: '',
     sectionAlt: '',
-    
-    // Aliases for backward compatibility
     accent: '',
     gradient: '',
     border: '',
