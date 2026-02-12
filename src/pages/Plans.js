@@ -145,7 +145,7 @@ const Plans = () => {
     try {
       console.log('Creating order with:', { amount, planName, mobile: userMobile, name: userName });
       
-      const response = await fetch('http://localhost:5000/api/payment/create-order', {
+      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000'}/api/payment/create-order`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -183,7 +183,7 @@ const Plans = () => {
         mobile: userMobile
       });
 
-      const response = await fetch('http://localhost:5000/api/payment/verify', {
+      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000'}/api/payment/verify`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -347,7 +347,7 @@ const Plans = () => {
           
           console.log('Logging failure to backend:', failureData);
           
-          await fetch('http://localhost:5000/api/payment/failure', {
+          await fetch(`${process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000'}/api/payment/failure`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json'

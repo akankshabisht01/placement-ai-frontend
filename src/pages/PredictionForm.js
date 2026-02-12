@@ -574,7 +574,7 @@ const PredictionForm = () => {
   // Check if resume exists for the mobile number
   const checkExistingResume = async (mobile) => {
     try {
-      const response = await fetch('http://localhost:5000/api/check-resume', {
+      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000'}/api/check-resume`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -606,7 +606,7 @@ const PredictionForm = () => {
       
       try {
         // Call the link-resume-profile API to get complete resume data
-        const response = await fetch('http://localhost:5000/api/link-resume-profile', {
+        const response = await fetch(`${process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000'}/api/link-resume-profile`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -885,7 +885,7 @@ const PredictionForm = () => {
         unselectedCount: unselectedSkills.length
       });
 
-      const response = await fetch('http://localhost:5000/api/update-resume-skills', {
+      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000'}/api/update-resume-skills`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -265,7 +265,7 @@ const Profile = () => {
       }
       
       console.log('🌐 Sending request to backend...');
-      const response = await fetch('http://localhost:5000/api/profile/update', {
+      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000'}/api/profile/update`, {
         method: 'POST',
         body: formData
       });

@@ -23,7 +23,7 @@ const Roadmap = () => {
   const fetchAllRoadmaps = async () => {
     try {
       setLoading(true);
-      const response = await fetch('http://localhost:5000/api/get-all-roadmaps', {
+      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000'}/api/get-all-roadmaps`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
