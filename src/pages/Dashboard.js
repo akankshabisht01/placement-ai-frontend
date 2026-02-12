@@ -5206,8 +5206,8 @@ const Dashboard = () => {
                       </div>
                     )}
 
-                    {/* Show Start Test button only when test is generated and timer is completed */}
-                    {weeklyTestGenerated && timerCompleted && !showTimerModal && (
+                    {/* Show Start Test button only when test is generated, timer is completed, and no post-analysis timer is running */}
+                    {weeklyTestGenerated && timerCompleted && !showTimerModal && !monthlyPostAnalysisTimerActive && (
                     <div className={`mb-3 ${weeklyTestHasAnalysis ? '' : `pb-3 border-b ${themeClasses.cardBorder}`}`}>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
