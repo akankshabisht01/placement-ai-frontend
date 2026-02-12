@@ -2023,13 +2023,16 @@ const Dashboard = () => {
         
         console.log('📥 Test result API response:', resultData);
         
-        if (resultData.success && resultData.result) {
+        // API returns 'data' field, not 'result'
+        const result = resultData.data || resultData.result;
+        
+        if (resultData.success && result) {
           // Check if this specific week/month has results
-          console.log(`📊 Found test result: Week ${resultData.result.week}, Month ${resultData.result.month}`);
+          console.log(`📊 Found test result: Week ${result.week}, Month ${result.month}`);
           console.log(`📊 Looking for: Week ${week}, Month ${month}`);
-          console.log(`📊 Match: ${resultData.result.week === week && resultData.result.month === month}`);
+          console.log(`📊 Match: ${result.week === week && result.month === month}`);
           
-          if (resultData.result.week === week && resultData.result.month === month) {
+          if (result.week === week && result.month === month) {
             console.log(`✅✅✅ TEST RESULT MATCH! Setting weeklyTestHasAnalysis = true`);
             setWeeklyTestGenerated(true); // Keep test button visible
             setWeeklyTestHasAnalysis(true); // Show analysis button
@@ -2041,7 +2044,7 @@ const Dashboard = () => {
             previousMonthRef.current = month;
             return;
           } else {
-            console.log(`⚠️ Week/month mismatch - result is for Week ${resultData.result.week}, Month ${resultData.result.month} but we need Week ${week}, Month ${month}`);
+            console.log(`⚠️ Week/month mismatch - result is for Week ${result.week}, Month ${result.month} but we need Week ${week}, Month ${month}`);
           }
         } else {
           console.log(`❌ No test result found or API returned failure:`, resultData);
