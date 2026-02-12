@@ -205,7 +205,8 @@ const Roadmap = () => {
   const fetchAllRoadmaps = async () => {
     try {
       setLoading(true);
-      const response = await fetch('http://localhost:5000/api/get-all-roadmaps', {
+      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
+      const response = await fetch(`${backendUrl}/api/get-all-roadmaps`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -1773,7 +1774,7 @@ const Roadmap = () => {
                       console.log(`🔄 Checking for courses in Course collection... (Attempt ${attempts}/${maxAttempts})`);
                       
                       // Check Course collection by mobile number as _id
-                      const checkResponse = await fetch('http://localhost:5000/api/get-user-courses', {
+                      const checkResponse = await fetch(`${backendUrl}/api/get-user-courses`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ mobile }),
