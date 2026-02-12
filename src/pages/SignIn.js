@@ -157,8 +157,13 @@ const SignIn = () => {
 
       if (result.success) {
         setOtpSent(true);
-        setSuccessMessage('OTP sent successfully to your email!');
-        setOtpMessage('Please check your email and enter the OTP below');
+        if (result.demo_mode) {
+          setSuccessMessage('Demo mode active: Use OTP 123456');
+          setOtpMessage('📧 Email service unavailable. Use demo OTP: 123456');
+        } else {
+          setSuccessMessage('OTP sent successfully to your email!');
+          setOtpMessage('Please check your email and enter the OTP below');
+        }
         startCountdown();
       } else {
         setOtpMessage(result.message || 'Failed to send OTP');

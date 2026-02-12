@@ -193,7 +193,11 @@ const Register = () => {
       if (data.success) {
         setOtpSent(true);
         startCountdown(); // Start 60-second countdown
-        setSuccessMessage(`OTP sent successfully to ${formData.email}! Please check your inbox.`);
+        if (data.demo_mode) {
+          setSuccessMessage(`📧 Demo mode: Use OTP 123456 (email service unavailable)`);
+        } else {
+          setSuccessMessage(`OTP sent successfully to ${formData.email}! Please check your inbox.`);
+        }
         setErrors(prev => ({ ...prev, email: '' })); // Clear any email errors
       } else {
         setErrors(prev => ({ ...prev, email: `Failed to send OTP: ${data.message}` }));
