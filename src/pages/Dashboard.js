@@ -2034,8 +2034,8 @@ const Dashboard = () => {
           
           if (result.week === week && result.month === month) {
             console.log(`✅✅✅ TEST RESULT MATCH! Setting weeklyTestHasAnalysis = true`);
-            setWeeklyTestGenerated(true); // Keep test button visible
-            setWeeklyTestHasAnalysis(true); // Show analysis button
+            setWeeklyTestGenerated(false); // Hide test button - test is completed
+            setWeeklyTestHasAnalysis(true); // Show analysis button only
             setShowTimerModal(false);
             setTimerCompleted(true);
             setCheckingTestGeneration(false);
