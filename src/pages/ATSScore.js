@@ -7,7 +7,7 @@ const ATSScore = () => {
   const navigate = useNavigate();
   const { theme } = useTheme();
   const themeClasses = getThemeClasses(theme);
-  const API_BASE = `${window.location.protocol}//${window.location.hostname}:5000`;
+  const API_BASE = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
   
   const [atsData, setAtsData] = useState(null);
   const [loading, setLoading] = useState(true);

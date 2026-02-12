@@ -206,8 +206,8 @@ const roleSkillsMap = {
 };
 
 const PredictionForm = () => {
-  // Dynamic API base for localhost and LAN usage
-  const API_BASE = `${window.location.protocol}//${window.location.hostname}:5000`;
+  // Use environment variable for backend URL, fallback to localhost for development
+  const API_BASE = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
   const { domainId } = useParams();
   const navigate = useNavigate();
   const allSkills = getAllSkills();

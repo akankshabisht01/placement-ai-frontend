@@ -1514,7 +1514,7 @@ const Dashboard = () => {
       else if (email) params.append('email', email);
 
       // Call the backend API to check for existing analysis
-      const API_BASE = `${window.location.protocol}//${window.location.hostname}:5000`;
+      const API_BASE = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
       const response = await fetch(`${API_BASE}/api/student-analysis?${params.toString()}`, {
         method: 'GET',
         headers: {

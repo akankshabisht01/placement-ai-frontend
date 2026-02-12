@@ -36,8 +36,8 @@ const ModernPredictionFormExample = () => {
     formData.append('file', file);
 
     try {
-      // Get the API base URL from window location
-      const API_BASE = `${window.location.protocol}//${window.location.hostname}:5000`;
+      // Get the API base URL from environment
+      const API_BASE = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
       
       const response = await fetch(`${API_BASE}/api/parse-resume`, {
         method: 'POST',
@@ -85,7 +85,7 @@ const ModernPredictionFormExample = () => {
 
     try {
       // API call to predict
-      const API_BASE = `${window.location.protocol}//${window.location.hostname}:5000`;
+      const API_BASE = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
       const response = await fetch(`${API_BASE}/api/predict`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

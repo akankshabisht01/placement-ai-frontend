@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
 const ResumeProfileSelection = () => {
-  // Dynamic API base for localhost and LAN usage
-  const API_BASE = `${window.location.protocol}//${window.location.hostname}:5000`;
+  // Use environment variable for backend URL
+  const API_BASE = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
   
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
