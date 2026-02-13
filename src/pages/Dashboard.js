@@ -8418,8 +8418,10 @@ const Dashboard = () => {
               {/* Status Info */}
               <div className="bg-purple-50 dark:bg-purple-900/20 rounded-xl p-4 border border-purple-200 dark:border-purple-500/30">
                 <p className="text-sm text-purple-800 dark:text-purple-300 font-medium">
-                  {progressTrackingMessage.includes('Checking') && '⚙️ AI is generating your weekly test analysis...'}
-                  {progressTrackingMessage.includes('Generating') && '⚙️ AI is analyzing your test performance...'}
+                  {progressTrackingMessage.includes('Checking') && progressTrackingMessage.includes('Month') && '⚙️ AI is generating your monthly test analysis...'}
+                  {progressTrackingMessage.includes('Checking') && !progressTrackingMessage.includes('Month') && '⚙️ AI is generating your weekly test analysis...'}
+                  {progressTrackingMessage.includes('Generating') && progressTrackingMessage.includes('Month') && '⚙️ AI is analyzing your monthly test performance...'}
+                  {progressTrackingMessage.includes('Generating') && !progressTrackingMessage.includes('Month') && '⚙️ AI is analyzing your test performance...'}
                   {progressTrackingMessage.includes('Found') && '✅ Redirecting to Progress Tracking page...'}
                   {progressTrackingMessage.includes('Generated') && '✅ Redirecting to Progress Tracking page...'}
                   {!progressTrackingMessage && '⏳ Processing your request...'}
