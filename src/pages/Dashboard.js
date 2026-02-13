@@ -124,6 +124,11 @@ const MonthlyRetakeButton = ({ getUserMobile, month, onAnalysisClick }) => {
         if (data.analysisTimerRemaining > 0) {
           setTimerRemaining(data.analysisTimerRemaining);
         }
+        // If API says test is ready (new test generated), set testReady and clear timer
+        if (data.testReady) {
+          setTestReady(true);
+          setGenerationTimerRemaining(0);
+        }
       }
       setLoading(false);
     } catch (error) {
@@ -192,6 +197,44 @@ const MonthlyRetakeButton = ({ getUserMobile, month, onAnalysisClick }) => {
 
   if (loading) return <div className={`text-center py-2 text-sm ${themeClasses.textSecondary}`}>Checking test status...</div>;
   
+  // Show generation timer or start test button even if retakeStatus is not available
+  if (generationTimerRemaining > 0 || testReady) {
+    return (
+      <div className="space-y-2">
+        {/* Generation Timer - 5 minute countdown after clicking retake */}
+        {generationTimerRemaining > 0 && (
+          <div className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 border-2 border-purple-400 dark:border-purple-600 rounded-lg p-4">
+            <div className="text-center">
+              <div className="text-3xl font-bold text-purple-600 dark:text-purple-400 mb-2">
+                ⏳ {formatTime(generationTimerRemaining)}
+              </div>
+              <p className="text-sm text-purple-700 dark:text-purple-300">
+                Generating your retest... Please wait.
+              </p>
+              <p className="text-xs text-purple-600 dark:text-purple-400 mt-1">
+                The "Start Monthly Test" button will appear when ready.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Start Monthly Test Button - Show after generation timer ends */}
+        {testReady && (
+          <button
+            onClick={handleStartTest}
+            className="w-full px-4 py-3 bg-gradient-to-r from-green-500 via-emerald-500 to-teal-500 hover:from-green-600 hover:via-emerald-600 hover:to-teal-600 text-white font-bold rounded-lg transition-all duration-300 shadow-md hover:shadow-xl hover:scale-105 active:scale-95 flex items-center justify-center gap-2"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span>🚀 Start Monthly Test</span>
+          </button>
+        )}
+      </div>
+    );
+  }
+  
   if (!retakeStatus || !retakeStatus.needsRetake) return null; // Don't show if passed
 
   return (
@@ -253,37 +296,6 @@ const MonthlyRetakeButton = ({ getUserMobile, month, onAnalysisClick }) => {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
           </svg>
           <span>{triggering ? 'Generating...' : '🔄 Generate Monthly Retest'}</span>
-        </button>
-      )}
-
-      {/* Generation Timer - 5 minute countdown after clicking retake */}
-      {generationTimerRemaining > 0 && (
-        <div className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 border-2 border-purple-400 dark:border-purple-600 rounded-lg p-4">
-          <div className="text-center">
-            <div className="text-3xl font-bold text-purple-600 dark:text-purple-400 mb-2">
-              ⏳ {formatTime(generationTimerRemaining)}
-            </div>
-            <p className="text-sm text-purple-700 dark:text-purple-300">
-              Generating your retest... Please wait.
-            </p>
-            <p className="text-xs text-purple-600 dark:text-purple-400 mt-1">
-              The "Start Monthly Test" button will appear when ready.
-            </p>
-          </div>
-        </div>
-      )}
-
-      {/* Start Monthly Test Button - Show after generation timer ends */}
-      {testReady && (
-        <button
-          onClick={handleStartTest}
-          className="w-full px-4 py-3 bg-gradient-to-r from-green-500 via-emerald-500 to-teal-500 hover:from-green-600 hover:via-emerald-600 hover:to-teal-600 text-white font-bold rounded-lg transition-all duration-300 shadow-md hover:shadow-xl hover:scale-105 active:scale-95 flex items-center justify-center gap-2"
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          <span>🚀 Start Monthly Test</span>
         </button>
       )}
 
