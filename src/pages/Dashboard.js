@@ -7,20 +7,36 @@ import { useTheme } from '../contexts/ThemeContext';
 import { getThemeClasses } from '../utils/themeHelpers';
 
 // Monthly Retake Button Component - Shows retake button if score < 50%
-const MonthlyRetakeButton = ({ getUserMobile, month }) => {
+const MonthlyRetakeButton = ({ getUserMobile, month, onAnalysisClick }) => {
   const { theme } = useTheme();
   const themeClasses = getThemeClasses(theme);
   const [retakeStatus, setRetakeStatus] = useState(null);
   const [loading, setLoading] = useState(true);
   const [triggering, setTriggering] = useState(false);
+  const [timerRemaining, setTimerRemaining] = useState(0);
 
   useEffect(() => {
     checkRetakeStatus();
-    const interval = setInterval(checkRetakeStatus, 60000); // Refresh every 60s (reduced from 30s)
+    const interval = setInterval(checkRetakeStatus, 30000); // Refresh every 30s
     return () => clearInterval(interval);
   }, [month]);
 
-
+  // Timer countdown effect
+  useEffect(() => {
+    if (timerRemaining > 0) {
+      const timer = setInterval(() => {
+        setTimerRemaining(prev => {
+          if (prev <= 1) {
+            // Timer ended, refresh status
+            checkRetakeStatus();
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+      return () => clearInterval(timer);
+    }
+  }, [timerRemaining]);
 
   // Listen for test completion events (when user submits the retake test)
   useEffect(() => {
@@ -85,6 +101,10 @@ const MonthlyRetakeButton = ({ getUserMobile, month }) => {
       const data = await response.json();
       if (data.success) {
         setRetakeStatus(data);
+        // Set timer if there's time remaining
+        if (data.analysisTimerRemaining > 0) {
+          setTimerRemaining(data.analysisTimerRemaining);
+        }
       }
       setLoading(false);
     } catch (error) {
@@ -130,6 +150,13 @@ const MonthlyRetakeButton = ({ getUserMobile, month }) => {
     }));
   };
 
+  // Format timer
+  const formatTime = (seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
   if (loading) return <div className={`text-center py-2 text-sm ${themeClasses.textSecondary}`}>Checking test status...</div>;
   
   if (!retakeStatus || !retakeStatus.needsRetake) return null; // Don't show if passed
@@ -140,15 +167,50 @@ const MonthlyRetakeButton = ({ getUserMobile, month }) => {
       <div className="bg-gradient-to-r from-red-50 to-orange-50 dark:from-red-900/20 dark:to-orange-900/20 border-2 border-red-300 dark:border-red-700 rounded-lg p-3">
         <div className="flex items-center justify-between mb-2">
           <div>
-            <p className="text-sm font-bold text-red-700 dark:text-red-400">❌ Test Not Passed</p>
+            <p className="text-sm font-bold text-red-700 dark:text-red-400">❌ Test Not Passed (Attempt {retakeStatus.testAttempt}/3)</p>
             <p className="text-xs text-red-600 dark:text-red-500">Score: {retakeStatus.percentage}% (Need 50%+)</p>
           </div>
           <div className="text-2xl">😟</div>
         </div>
       </div>
 
-      {/* Retake Button */}
-      {retakeStatus.canRetake && (
+      {/* Max Attempts Reached */}
+      {retakeStatus.maxAttemptsReached && (
+        <div className="bg-gray-100 dark:bg-gray-800 border-2 border-gray-400 dark:border-gray-600 rounded-lg p-4 text-center">
+          <p className="text-gray-700 dark:text-gray-300 font-semibold">⚠️ Maximum 3 attempts reached</p>
+          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Please contact support for assistance.</p>
+        </div>
+      )}
+
+      {/* Show Analysis Button - Only if analysis not generated yet for current attempt */}
+      {retakeStatus.showAnalysisButton && !retakeStatus.maxAttemptsReached && onAnalysisClick && (
+        <button
+          onClick={() => onAnalysisClick(month)}
+          className="w-full px-4 py-3 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 hover:from-indigo-600 hover:via-purple-600 hover:to-pink-600 text-white font-semibold rounded-lg transition-all duration-300 shadow-md hover:shadow-xl hover:scale-105 active:scale-95 flex items-center justify-center gap-2"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+          </svg>
+          <span>Monthly Test Analysis</span>
+        </button>
+      )}
+
+      {/* Timer - Show after analysis generated, waiting for retake */}
+      {timerRemaining > 0 && !retakeStatus.maxAttemptsReached && (
+        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border-2 border-blue-400 dark:border-blue-600 rounded-lg p-4">
+          <div className="text-center">
+            <div className="text-3xl font-bold text-blue-600 dark:text-blue-400 mb-2">
+              ⏱️ {formatTime(timerRemaining)}
+            </div>
+            <p className="text-sm text-blue-700 dark:text-blue-300">
+              Review your analysis. Retake button will appear when timer ends.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Retake Button - Only show after analysis + timer */}
+      {retakeStatus.showRetakeButton && timerRemaining === 0 && (
         <button
           onClick={handleRetake}
           disabled={triggering}
@@ -157,16 +219,18 @@ const MonthlyRetakeButton = ({ getUserMobile, month }) => {
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
           </svg>
-          <span>{triggering ? 'Triggering...' : '🔄 Retake Monthly Test (Required)'}</span>
+          <span>{triggering ? 'Triggering...' : '🔄 Retake Monthly Test'}</span>
         </button>
       )}
 
       {/* Blocking Warning */}
-      <div className="bg-yellow-50 dark:bg-yellow-900/20 border-l-4 border-yellow-500 p-2 rounded">
-        <p className="text-xs text-yellow-800 dark:text-yellow-400">
-          ⚠️ <strong>Action Required:</strong> You must pass this test before continuing with weekly tests or next month.
-        </p>
-      </div>
+      {!retakeStatus.maxAttemptsReached && (
+        <div className="bg-yellow-50 dark:bg-yellow-900/20 border-l-4 border-yellow-500 p-2 rounded">
+          <p className="text-xs text-yellow-800 dark:text-yellow-400">
+            ⚠️ <strong>Action Required:</strong> You must pass this test before continuing with weekly tests or next month.
+          </p>
+        </div>
+      )}
     </div>
   );
 };
@@ -5788,7 +5852,7 @@ const Dashboard = () => {
                             ) : (
                               <>
                                 {/* MONTHLY RETAKE BUTTON - Shows only if score < 50% */}
-                                <MonthlyRetakeButton getUserMobile={getUserMobile} month={monthData.month} />
+                                <MonthlyRetakeButton getUserMobile={getUserMobile} month={monthData.month} onAnalysisClick={handleMonthlyAnalysis} />
                                 
                                 {/* Get status for this month */}
                                 {(() => {
