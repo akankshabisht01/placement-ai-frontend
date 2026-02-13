@@ -14,6 +14,8 @@ const MonthlyRetakeButton = ({ getUserMobile, month, onAnalysisClick }) => {
   const [loading, setLoading] = useState(true);
   const [triggering, setTriggering] = useState(false);
   const [timerRemaining, setTimerRemaining] = useState(0);
+  const [generationTimerRemaining, setGenerationTimerRemaining] = useState(0); // 5-min timer after clicking retake
+  const [testReady, setTestReady] = useState(false); // Show "Start Monthly Test" button
 
   useEffect(() => {
     checkRetakeStatus();
@@ -37,6 +39,23 @@ const MonthlyRetakeButton = ({ getUserMobile, month, onAnalysisClick }) => {
       return () => clearInterval(timer);
     }
   }, [timerRemaining]);
+
+  // Generation timer countdown effect (5-minute timer after clicking retake)
+  useEffect(() => {
+    if (generationTimerRemaining > 0) {
+      const timer = setInterval(() => {
+        setGenerationTimerRemaining(prev => {
+          if (prev <= 1) {
+            // Timer ended, show "Start Monthly Test" button
+            setTestReady(true);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+      return () => clearInterval(timer);
+    }
+  }, [generationTimerRemaining]);
 
   // Listen for test completion events (when user submits the retake test)
   useEffect(() => {
@@ -129,11 +148,12 @@ const MonthlyRetakeButton = ({ getUserMobile, month, onAnalysisClick }) => {
       });
       const data = await response.json();
       if (data.success) {
-        // Hide retake status and notify parent to show test buttons
-        setRetakeStatus(null);
-        notifyRetakeStatusChange();
+        // Start 5-minute generation timer instead of immediately showing test button
+        setGenerationTimerRemaining(300); // 5 minutes = 300 seconds
+        setTestReady(false);
         
-        alert(`✅ Monthly test retake triggered!\n\n📝 You can now click "Start Monthly Test" button.`);
+        // Notify parent that generation has started
+        notifyRetakeStatusChange();
       } else {
         alert('❌ Error: ' + data.error);
       }
@@ -141,6 +161,19 @@ const MonthlyRetakeButton = ({ getUserMobile, month, onAnalysisClick }) => {
       alert('❌ Network error. Please try again.');
     }
     setTriggering(false);
+  };
+
+  // Handle starting the monthly test
+  const handleStartTest = () => {
+    // Reset states and notify parent to show the test
+    setRetakeStatus(null);
+    setGenerationTimerRemaining(0);
+    setTestReady(false);
+    
+    // Dispatch event to trigger the monthly test start
+    window.dispatchEvent(new CustomEvent('startMonthlyRetakeTest', { 
+      detail: { month } 
+    }));
   };
 
   // Notify parent that retake status changed (for hiding/showing buttons)
@@ -209,8 +242,8 @@ const MonthlyRetakeButton = ({ getUserMobile, month, onAnalysisClick }) => {
         </div>
       )}
 
-      {/* Retake Button - Only show after analysis + timer */}
-      {retakeStatus.showRetakeButton && timerRemaining === 0 && (
+      {/* Retake Button - Only show after analysis + timer, and not during generation */}
+      {retakeStatus.showRetakeButton && timerRemaining === 0 && generationTimerRemaining === 0 && !testReady && (
         <button
           onClick={handleRetake}
           disabled={triggering}
@@ -219,7 +252,38 @@ const MonthlyRetakeButton = ({ getUserMobile, month, onAnalysisClick }) => {
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
           </svg>
-          <span>{triggering ? 'Triggering...' : '🔄 Retake Monthly Test'}</span>
+          <span>{triggering ? 'Generating...' : '🔄 Generate Monthly Retest'}</span>
+        </button>
+      )}
+
+      {/* Generation Timer - 5 minute countdown after clicking retake */}
+      {generationTimerRemaining > 0 && (
+        <div className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 border-2 border-purple-400 dark:border-purple-600 rounded-lg p-4">
+          <div className="text-center">
+            <div className="text-3xl font-bold text-purple-600 dark:text-purple-400 mb-2">
+              ⏳ {formatTime(generationTimerRemaining)}
+            </div>
+            <p className="text-sm text-purple-700 dark:text-purple-300">
+              Generating your retest... Please wait.
+            </p>
+            <p className="text-xs text-purple-600 dark:text-purple-400 mt-1">
+              The "Start Monthly Test" button will appear when ready.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Start Monthly Test Button - Show after generation timer ends */}
+      {testReady && (
+        <button
+          onClick={handleStartTest}
+          className="w-full px-4 py-3 bg-gradient-to-r from-green-500 via-emerald-500 to-teal-500 hover:from-green-600 hover:via-emerald-600 hover:to-teal-600 text-white font-bold rounded-lg transition-all duration-300 shadow-md hover:shadow-xl hover:scale-105 active:scale-95 flex items-center justify-center gap-2"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <span>🚀 Start Monthly Test</span>
         </button>
       )}
 
@@ -2639,6 +2703,21 @@ const Dashboard = () => {
       alert('Error starting monthly test. Please try again.');
     }
   };
+
+  // Listen for startMonthlyRetakeTest event from MonthlyRetakeButton
+  useEffect(() => {
+    const handleStartRetakeTest = (event) => {
+      if (event.detail && event.detail.month) {
+        console.log(`🔄 Starting monthly retake test for Month ${event.detail.month}`);
+        handleStartMonthlyTest(event.detail.month);
+      }
+    };
+
+    window.addEventListener('startMonthlyRetakeTest', handleStartRetakeTest);
+    return () => {
+      window.removeEventListener('startMonthlyRetakeTest', handleStartRetakeTest);
+    };
+  }, [navigate]);
 
   // Handle Monthly Test Analysis - Check DB first, then trigger webhook if needed
   const handleMonthlyAnalysis = async (monthNumber) => {
