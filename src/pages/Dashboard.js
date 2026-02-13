@@ -2844,6 +2844,7 @@ const Dashboard = () => {
             }, 500);
           }, 400);
         }, 500);
+        }
       } else {
         const errorText = await response.text().catch(() => 'Unknown error');
         console.error('❌ Failed to trigger monthly analysis webhook:', response.status, errorText);
