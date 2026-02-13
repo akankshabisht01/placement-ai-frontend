@@ -2018,16 +2018,16 @@ const Dashboard = () => {
           if (!canGenerateNext && timerRemaining > 0) {
             // Timer still active - show countdown
             if (!postAnalysisTimerRef.current) {
-              setAnalysisCompleted(true);
-              setPostAnalysisTimeRemaining(timerRemaining);
-              setTotalTimerDuration(timerDuration || 600);
+              setPostAnalysisTimerRemaining(timerRemaining);
+              setPostAnalysisTimerDuration(timerDuration || 600);
               setPostAnalysisTimerActive(true);
-              setIsMonthEndWeek(isMonthEndWeek || false);
+              setPostAnalysisIsMonthEnd(isMonthEndWeek || false);
+              setPostAnalysisNextAction(nextAction || 'generate_weekly_test');
             }
           } else if (canGenerateNext) {
             // Timer completed - show Generate button
-            setAnalysisCompleted(false);
             setPostAnalysisTimerActive(false);
+            setPostAnalysisTimerRemaining(0);
             setWeeklyTestGenerated(false);
             setWeeklyTestHasAnalysis(false);
             
