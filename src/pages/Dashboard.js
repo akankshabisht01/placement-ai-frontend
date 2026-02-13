@@ -447,6 +447,12 @@ const Dashboard = () => {
   const [monthlyPostAnalysisTimerRemaining, setMonthlyPostAnalysisTimerRemaining] = useState(0);
   const monthlyPostAnalysisTimerRef = useRef(null);
 
+  // Monthly test retake states (for users who score <50%)
+  const [monthlyTestFailed, setMonthlyTestFailed] = useState(false);
+  const [monthlyTestFailedMonth, setMonthlyTestFailedMonth] = useState(null);
+  const [monthlyTestFailedScore, setMonthlyTestFailedScore] = useState(0);
+  const [monthlyTestRetakeAttempt, setMonthlyTestRetakeAttempt] = useState(1);
+
   // Primary timer controller: This useEffect is the SOLE owner of the postAnalysis timer interval
   useEffect(() => {
     // Clear any existing interval first to avoid duplicates
@@ -2731,37 +2737,102 @@ const Dashboard = () => {
           console.error('Failed to record analysis completion:', recordErr);
         }
         
-        // STEP 3: Wait for database to update, then redirect
-        setProgressTrackingMessage(`Month ${monthNumber} Analysis Generated! Redirecting...`);
-        await new Promise(resolve => setTimeout(resolve, 3000)); // Wait 3 seconds
+        // STEP 3: Check if user PASSED the monthly test (≥50%)
+        setProgressTrackingMessage(`Checking test results...`);
+        let testPassed = true; // Default to true for safety
+        let scorePercentage = 0;
+        let testAttempt = 1;
         
-        // Redirect to progress section
-        setActiveSection('progress');
-        
-        // Wait for section to render, then expand and scroll
-        setTimeout(() => {
-          setShowMonthlyTestAnalysis(true);
-          
-          // Fetch the data
-          fetchMonthlyAnalysisData();
-          
-          // Refetch month eligibility to update analysis_completed flag
-          fetchMonthTestEligibility();
-          
-          // Refetch current week info to advance to next month's first week
-          fetchCurrentWeekInfo();
-          
-          // Start the 5-minute post-monthly-analysis timer before generating next week test
-          // IMPORTANT: Only start if not already running
-          if (!monthlyPostAnalysisTimerRef.current) {
-            console.log(`⏱️ Starting 5-minute post-monthly-analysis timer for next week test generation`);
-            setMonthlyPostAnalysisTimerRemaining(300); // 5 minutes
-            setMonthlyPostAnalysisTimerActive(true); // Set active LAST to trigger useEffect
-          } else {
-            console.log(`⏱️ Monthly timer already running, skipping new timer start`);
+        try {
+          const resultResponse = await fetch(`${backendUrl}/api/monthly-test-result/${encodeURIComponent(mobile)}/${monthNumber}`);
+          if (resultResponse.ok) {
+            const resultData = await resultResponse.json();
+            if (resultData.success && resultData.data) {
+              testPassed = resultData.data.passed;
+              scorePercentage = resultData.data.scorePercentage;
+              testAttempt = resultData.data.testAttempt;
+              console.log(`📊 Monthly test result: passed=${testPassed}, score=${scorePercentage}%, attempt=${testAttempt}`);
+            }
           }
+        } catch (resultErr) {
+          console.error('Error checking monthly test result:', resultErr);
+          // Continue with default (passed = true) to not block on error
+        }
+        
+        // STEP 4: Handle based on pass/fail
+        if (!testPassed) {
+          // User FAILED (<50%) - Show retake UI
+          console.log(`❌ Monthly test FAILED with ${scorePercentage}% - showing retake option`);
+          setProgressTrackingMessage(`You scored ${scorePercentage.toFixed(1)}%. Need 50% to proceed.`);
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          
+          // Set retake states
+          setMonthlyTestFailed(true);
+          setMonthlyTestFailedMonth(monthNumber);
+          setMonthlyTestFailedScore(scorePercentage);
+          setMonthlyTestRetakeAttempt(testAttempt);
+          
+          // Still redirect to progress to show analysis (so user can learn from mistakes)
+          setActiveSection('progress');
           
           setTimeout(() => {
+            setShowMonthlyTestAnalysis(true);
+            fetchMonthlyAnalysisData();
+            fetchMonthTestEligibility();
+            // DON'T fetch current week info - keep user on same month
+            // DON'T start post-analysis timer - user needs to retake
+            
+            setTimeout(() => {
+              const element = document.getElementById('monthly-test-analysis-section');
+              if (element) {
+                element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              }
+              setTimeout(() => {
+                setRedirectingToProgressTracking(false);
+                setProgressTrackingMessage('');
+              }, 500);
+            }, 400);
+          }, 500);
+          
+        } else {
+          // User PASSED (≥50%) - Continue with normal flow
+          console.log(`✅ Monthly test PASSED with ${scorePercentage}% - proceeding to next month`);
+          
+          // Clear any previous failed state
+          setMonthlyTestFailed(false);
+          setMonthlyTestFailedMonth(null);
+          setMonthlyTestFailedScore(0);
+          
+          setProgressTrackingMessage(`Month ${monthNumber} Analysis Generated! Redirecting...`);
+          await new Promise(resolve => setTimeout(resolve, 3000)); // Wait 3 seconds
+          
+          // Redirect to progress section
+          setActiveSection('progress');
+          
+          // Wait for section to render, then expand and scroll
+          setTimeout(() => {
+            setShowMonthlyTestAnalysis(true);
+            
+            // Fetch the data
+            fetchMonthlyAnalysisData();
+            
+            // Refetch month eligibility to update analysis_completed flag
+            fetchMonthTestEligibility();
+            
+            // Refetch current week info to advance to next month's first week
+            fetchCurrentWeekInfo();
+            
+            // Start the 5-minute post-monthly-analysis timer before generating next week test
+            // IMPORTANT: Only start if not already running
+            if (!monthlyPostAnalysisTimerRef.current) {
+              console.log(`⏱️ Starting 5-minute post-monthly-analysis timer for next week test generation`);
+              setMonthlyPostAnalysisTimerRemaining(300); // 5 minutes
+              setMonthlyPostAnalysisTimerActive(true); // Set active LAST to trigger useEffect
+            } else {
+              console.log(`⏱️ Monthly timer already running, skipping new timer start`);
+            }
+            
+            setTimeout(() => {
             const element = document.getElementById('monthly-test-analysis-section');
             if (element) {
               element.scrollIntoView({ behavior: 'smooth', block: 'center' });
