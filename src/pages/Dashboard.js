@@ -5398,6 +5398,14 @@ const Dashboard = () => {
                 
                 <div className="space-y-3 mb-6">
                   <div className={`${themeClasses.cardBackground} rounded-xl p-4 border ${themeClasses.cardBorder}`}>
+                    {/* Show loading skeleton while checking test status */}
+                    {(checkingTestGeneration || loadingWeekInfo) ? (
+                      <div className="animate-pulse space-y-3">
+                        <div className="h-12 bg-gray-200 dark:bg-gray-700 rounded-lg"></div>
+                        <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mx-auto"></div>
+                      </div>
+                    ) : (
+                    <>
                     {/* Generate Weekly Test Button - Show only when:
                         - test not generated 
                         - no timer modal showing
@@ -5879,6 +5887,8 @@ const Dashboard = () => {
                         </svg>
                       </button>
                     </div>
+                    )}
+                    </>
                     )}
                   </div>
                 </div>
