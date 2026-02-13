@@ -5963,8 +5963,9 @@ const Dashboard = () => {
                                     );
                                   }
 
-                                  // Case 4: Test completed - Show "Monthly Test Analysis" button
-                                  if (testCompleted) {
+                                  // Case 4: Test completed AND PASSED - Show "Monthly Test Analysis" button
+                                  // If user failed (<50%), MonthlyRetakeButton handles the analysis button
+                                  if (testCompleted && monthData.test_passed) {
                                     return (
                                       <button
                                         onClick={() => handleMonthlyAnalysis(monthData.month)}
@@ -5976,6 +5977,11 @@ const Dashboard = () => {
                                         <span>Monthly Test Analysis</span>
                                       </button>
                                     );
+                                  }
+                                  
+                                  // If test completed but failed, MonthlyRetakeButton handles everything
+                                  if (testCompleted && !monthData.test_passed) {
+                                    return null;
                                   }
 
                                   // Default: Show generate button (only if timer not active)
