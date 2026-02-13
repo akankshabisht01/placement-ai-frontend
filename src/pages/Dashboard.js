@@ -5737,9 +5737,9 @@ const Dashboard = () => {
                       // Show unlocked months
                       <div className="space-y-2">
                         {monthTestEligibility.unlocked_months.map((monthData) => {
-                          // Check if user has passed this month's test
-                          // Also treat analysis_completed as proof of passing (since analysis can only exist if test was passed)
-                          const hasPassed = monthData.analysis_completed || (monthData.test_passed && monthData.test_percentage >= 50);
+                          // Check if user has ACTUALLY passed this month's test (score >= 50%)
+                          // analysis_completed does NOT mean passed - user can view analysis even if they failed
+                          const hasPassed = monthData.test_passed === true && monthData.test_percentage >= 50;
                           
                           return (
                           <div key={monthData.month} className="space-y-2">
