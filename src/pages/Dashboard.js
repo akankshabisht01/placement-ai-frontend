@@ -1986,411 +1986,95 @@ const Dashboard = () => {
     try {
       const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
       
-      // STEP 1: Check if analysis exists for this week
-      // If analysis exists, it means this week's cycle is complete
-      console.log(`🔍 Checking if analysis exists for Week ${week}, Month ${month}...`);
-      const analysisResponse = await fetch(`${backendUrl}/api/weekly-test-analysis/${mobile}`);
-      const analysisData = await analysisResponse.json();
+      // Use unified endpoint to get all test status in one call
+      console.log(`🔍 Fetching unified test status for Week ${week}, Month ${month}...`);
+      const statusResponse = await fetch(`${backendUrl}/api/weekly-test-status/${mobile}/${week}/${month}`);
+      const statusData = await statusResponse.json();
       
-      let hasAnalysisForThisWeek = false;
-      if (analysisData.success && analysisData.data && analysisData.data.months && Array.isArray(analysisData.data.months)) {
-        for (const monthData of analysisData.data.months) {
-          if (monthData.month === month && monthData.weeks && Array.isArray(monthData.weeks)) {
-            for (const weekData of monthData.weeks) {
-              if (weekData.week === week) {
-                hasAnalysisForThisWeek = true;
-                console.log(`✅ Analysis exists for Week ${week}, Month ${month}`);
-                break;
-              }
-            }
-          }
-          if (hasAnalysisForThisWeek) break;
-        }
-      }
-      
-      // STEP 2: If analysis exists for this week, the cycle is complete
-      // Check timer status before showing Generate button
-      if (hasAnalysisForThisWeek) {
-        console.log(`📝 Week ${week} analysis complete - checking post-analysis timer status`);
-        setWeeklyTestGenerated(false); // Hide Start Test button
-        setWeeklyTestHasAnalysis(false); // Hide Analysis button (analysis already done)
-        setShowTimerModal(false);
-        setTimerCompleted(false);
+      if (statusData.success && statusData.data) {
+        const { testGenerated, testCompleted, analysisExists, timerRemaining, canGenerateNext, nextAction, isMonthEndWeek, timerDuration } = statusData.data;
         
-        // Record analysis completion for timer tracking (will only record once)
-        try {
-          await fetch(`${backendUrl}/api/record-analysis-completion`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              mobile: mobile,
-              type: 'weekly',
-              week: week,
-              month: month
-            })
-          });
-        } catch (recordErr) {
-          console.error('Failed to record weekly analysis completion:', recordErr);
-        }
+        console.log(`📊 Unified status: testGenerated=${testGenerated}, testCompleted=${testCompleted}, analysisExists=${analysisExists}`);
         
-        // Check timer status from backend
-        try {
-          const timerResponse = await fetch(`${backendUrl}/api/weekly-analysis-timer-status/${mobile}/${week}/${month}`);
-          const timerData = await timerResponse.json();
+        if (analysisExists) {
+          // Analysis exists - cycle complete, check timer for next week
+          console.log(`✅ Analysis exists for Week ${week} - checking timer status`);
+          setWeeklyTestGenerated(false);
+          setWeeklyTestHasAnalysis(false); // Hide analysis button (already done)
+          setShowTimerModal(false);
+          setTimerCompleted(false);
           
-          if (timerData.success && timerData.data) {
-            const { timer_remaining, can_generate_next, next_action, is_month_end_week, timer_duration } = timerData.data;
-            
-            console.log(`⏱️ Timer status: remaining=${timer_remaining}s, can_generate=${can_generate_next}, next_action=${next_action}`);
-            
-            if (!can_generate_next && timer_remaining > 0) {
-              // Timer is still active - show timer countdown
-              // IMPORTANT: Only set remaining time if timer interval is NOT already running
-              // This prevents refetch from resetting the countdown
-              if (!postAnalysisTimerRef.current) {
-                console.log(`⏳ Starting post-analysis timer: ${timer_remaining}s remaining`);
-                setPostAnalysisTimerRemaining(timer_remaining);
-                setPostAnalysisTimerDuration(timer_duration);
-                setPostAnalysisNextAction(next_action);
-                setPostAnalysisIsMonthEnd(is_month_end_week);
-                setPostAnalysisIsRoadmapTimer(false); // Not a roadmap timer
-                setPostAnalysisTimerActive(true); // Set active LAST to trigger useEffect
-              } else {
-                console.log(`⏳ Timer already running, skipping reset (ref exists)`);
-              }
-            } else {
-              // Timer completed - can show Generate button
-              console.log(`✅ Timer completed - showing ${next_action} button`);
-              setPostAnalysisTimerActive(false);
-              setPostAnalysisTimerRemaining(0);
-              setPostAnalysisNextAction(next_action);
-              setPostAnalysisIsMonthEnd(is_month_end_week);
-            }
-          }
-        } catch (timerErr) {
-          console.error('Error checking timer status:', timerErr);
-          // If timer check fails, allow generation
-          setPostAnalysisTimerActive(false);
-        }
-        
-        setCheckingTestGeneration(false);
-        
-        // Update previous week tracking
-        previousWeekRef.current = week;
-        previousMonthRef.current = month;
-        return;
-      }
-      
-      // STEP 2.5-PREV: If analysis does NOT exist for current week,
-      // check if PREVIOUS week's analysis exists and timer is still running
-      // This handles the case where user just completed Week N analysis and moved to Week N+1
-      if (!hasAnalysisForThisWeek && week > 1) {
-        const prevWeek = week - 1;
-        const prevMonth = month; // Assuming same month for simplicity (can be enhanced later)
-        
-        console.log(`🔍 Checking previous Week ${prevWeek} analysis timer status...`);
-        
-        // Check if previous week's analysis exists
-        let hasPrevWeekAnalysis = false;
-        if (analysisData.success && analysisData.data && analysisData.data.months && Array.isArray(analysisData.data.months)) {
-          for (const monthData of analysisData.data.months) {
-            if (monthData.month === prevMonth && monthData.weeks && Array.isArray(monthData.weeks)) {
-              for (const weekData of monthData.weeks) {
-                if (weekData.week === prevWeek) {
-                  hasPrevWeekAnalysis = true;
-                  console.log(`✅ Previous Week ${prevWeek} analysis exists`);
-                  break;
-                }
-              }
-            }
-            if (hasPrevWeekAnalysis) break;
-          }
-        }
-        
-        if (hasPrevWeekAnalysis) {
-          // Check timer status for previous week's analysis
+          // Record analysis completion for timer tracking
           try {
-            const timerResponse = await fetch(`${backendUrl}/api/weekly-analysis-timer-status/${mobile}/${prevWeek}/${prevMonth}`);
-            const timerData = await timerResponse.json();
-            
-            if (timerData.success && timerData.data) {
-              const { timer_remaining, can_generate_next, next_action, is_month_end_week, timer_duration } = timerData.data;
-              
-              console.log(`⏱️ Previous week timer status: remaining=${timer_remaining}s, can_generate=${can_generate_next}`);
-              
-              if (!can_generate_next && timer_remaining > 0) {
-                // Timer is still active - show timer countdown and block Generation
-                if (!postAnalysisTimerRef.current) {
-                  console.log(`⏳ Starting previous week post-analysis timer: ${timer_remaining}s remaining`);
-                  setPostAnalysisTimerRemaining(timer_remaining);
-                  setPostAnalysisTimerDuration(timer_duration);
-                  setPostAnalysisNextAction(next_action);
-                  setPostAnalysisIsMonthEnd(is_month_end_week);
-                  setPostAnalysisIsRoadmapTimer(false);
-                  setPostAnalysisTimerActive(true);
-                  
-                  // Reset other states
-                  setWeeklyTestGenerated(false);
-                  setWeeklyTestHasAnalysis(false);
-                  setShowTimerModal(false);
-                  setTimerCompleted(false);
-                  setCheckingTestGeneration(false);
-                  return;
-                }
-              }
-              // If timer completed, continue to check if test exists
-            }
-          } catch (timerErr) {
-            console.error('Error checking previous week timer status:', timerErr);
+            await fetch(`${backendUrl}/api/record-analysis-completion`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ mobile, type: 'weekly', week, month })
+            });
+          } catch (recordErr) {
+            console.error('Failed to record weekly analysis completion:', recordErr);
           }
-        }
-      }
-      
-      // STEP 2.5A-ROADMAP: For Week 1, Month 1 - check if roadmap timer is still active
-      // This is the very first week, so there's no previous week analysis - timer starts after roadmap generation
-      if (week === 1 && month === 1) {
-        console.log(`📅 Week 1, Month 1 - Checking roadmap timer status...`);
-        
-        try {
-          // First record roadmap completion (will only record once)
-          await fetch(`${backendUrl}/api/record-roadmap-completion`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ mobile: mobile })
-          });
           
-          const roadmapTimerResponse = await fetch(`${backendUrl}/api/roadmap-timer-status/${mobile}`);
-          const roadmapTimerData = await roadmapTimerResponse.json();
-          
-          console.log(`⏱️ Roadmap timer status:`, roadmapTimerData);
-          
-          if (roadmapTimerData.success && roadmapTimerData.data) {
-            const { timer_remaining, can_generate_test, roadmap_exists, timer_duration } = roadmapTimerData.data;
+          if (!canGenerateNext && timerRemaining > 0) {
+            // Timer still active - show countdown
+            if (!postAnalysisTimerRef.current) {
+              setAnalysisCompleted(true);
+              setPostAnalysisTimeRemaining(timerRemaining);
+              setTotalTimerDuration(timerDuration || 600);
+              setPostAnalysisTimerActive(true);
+              setIsMonthEndWeek(isMonthEndWeek || false);
+            }
+          } else if (canGenerateNext) {
+            // Timer completed - show Generate button
+            setAnalysisCompleted(false);
+            setPostAnalysisTimerActive(false);
+            setWeeklyTestGenerated(false);
+            setWeeklyTestHasAnalysis(false);
             
-            if (roadmap_exists && !can_generate_test && timer_remaining > 0) {
-              // IMPORTANT: Only start timer if not already running
-              if (!postAnalysisTimerRef.current) {
-                console.log(`⏳ Starting roadmap post-generation timer: ${timer_remaining}s remaining`);
-                setPostAnalysisTimerRemaining(timer_remaining);
-                setPostAnalysisTimerDuration(timer_duration);
-                setPostAnalysisNextAction('generate_weekly_test');
-                setPostAnalysisIsMonthEnd(false);
-                setPostAnalysisIsRoadmapTimer(true); // This is a roadmap timer
-                setPostAnalysisTimerActive(true); // Set active LAST to trigger useEffect
-              } else {
-                console.log(`⏳ Roadmap timer already running, skipping reset`);
-              }
-              
-              setCheckingTestGeneration(false);
-              previousWeekRef.current = week;
-              previousMonthRef.current = month;
-              return;
+            if (nextAction === 'monthly_test' && isMonthEndWeek) {
+              console.log(`📝 Month end - redirecting to monthly test`);
             }
           }
-        } catch (roadmapTimerErr) {
-          console.error('Error checking roadmap timer status:', roadmapTimerErr);
-        }
-      }
-      
-      // STEP 2.5A: No analysis for current week - check if PREVIOUS week's timer is still active
-      // This handles the case where user refreshes after completing previous week's analysis
-      const prevWeek = week - 1;
-      const prevMonth = prevWeek < 1 ? month - 1 : month;
-      const actualPrevWeek = prevWeek < 1 ? 4 : prevWeek; // Week 0 means week 4 of previous month
-      
-      if (prevWeek >= 1 || prevMonth >= 1) {
-        console.log(`📅 No analysis for Week ${week}. Checking previous week ${actualPrevWeek} (Month ${prevMonth}) timer...`);
-        
-        try {
-          const prevTimerResponse = await fetch(`${backendUrl}/api/weekly-analysis-timer-status/${mobile}/${actualPrevWeek}/${prevMonth}`);
-          const prevTimerData = await prevTimerResponse.json();
+        } else if (testCompleted) {
+          // Test completed but no analysis yet - show Analysis button
+          console.log(`✅ Test completed, analysis pending - showing Analysis button`);
+          setWeeklyTestGenerated(false);
+          setWeeklyTestHasAnalysis(true); // Show analysis button
+          setShowTimerModal(false);
+          setTimerCompleted(true);
+        } else if (testGenerated) {
+          // Test generated but not completed - check timer then show Start Test
+          console.log(`✅ Test generated, not completed - checking timer status`);
           
-          console.log(`⏱️ Previous week timer status:`, prevTimerData);
-          
-          if (prevTimerData.success && prevTimerData.data) {
-            const { timer_remaining, can_generate_next, analysis_exists, next_action, is_month_end_week, timer_duration } = prevTimerData.data;
-            
-            if (analysis_exists && !can_generate_next && timer_remaining > 0) {
-              // IMPORTANT: Only start timer if not already running
-              if (!postAnalysisTimerRef.current) {
-                console.log(`⏳ Starting previous week's post-analysis timer: ${timer_remaining}s remaining`);
-                setPostAnalysisTimerRemaining(timer_remaining);
-                setPostAnalysisTimerDuration(timer_duration);
-                setPostAnalysisNextAction(next_action);
-                setPostAnalysisIsMonthEnd(is_month_end_week);
-                setPostAnalysisIsRoadmapTimer(false); // Not a roadmap timer
-                setPostAnalysisTimerActive(true); // Set active LAST to trigger useEffect
-              } else {
-                console.log(`⏳ Previous week timer already running, skipping reset`);
-              }
-              
-              setCheckingTestGeneration(false);
-              previousWeekRef.current = week;
-              previousMonthRef.current = month;
-              return;
-            }
-          }
-        } catch (prevTimerErr) {
-          console.error('Error checking previous week timer status:', prevTimerErr);
-        }
-      }
-      
-      // STEP 2.5B: If this is the first week of a new month (week 5, 9, 13, etc.),
-      // check if monthly analysis timer from previous month is still active
-      const weekInMonth = ((week - 1) % 4) + 1; // 1, 2, 3, or 4
-      const previousMonth = month - 1;
-      
-      if (weekInMonth === 1 && previousMonth >= 1) {
-        console.log(`📅 Week ${week} is first week of Month ${month}. Checking previous month's monthly analysis timer...`);
-        
-        try {
-          const monthlyTimerResponse = await fetch(`${backendUrl}/api/monthly-analysis-timer-status/${mobile}/${previousMonth}`);
-          const monthlyTimerData = await monthlyTimerResponse.json();
-          
-          console.log(`⏱️ Monthly analysis timer status for Month ${previousMonth}:`, monthlyTimerData);
-          
-          if (monthlyTimerData.success && monthlyTimerData.data) {
-            const { timer_remaining, can_generate_next, analysis_exists } = monthlyTimerData.data;
-            
-            if (analysis_exists && !can_generate_next && timer_remaining > 0) {
-              // IMPORTANT: Only start timer if not already running
-              if (!monthlyPostAnalysisTimerRef.current) {
-                console.log(`⏳ Starting monthly post-analysis timer: ${timer_remaining}s remaining`);
-                
-                // Set timer state - useEffect will start the interval
-                setMonthlyPostAnalysisTimerRemaining(timer_remaining);
-                setMonthlyPostAnalysisTimerActive(true); // Set active LAST to trigger useEffect
-              } else {
-                console.log(`⏳ Monthly timer already running, skipping reset`);
-              }
-              
-              // Still need to continue checking if test exists, so don't return here
-              // but block the Generate button via monthlyPostAnalysisTimerActive
-            }
-          }
-        } catch (monthlyTimerErr) {
-          console.error('Error checking monthly analysis timer status:', monthlyTimerErr);
-        }
-      }
-      
-      // STEP 3: Check if test result exists (test was submitted/completed)
-      console.log(`🔍 Checking if test result exists for Week ${week}, Month ${month}...`);
-      try {
-        const resultResponse = await fetch(`${backendUrl}/api/weekly-test-result/${mobile}`);
-        const resultData = await resultResponse.json();
-        
-        console.log('📥 Test result API response:', resultData);
-        
-        // API returns 'data' field, not 'result'
-        const result = resultData.data || resultData.result;
-        
-        if (resultData.success && result) {
-          // Check if this specific week/month has results
-          console.log(`📊 Found test result: Week ${result.week}, Month ${result.month}`);
-          console.log(`📊 Looking for: Week ${week}, Month ${month}`);
-          console.log(`📊 Match: ${result.week === week && result.month === month}`);
-          
-          if (result.week === week && result.month === month) {
-            console.log(`✅✅✅ TEST RESULT MATCH! Setting weeklyTestHasAnalysis = true`);
-            setWeeklyTestGenerated(false); // Hide test button - test is completed
-            setWeeklyTestHasAnalysis(true); // Show analysis button only
+          // Check timer status
+          if (timerRemaining > 0) {
+            console.log(`⏱️ Timer active: ${timerRemaining}s remaining`);
+            setShowTimerModal(true);
+            setTimerCompleted(false);
+            setWeeklyTestGenerated(true);
+            setWeeklyTestHasAnalysis(false);
+            // Timer is stored in week_test collection, will be fetched by timer component
+          } else {
+            // Timer expired or not set - show Start Test button
+            console.log(`⏱️ Timer expired - showing Start Test button`);
             setShowTimerModal(false);
             setTimerCompleted(true);
-            setCheckingTestGeneration(false);
-            
-            previousWeekRef.current = week;
-            previousMonthRef.current = month;
-            return;
-          } else {
-            console.log(`⚠️ Week/month mismatch - result is for Week ${result.week}, Month ${result.month} but we need Week ${week}, Month ${month}`);
-          }
-        } else {
-          console.log(`❌ No test result found or API returned failure:`, resultData);
-        }
-      } catch (resultErr) {
-        console.error('❌ Error checking test result:', resultErr);
-      }
-      
-      // STEP 4: No analysis or result exists - check if test exists for this specific week
-      console.log(`📝 No analysis/result found - checking if test exists for Week ${week}...`);
-      
-      // Reset states first since we're checking fresh
-      // BUT don't reset showTimerModal if it's already showing (timer is running)
-      setWeeklyTestGenerated(false);
-      setWeeklyTestHasAnalysis(false);
-      // Don't reset timer modal - let the timer continue if it's already running
-      // setShowTimerModal(false);
-      // setTimerCompleted(false);
-      
-      const response = await fetch(`${backendUrl}/api/check-weekly-test`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          mobile,
-          week,
-          month
-        })
-      });
-      
-      if (response.ok) {
-        const result = await response.json();
-        if (result.success && result.exists) {
-          // Test exists for this specific week - show Start Test button
-          console.log(`✅ Test exists for Week ${week}, Month ${month}`);
-          
-          setWeeklyTestGenerated(true);
-          
-          // Only skip timer if it's not currently running
-          // If timer is already showing, let it continue
-          if (!showTimerModal) {
-            setTimerCompleted(true); // Assume timer has passed if test already exists
-            // Don't show timer since we're loading an existing test
-          }
-          // If showTimerModal is true, the timer is running - don't interrupt it
-          
-          // Now check if test was COMPLETED by looking for test result
-          console.log(`🔍 Checking if test was completed (has result)...`);
-          try {
-            const resultCheckResponse = await fetch(`${backendUrl}/api/weekly-test-result/${mobile}`);
-            const resultCheckData = await resultCheckResponse.json();
-            
-            console.log(`📥 Weekly test result API response:`, resultCheckData);
-            
-            // API returns { success: true, data: {...} } - check for 'data' field
-            if (resultCheckData.success && (resultCheckData.data || resultCheckData.result)) {
-              const resultData = resultCheckData.data || resultCheckData.result;
-              console.log(`📊 Found test result: Week ${resultData.week}, Month ${resultData.month}`);
-              
-              // Check if result matches current week/month
-              if (resultData.week === week && resultData.month === month) {
-                console.log(`✅ Test COMPLETED for Week ${week}, Month ${month} - showing Analysis button ONLY`);
-                setWeeklyTestGenerated(false); // Hide Start Test button (no retake)
-                setWeeklyTestHasAnalysis(true); // Show Analysis button
-              } else {
-                console.log(`📝 Result exists but for different week (${resultData.week}/${resultData.month}) - showing Start Test`);
-                setWeeklyTestHasAnalysis(false);
-              }
-            } else {
-              console.log(`📝 No test result found - test not completed yet, showing Start Test button`);
-              setWeeklyTestHasAnalysis(false);
-            }
-          } catch (resultErr) {
-            console.log(`📝 Error checking result, assuming not completed:`, resultErr);
+            setWeeklyTestGenerated(true);
             setWeeklyTestHasAnalysis(false);
           }
-          
         } else {
-          console.log(`📝 No test exists yet for Week ${week}, Month ${month}`);
+          // No test generated - show Generate button
+          console.log(`📝 No test exists for Week ${week}, Month ${month}`);
           setWeeklyTestGenerated(false);
           setWeeklyTestHasAnalysis(false);
         }
       } else {
-        console.log(`📝 Error checking test, assuming no test exists`);
+        // API error - fallback to no test state
+        console.log(`📝 Error fetching status, assuming no test exists`);
         setWeeklyTestGenerated(false);
         setWeeklyTestHasAnalysis(false);
       }
       
-      // Update previous week tracking
       previousWeekRef.current = week;
       previousMonthRef.current = month;
       
@@ -2404,7 +2088,7 @@ const Dashboard = () => {
     }
   };
 
-  // Check if weekly test has been generated for current user (legacy function)
+  // Check if weekly test has been generated for current user
   const checkWeeklyTestGeneration = async () => {
     const mobile = getUserMobile();
     
