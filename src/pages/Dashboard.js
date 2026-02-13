@@ -250,11 +250,57 @@ const MonthlyRetakeButton = ({ getUserMobile, month, onAnalysisClick }) => {
         </div>
       </div>
 
-      {/* Max Attempts Reached */}
+      {/* Max Attempts Reached - Option D: Auto-Proceed with Warning */}
       {retakeStatus.maxAttemptsReached && (
-        <div className="bg-gray-100 dark:bg-gray-800 border-2 border-gray-400 dark:border-gray-600 rounded-lg p-4 text-center">
-          <p className="text-gray-700 dark:text-gray-300 font-semibold">⚠️ Maximum 3 attempts reached</p>
-          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Please contact support for assistance.</p>
+        <div className="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/30 dark:to-orange-900/30 border-2 border-amber-500 dark:border-amber-600 rounded-lg p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-2xl">⚠️</span>
+            <div>
+              <p className="text-amber-800 dark:text-amber-300 font-bold">Maximum 3 Attempts Reached</p>
+              <p className="text-sm text-amber-700 dark:text-amber-400">You did not pass Month {month} after 3 attempts</p>
+            </div>
+          </div>
+          
+          <div className="bg-white/60 dark:bg-gray-800/60 rounded-lg p-3 mb-3">
+            <p className="text-sm text-gray-700 dark:text-gray-300 mb-2">
+              <strong>What happens if you proceed:</strong>
+            </p>
+            <ul className="text-xs text-gray-600 dark:text-gray-400 space-y-1 ml-4 list-disc">
+              <li>Month {month} will be marked as <span className="text-red-600 dark:text-red-400 font-semibold">"Failed"</span></li>
+              <li>You can continue to Month {month + 1} weekly tests</li>
+              <li>Your final certificate will show <span className="text-amber-600 dark:text-amber-400 font-semibold">"Incomplete"</span> status</li>
+              <li>You can still complete the program but with a failed month badge</li>
+            </ul>
+          </div>
+          
+          <button
+            onClick={async () => {
+              try {
+                const API_BASE = process.env.REACT_APP_BACKEND_URL || 'https://placement-ai-backend-production.up.railway.app';
+                const response = await fetch(`${API_BASE}/api/accept-monthly-failure`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ mobile, month })
+                });
+                const result = await response.json();
+                if (result.success) {
+                  alert(`Month ${month} marked as failed. You can now proceed to Month ${month + 1}.`);
+                  window.location.reload();
+                } else {
+                  alert('Error: ' + (result.error || 'Failed to accept failure'));
+                }
+              } catch (err) {
+                console.error('Accept failure error:', err);
+                alert('Failed to process. Please try again.');
+              }
+            }}
+            className="w-full px-4 py-3 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold rounded-lg transition-all duration-300 shadow-md hover:shadow-xl flex items-center justify-center gap-2"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+            </svg>
+            <span>Accept Failure & Proceed to Month {month + 1}</span>
+          </button>
         </div>
       )}
 
@@ -5895,11 +5941,36 @@ const Dashboard = () => {
                           // Check if user has ACTUALLY passed this month's test (score >= 50%)
                           // analysis_completed does NOT mean passed - user can view analysis even if they failed
                           const hasPassed = monthData.test_passed === true && monthData.test_percentage >= 50;
+                          const hasAcceptedFailure = monthData.accepted_failure === true;
                           
                           return (
                           <div key={monthData.month} className="space-y-2">
-                            {/* If passed, show completion status */}
-                            {hasPassed ? (
+                            {/* If accepted failure, show Failed badge */}
+                            {hasAcceptedFailure && !hasPassed ? (
+                              <div className="bg-gradient-to-r from-red-50 to-orange-50 dark:from-red-900/20 dark:to-orange-900/20 border-2 border-red-400 dark:border-red-600 rounded-lg p-4">
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-3">
+                                    <div className="w-12 h-12 bg-red-500 rounded-full flex items-center justify-center">
+                                      <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
+                                      </svg>
+                                    </div>
+                                    <div>
+                                      <h4 className="text-lg font-bold text-red-800 dark:text-red-300">Month {monthData.month} - Failed ❌</h4>
+                                      <p className="text-sm text-red-700 dark:text-red-400">
+                                        {monthData.test_percentage ? `Score: ${monthData.test_percentage}%` : 'Did not pass after 3 attempts'}
+                                      </p>
+                                    </div>
+                                  </div>
+                                  <div className="px-3 py-1 bg-red-200 dark:bg-red-800 text-red-800 dark:text-red-200 text-xs font-bold rounded-full">
+                                    FAILED
+                                  </div>
+                                </div>
+                                <div className="mt-3 text-xs text-red-700 dark:text-red-400 italic">
+                                  You've continued to the next month but this month remains marked as failed. Your certificate will reflect an incomplete status.
+                                </div>
+                              </div>
+                            ) : hasPassed ? (
                               <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border-2 border-green-400 dark:border-green-600 rounded-lg p-4">
                                 <div className="flex items-center justify-between">
                                   <div className="flex items-center gap-3">
