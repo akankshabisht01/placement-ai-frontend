@@ -276,11 +276,12 @@ const MonthlyRetakeButton = ({ getUserMobile, month, onAnalysisClick }) => {
           <button
             onClick={async () => {
               try {
+                const userMobile = getUserMobile();
                 const API_BASE = process.env.REACT_APP_BACKEND_URL || 'https://placement-ai-backend-production.up.railway.app';
                 const response = await fetch(`${API_BASE}/api/accept-monthly-failure`, {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ mobile, month })
+                  body: JSON.stringify({ mobile: userMobile, month })
                 });
                 const result = await response.json();
                 if (result.success) {
