@@ -2450,9 +2450,9 @@ const Dashboard = () => {
       // Check if they have completed the monthly analysis
       const completedMonthNumber = Math.floor((currentWeek - 1) / 4);
       
-      // Check if this month's analysis is completed (not just test passed)
+      // Check if this month's analysis is completed (test passed OR failure accepted)
       const hasMonthlyAnalysis = monthTestEligibility.unlocked_months?.some(
-        m => m.month === completedMonthNumber && m.test_passed && m.analysis_completed
+        m => m.month === completedMonthNumber && (m.test_passed || m.accepted_failure) && m.analysis_completed
       );
       
       if (!hasMonthlyAnalysis) {
