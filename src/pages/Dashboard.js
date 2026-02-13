@@ -2738,7 +2738,7 @@ const Dashboard = () => {
         }
         
         // STEP 3: Check if user PASSED the monthly test (≥50%)
-        setProgressTrackingMessage(`Checking test results...`);
+        setProgressTrackingMessage(`Checking Month ${monthNumber} test results...`);
         let testPassed = true; // Default to true for safety
         let scorePercentage = 0;
         let testAttempt = 1;
@@ -8217,7 +8217,11 @@ const Dashboard = () => {
               
               {/* Dynamic Heading */}
               <h2 className="text-3xl font-bold mb-4 bg-gradient-to-r from-purple-600 via-pink-600 to-purple-600 dark:from-purple-400 dark:via-pink-400 dark:to-purple-400 bg-clip-text text-transparent">
-                {progressTrackingMessage.includes('Checking') ? 'Generating Weekly Test Analysis' : 
+                {progressTrackingMessage.includes('Month') ? 
+                  (progressTrackingMessage.includes('Checking') || progressTrackingMessage.includes('Generating') ? 'Generating Monthly Test Analysis' :
+                   progressTrackingMessage.includes('Found') || progressTrackingMessage.includes('Generated') ? 'Redirecting to Progress Tracking' :
+                   'Processing Monthly Analysis...') :
+                 progressTrackingMessage.includes('Checking') ? 'Generating Weekly Test Analysis' : 
                  progressTrackingMessage.includes('Found') ? 'Redirecting to Progress Tracking' :
                  progressTrackingMessage.includes('Generating') ? 'Generating Analysis' :
                  progressTrackingMessage.includes('Generated') ? 'Redirecting to Progress Tracking' :
