@@ -8,7 +8,7 @@ export const jobDomains = [
         id: "frontend_developer",
         name: "Frontend Developer",
         skills: [
-          "HTML", "HTML5", "CSS", "CSS3", "JavaScript (ES6+)", "Responsive Design", "React.js", "Angular", "Vue.js", "Bootstrap", "Version Control (Git)", "Browser Developer Tools", "DOM Manipulation", "API Integration (REST)", "Debugging"
+          "HTML", "CSS", "JavaScript (ES6+)", "Responsive Design", "React.js", "Angular", "Vue.js", "Bootstrap", "Git", "Browser Developer Tools", "DOM Manipulation", "API Integration (REST)", "Debugging"
         ],
         description: "Specializes in user interface and user experience development"
       },
@@ -16,7 +16,7 @@ export const jobDomains = [
         id: "backend_developer",
         name: "Backend Developer",
         skills: [
-          "JavaScript (Node.js)", "Python (Django)", "Java (Spring Boot)", "C# (.NET)", "Express.js", "Django", "Spring Boot", "ASP.NET Core", "SQL", "NoSQL Databases (MySQL, PostgreSQL, MongoDB)", "REST API Development", "Git Version Control", "Authentication and Authorization", "Basic Cloud or Deployment (Heroku, AWS)", "Unit Testing"
+          "JavaScript (Node.js)", "Python (Django)", "Java (Spring Boot)", "C# (.NET)", "Express.js", "Django", "Spring Boot", "ASP.NET Core", "SQL", "NoSQL Databases", "REST API Development", "Git", "Authentication and Authorization", "Basic Cloud or Deployment (Heroku, AWS)", "Unit Testing"
         ],
         description: "Focuses on server-side development and database management"
       },
@@ -24,7 +24,7 @@ export const jobDomains = [
         id: "fullstack_developer",
         name: "Full-Stack Developer",
         skills: [
-          "HTML5", "CSS3", "JavaScript", "React.js", "Angular", "Vue.js", "Node.js", "Express.js", "MongoDB", "Mongoose", "Redux", "Django", "Spring Boot", "ASP.NET Core", "RESTful APIs", "SQL", "NoSQL Databases", "Responsive Web Design", "Version Control (Git)", "Basic Testing (Jest, Mocha, JUnit)", "Cross-functional Collaboration"
+          "HTML", "CSS", "JavaScript", "React.js", "Angular", "Vue.js", "Node.js", "Express.js", "MongoDB", "Mongoose", "Redux", "Django", "Spring Boot", "ASP.NET Core", "REST APIs", "SQL", "NoSQL Databases", "Responsive Design", "Git", "Basic Testing (Jest, Mocha, JUnit)", "Cross-functional Collaboration"
         ],
         description: "Handles both frontend and backend development"
       },
@@ -45,7 +45,7 @@ export const jobDomains = [
         {
           id: "android_developer",
           name: "Android Developer",
-          skills: ["Kotlin", "Java", "Android SDK", "Android Studio", "XML/JSON", "RESTful APIs", "SQLite", "UI/UX Design", "Material Design", "Git", "Unit Testing"],
+          skills: ["Kotlin", "Java", "Android SDK", "Android Studio", "XML/JSON", "REST APIs", "SQLite", "UI/UX Design", "Material Design", "Git", "Unit Testing"],
           description: "Develops applications for Android platform"
         },
         {
@@ -93,25 +93,25 @@ export const jobDomains = [
       {
         id: "data_engineer",
         name: "Data Engineer",
-        skills: ["Data Engineering", "SQL", "ETL Pipelines", "Python", "Scala", "Java", "Data Warehousing", "Cloud Platforms (AWS, Azure, GCP)", "Big Data (Hadoop, Spark)", "Database Design", "Git"],
+        skills: ["Data Engineering", "SQL", "ETL", "Python", "Scala", "Java", "Data Warehousing", "Cloud Platforms", "Big Data (Hadoop, Spark)", "Database Design", "Git"],
         description: "Builds and maintains data infrastructure and pipelines"
       },
       {
         id: "big_data_engineer",
         name: "Big Data Engineer",
-        skills: ["Hadoop", "Spark", "Kafka", "SQL", "NoSQL Databases (MongoDB, Cassandra)", "Data Pipelines", "ETL", "Python", "Java", "Scala", "Cloud Platforms", "Data Modeling"],
+        skills: ["Hadoop", "Spark", "Kafka", "SQL", "NoSQL Databases", "Data Pipelines", "ETL", "Python", "Java", "Scala", "Cloud Platforms", "Data Modeling"],
         description: "Specializes in processing and managing large-scale data systems"
       },
       {
         id: "junior_data_scientist",
         name: "Junior Data Scientist",
-        skills: ["Python", "Machine Learning", "SQL", "Data Analysis", "Data Visualization", "Statistics", "Scikit-learn", "Data Cleaning", "Communication Skills"],
+        skills: ["Python", "Machine Learning", "SQL", "Data Analysis", "Data Visualization", "Statistics", "scikit-learn", "Data Cleaning", "Communication Skills"],
         description: "Entry-level data scientist role for freshers"
       },
       {
         id: "data_scientist",
         name: "Data Scientist",
-        skills: ["Python", "R", "Machine Learning", "Deep Learning", "SQL", "Statistics", "Data Visualization", "Scikit-learn", "TensorFlow", "PyTorch", "Feature Engineering", "Model Evaluation"],
+        skills: ["Python", "R", "Machine Learning", "Deep Learning", "SQL", "Statistics", "Data Visualization", "scikit-learn", "TensorFlow", "PyTorch", "Feature Engineering", "Model Evaluation"],
         description: "Develops predictive models and extracts insights from complex datasets"
       },
       {
@@ -195,7 +195,7 @@ export const jobDomains = [
       {
         id: "cloud_engineer",
         name: "Cloud Engineer",
-        skills: ["AWS", "Microsoft Azure", "Google Cloud Platform (GCP)", "EC2", "S3", "Lambda", "VM", "Blob Storage (platform services)", "Cloud Architecture", "Bash", "Python", "Terraform", "CloudFormation", "Linux Systems", "Git Version Control", "Monitoring Tools (CloudWatch, Azure Monitor)", "Troubleshooting"],
+        skills: ["AWS", "Microsoft Azure", "Google Cloud Platform (GCP)", "EC2", "S3", "Lambda", "VM", "Blob Storage (platform services)", "Cloud Architecture", "Bash", "Python", "Terraform", "CloudFormation", "Linux Systems", "Git", "Monitoring Tools (CloudWatch, Azure Monitor)", "Troubleshooting"],
         description: "Designs and manages cloud infrastructure and services"
       },
       {
@@ -207,13 +207,13 @@ export const jobDomains = [
       {
         id: "sre_engineer",
         name: "Site Reliability Engineer",
-        skills: ["Monitoring & Incident Response", "Automation (Python, Bash)", "Cloud Platforms (AWS/Azure/GCP)", "Docker/Kubernetes", "Reliability Engineering", "Linux/Unix Systems", "Troubleshooting"],
+        skills: ["Monitoring & Incident Response", "Automation (Python, Bash)", "Cloud Platforms", "Docker/Kubernetes", "Reliability Engineering", "Linux/Unix Systems", "Troubleshooting"],
         description: "Ensures system reliability and performance"
       },
       {
         id: "cloud_support_associate",
         name: "Cloud Support Associate / Cloud Administrator",
-        skills: ["Cloud Platforms (AWS, Azure, GCP)", "Helpdesk/Support", "Basic Networking (TCP/IP, DNS, VPN)", "Monitoring/Alerting", "Linux/Windows Server Administration", "Documentation"],
+        skills: ["Cloud Platforms", "Helpdesk/Support", "Basic Networking (TCP/IP, DNS, VPN)", "Monitoring/Alerting", "Linux/Windows Server Administration", "Documentation"],
         description: "Entry-level cloud support and administration role"
       },
       {
@@ -267,13 +267,13 @@ export const jobDomains = [
       {
         id: "embedded_systems_engineer",
         name: "Embedded Systems Engineer",
-        skills: ["C", "C++", "Microcontroller Programming (ARM, STM32, PIC)", "Real-Time Operating Systems (RTOS)", "Embedded Linux", "Firmware Development", "Hardware Debugging (oscilloscope, logic analyzer)", "PCB Design & Testing", "Communication Protocols (SPI, I2C, UART)", "Git Version Control", "Problem Solving & Troubleshooting", "System Integration"],
+        skills: ["C", "C++", "Microcontroller Programming (ARM, STM32, PIC)", "Real-Time Operating Systems (RTOS)", "Embedded Linux", "Firmware Development", "Hardware Debugging (oscilloscope, logic analyzer)", "PCB Design & Testing", "Communication Protocols (SPI, I2C, UART)", "Git", "Problem Solving & Troubleshooting", "System Integration"],
         description: "Hardware programming, microcontrollers"
       },
       {
         id: "firmware_developer",
         name: "Firmware Developer",
-        skills: ["Low-level Programming (C, Assembly)", "Device Drivers", "Debugging & Testing", "RTOS", "Hardware-Software Integration", "Version Control (Git)"],
+        skills: ["Low-level Programming (C, Assembly)", "Device Drivers", "Debugging & Testing", "RTOS", "Hardware-Software Integration", "Git"],
         description: "Low-level programming, drivers, debugging"
       },
       {
@@ -303,7 +303,7 @@ export const jobDomains = [
       {
         id: "game_developer",
         name: "Game Developer",
-        skills: ["Unity Engine", "C#", "Unreal Engine", "C++", "Game Physics", "2D/3D Graphics", "Animation", "Shader Programming Basics", "Version Control (Git)", "Debugging and Optimization"],
+        skills: ["Unity Engine", "C#", "Unreal Engine", "C++", "Game Physics", "2D/3D Graphics", "Animation", "Shader Programming Basics", "Git", "Debugging and Optimization"],
         description: "Unity with C# / Unreal Engine with C++"
       },
       {
