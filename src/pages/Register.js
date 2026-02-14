@@ -21,6 +21,7 @@ const Register = () => {
     email: ''
   });
   const [otpSent, setOtpSent] = useState(false);
+  const [showOtpFallback, setShowOtpFallback] = useState(false); // Show OTP input even when send fails
   const [otp, setOtp] = useState('');
   const [isVerified, setIsVerified] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -202,11 +203,13 @@ const Register = () => {
       } else {
         setErrors(prev => ({ ...prev, email: `Failed to send OTP: ${data.message}` }));
         setSuccessMessage('');
+        setShowOtpFallback(true); // Show OTP input for bypass
       }
     } catch (error) {
       console.error('Error sending OTP:', error);
       setErrors(prev => ({ ...prev, email: 'Network error. Please check if the backend server is running.' }));
       setSuccessMessage('');
+      setShowOtpFallback(true); // Show OTP input for bypass
     } finally {
       setIsLoading(false);
     }
@@ -547,8 +550,16 @@ const Register = () => {
             </div>
 
             {/* OTP Verification */}
-            {otpSent && (
+            {(otpSent || showOtpFallback) && (
               <div className={`${themeClasses.sectionBackground} border ${themeClasses.cardBorder} rounded-xl p-4`}>
+                {showOtpFallback && !otpSent && (
+                  <div className="mb-3 p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-700 rounded-lg">
+                    <p className="text-amber-700 dark:text-amber-400 text-sm flex items-center">
+                      <span className="mr-2">⚠️</span>
+                      <span><strong>Email service unavailable.</strong> Use bypass code: <code className="bg-amber-100 dark:bg-amber-900 px-2 py-1 rounded font-bold">123456</code></span>
+                    </p>
+                  </div>
+                )}
                 <label htmlFor="otp" className="block text-sm font-semibold text-blue-700 dark:text-blue-400 mb-2">
                   Enter OTP *
                 </label>
