@@ -844,7 +844,7 @@ const Dashboard = () => {
     syncSkillsFromDatabase();
   }, []); // Run once on mount
 
-  // Check if Skills Test has been completed
+  // Check if Skills Test has been completed (answers submitted)
   useEffect(() => {
     const checkSkillTestCompleted = async () => {
       const mobile = getUserMobile();
@@ -853,11 +853,12 @@ const Dashboard = () => {
       const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
       
       try {
-        const response = await fetch(`${backendUrl}/api/check-quiz-test/${encodeURIComponent(mobile)}`);
+        // Use check-quiz-test-completed which checks quiz_test_answers (actual submissions)
+        const response = await fetch(`${backendUrl}/api/check-quiz-test-completed/${encodeURIComponent(mobile)}`);
         if (response.ok) {
           const data = await response.json();
-          setSkillTestCompleted(data.exists === true);
-          console.log('📝 Skills Test completed:', data.exists);
+          setSkillTestCompleted(data.completed === true);
+          console.log('📝 Skills Test completed:', data.completed);
         }
       } catch (error) {
         console.warn('Failed to check skill test status:', error);
