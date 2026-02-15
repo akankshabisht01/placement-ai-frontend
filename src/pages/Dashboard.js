@@ -4787,7 +4787,10 @@ const Dashboard = () => {
                       You have already completed your initial skills assessment. Your personalized report is available in Progress Tracking.
                     </p>
                     <button
-                      onClick={() => setActiveSection('progress')}
+                      onClick={() => {
+                        setActiveSection('progress');
+                        fetchTestAnalysisData();
+                      }}
                       className={`inline-flex items-center gap-3 px-8 py-4 rounded-xl ${themeClasses.buttonPrimary} text-white font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200`}
                     >
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -4986,8 +4989,9 @@ const Dashboard = () => {
                                   return;
                                 }
 
-                                // Navigate immediately for fast response
-                                navigate('/test-analysis');
+                                // Navigate to Progress Tracking and auto-expand test analysis
+                                setActiveSection('progress');
+                                fetchTestAnalysisData();
                               }}
                               className={`inline-flex items-center gap-3 px-6 py-3 rounded-xl ${themeClasses.buttonPrimary} text-white font-medium shadow-lg hover:shadow-2xl transform hover:-translate-y-0.5 transition-all duration-200 ease-out focus:outline-none focus:ring-4 ${themeClasses.accent}/30`}
                               title={analysisReady ? 'View Assessment Report' : 'Generate and view Assessment Report'}
