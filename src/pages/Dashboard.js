@@ -533,6 +533,7 @@ const Dashboard = () => {
   const [testError, setTestError] = useState(null);
   const [testAvailable, setTestAvailable] = useState(false);
   const [skillTestCompleted, setSkillTestCompleted] = useState(false);
+  const [assessmentReportGenerated, setAssessmentReportGenerated] = useState(false);
   const [weeklyTestLoading, setWeeklyTestLoading] = useState(false);
   const [weeklyTestMessage, setWeeklyTestMessage] = useState(null);
   const [showTimerModal, setShowTimerModal] = useState(false);
@@ -866,6 +867,31 @@ const Dashboard = () => {
     };
     
     checkSkillTestCompleted();
+  }, []);
+
+  // Check if Assessment Report has been generated (quiz_analysis exists)
+  useEffect(() => {
+    const checkAssessmentReportGenerated = async () => {
+      const mobile = getUserMobile();
+      if (!mobile) return;
+      
+      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
+      const clean = mobile.split('').filter(c => /\d/.test(c)).join('');
+      const phoneFormat = clean.length === 10 ? `+91 ${clean}` : mobile;
+      
+      try {
+        const response = await fetch(`${backendUrl}/api/check-quiz-analysis/${encodeURIComponent(phoneFormat)}`);
+        if (response.ok) {
+          const data = await response.json();
+          setAssessmentReportGenerated(data.exists === true);
+          console.log('📊 Assessment Report generated:', data.exists);
+        }
+      } catch (error) {
+        console.warn('Failed to check assessment report status:', error);
+      }
+    };
+    
+    checkAssessmentReportGenerated();
   }, []);
 
   // Fetch skill ratings when mobile is available
@@ -4747,6 +4773,32 @@ const Dashboard = () => {
           {/* Skills Test Section */}
           {activeSection === 'skilltest' && (
             <div className="space-y-6">
+              {/* Show Locked State when Assessment Report is Generated */}
+              {assessmentReportGenerated ? (
+                <div className={`${themeClasses.cardBackground} backdrop-blur-sm rounded-2xl p-8 shadow-lg border-2 ${themeClasses.cardBorder}`}>
+                  <div className="text-center py-12">
+                    <div className="w-24 h-24 mx-auto mb-6 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center shadow-lg">
+                      <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <h2 className={`text-3xl font-bold ${themeClasses.textPrimary} mb-4`}>Skills Assessment Completed</h2>
+                    <p className={`${themeClasses.textSecondary} mb-8 max-w-md mx-auto`}>
+                      You have already completed your initial skills assessment. Your personalized report is available in Progress Tracking.
+                    </p>
+                    <button
+                      onClick={() => setActiveSection('progress')}
+                      className={`inline-flex items-center gap-3 px-8 py-4 rounded-xl ${themeClasses.buttonPrimary} text-white font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200`}
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                      </svg>
+                      View Report in Progress Tracking
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <>
               <div className={`${themeClasses.gradient} rounded-2xl p-8 shadow-lg dark:shadow-soft`}>
                 <div className="flex items-start justify-between">
                   <div>
@@ -4993,6 +5045,8 @@ const Dashboard = () => {
                 </div>
               </div>
             </div>
+            </>
+          )}
           )}
 
           {activeSection === 'roadmap' && (
