@@ -532,6 +532,7 @@ const Dashboard = () => {
   const [isGeneratingTest, setIsGeneratingTest] = useState(false);
   const [testError, setTestError] = useState(null);
   const [testAvailable, setTestAvailable] = useState(false);
+  const [skillTestCompleted, setSkillTestCompleted] = useState(false);
   const [weeklyTestLoading, setWeeklyTestLoading] = useState(false);
   const [weeklyTestMessage, setWeeklyTestMessage] = useState(null);
   const [showTimerModal, setShowTimerModal] = useState(false);
@@ -842,6 +843,29 @@ const Dashboard = () => {
     
     syncSkillsFromDatabase();
   }, []); // Run once on mount
+
+  // Check if Skills Test has been completed
+  useEffect(() => {
+    const checkSkillTestCompleted = async () => {
+      const mobile = getUserMobile();
+      if (!mobile) return;
+      
+      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
+      
+      try {
+        const response = await fetch(`${backendUrl}/api/check-quiz-test/${encodeURIComponent(mobile)}`);
+        if (response.ok) {
+          const data = await response.json();
+          setSkillTestCompleted(data.exists === true);
+          console.log('📝 Skills Test completed:', data.exists);
+        }
+      } catch (error) {
+        console.warn('Failed to check skill test status:', error);
+      }
+    };
+    
+    checkSkillTestCompleted();
+  }, []);
 
   // Fetch skill ratings when mobile is available
   useEffect(() => {
@@ -4896,28 +4920,30 @@ const Dashboard = () => {
                           </div>
                         )}
 
-                        {/* Test Analysis Report Button - always visible */}
-                        <div className="mt-6 flex justify-center">
-                          <button
-                            onClick={() => {
-                              const mobile = getUserMobile();
-                              if (!mobile) {
-                                alert('Mobile number not found. Please sign in first.');
-                                return;
-                              }
+                        {/* Test Analysis Report Button - only visible after completing Skills Test */}
+                        {skillTestCompleted && (
+                          <div className="mt-6 flex justify-center">
+                            <button
+                              onClick={() => {
+                                const mobile = getUserMobile();
+                                if (!mobile) {
+                                  alert('Mobile number not found. Please sign in first.');
+                                  return;
+                                }
 
-                              // Navigate immediately for fast response
-                              navigate('/test-analysis');
-                            }}
-                            className={`inline-flex items-center gap-3 px-6 py-3 rounded-xl ${themeClasses.buttonPrimary} text-white font-medium shadow-lg hover:shadow-2xl transform hover:-translate-y-0.5 transition-all duration-200 ease-out focus:outline-none focus:ring-4 ${themeClasses.accent}/30`}
-                            title={analysisReady ? 'View Assessment Report' : 'Generate and view Assessment Report'}
-                          >
-                            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m2 0a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v3a2 2 0 002 2h12zM7 16v1a2 2 0 002 2h6a2 2 0 002-2v-1" />
-                            </svg>
-                            <span>View Assessment Report</span>
-                          </button>
-                        </div>
+                                // Navigate immediately for fast response
+                                navigate('/test-analysis');
+                              }}
+                              className={`inline-flex items-center gap-3 px-6 py-3 rounded-xl ${themeClasses.buttonPrimary} text-white font-medium shadow-lg hover:shadow-2xl transform hover:-translate-y-0.5 transition-all duration-200 ease-out focus:outline-none focus:ring-4 ${themeClasses.accent}/30`}
+                              title={analysisReady ? 'View Assessment Report' : 'Generate and view Assessment Report'}
+                            >
+                              <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m2 0a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v3a2 2 0 002 2h12zM7 16v1a2 2 0 002 2h6a2 2 0 002-2v-1" />
+                              </svg>
+                              <span>View Assessment Report</span>
+                            </button>
+                          </div>
+                        )}
                       </div>
                     );
                   } catch (error) {
