@@ -1829,6 +1829,7 @@ const Dashboard = () => {
       
       // Build variants for mobile number
       const clean = mobile.split('').filter(c => /\d/.test(c)).join('');
+      const phoneFormat = clean.length === 10 ? `+91 ${clean}` : mobile;
       const variants = [
         mobile,
         mobile.replace(/\s+/g, ''),
@@ -1866,7 +1867,86 @@ const Dashboard = () => {
         setTestAnalysisData(data);
         setShowTestAnalysis(true);
       } else {
-        setTestAnalysisError('No test analysis found. Please take a skills test first.');
+        // Analysis not found - trigger webhook to generate it
+        console.log('[fetchTestAnalysisData] Analysis not found, triggering webhook...');
+        setTestAnalysisError('Generating your analysis report... Please wait.');
+        
+        try {
+          await fetch(`${backendUrl}/api/notify-answer-response`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ mobile: phoneFormat, action: 'analysis_request' })
+          });
+          console.log('[fetchTestAnalysisData] Webhook triggered successfully');
+        } catch (webhookErr) {
+          console.error('[fetchTestAnalysisData] Webhook trigger failed:', webhookErr);
+        }
+
+        // Poll for analysis after 10 seconds
+        await new Promise(resolve => setTimeout(resolve, 10000));
+        
+        // Check again
+        for (const variant of uniqueVariants) {
+          try {
+            const url = `${backendUrl}/api/quiz-analysis/${encodeURIComponent(variant)}`;
+            const response = await fetch(url);
+            
+            if (response.ok) {
+              const result = await response.json();
+              if (result.success && result.data) {
+                data = result.data;
+                break;
+              }
+            }
+          } catch (err) {
+            console.error('Error fetching variant:', variant, err);
+          }
+        }
+
+        if (data) {
+          setTestAnalysisData(data);
+          setShowTestAnalysis(true);
+          setTestAnalysisError(null);
+        } else {
+          // Poll every 5 seconds for up to 8 attempts
+          let attempts = 0;
+          const maxAttempts = 8;
+          
+          const pollForAnalysis = async () => {
+            attempts++;
+            console.log(`[fetchTestAnalysisData] Polling attempt ${attempts}/${maxAttempts}`);
+            
+            for (const variant of uniqueVariants) {
+              try {
+                const url = `${backendUrl}/api/quiz-analysis/${encodeURIComponent(variant)}`;
+                const response = await fetch(url);
+                
+                if (response.ok) {
+                  const result = await response.json();
+                  if (result.success && result.data) {
+                    setTestAnalysisData(result.data);
+                    setShowTestAnalysis(true);
+                    setTestAnalysisError(null);
+                    setLoadingTestAnalysis(false);
+                    return true;
+                  }
+                }
+              } catch (err) {
+                console.error('Error fetching variant:', variant, err);
+              }
+            }
+            
+            if (attempts < maxAttempts) {
+              await new Promise(resolve => setTimeout(resolve, 5000));
+              return pollForAnalysis();
+            }
+            
+            setTestAnalysisError('Analysis generation is taking longer than expected. Please try again in a few minutes.');
+            return false;
+          };
+          
+          await pollForAnalysis();
+        }
       }
     } catch (error) {
       console.error('Error fetching test analysis:', error);
