@@ -63,6 +63,10 @@ const TestAnalysisReport = () => {
             console.log('[TestAnalysisReport] ✅ Analysis found in database');
             setAnalysis(result.data);
             setLoading(false);
+            // Redirect to Progress Tracking after report is ready
+            setTimeout(() => {
+              navigate('/dashboard?section=progress');
+            }, 500);
             return;
           }
         }
@@ -97,6 +101,10 @@ const TestAnalysisReport = () => {
             setAnalysis(checkResult.data);
             setGenerating(false);
             setLoading(false);
+            // Redirect to Progress Tracking after report is ready
+            setTimeout(() => {
+              navigate('/dashboard?section=progress');
+            }, 500);
             return;
           }
         }
@@ -125,6 +133,10 @@ const TestAnalysisReport = () => {
                 setGenerating(false);
                 setLoading(false);
                 clearInterval(pollInterval);
+                // Redirect to Progress Tracking after report is ready
+                setTimeout(() => {
+                  navigate('/dashboard?section=progress');
+                }, 500);
                 return;
               }
             }
