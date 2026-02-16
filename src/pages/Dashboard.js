@@ -1202,6 +1202,11 @@ const Dashboard = () => {
         };
         const target = mapping[s] || s;
         setActiveSection(target);
+        
+        // Auto-expand Test Analysis when redirected to progress section
+        if (target === 'progress') {
+          fetchTestAnalysisData();
+        }
       }
     } catch (err) {
       // ignore
