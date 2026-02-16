@@ -5048,11 +5048,10 @@ const Dashboard = () => {
                   <p className={`text-sm ${themeClasses.textSecondary}`}>Receive personalized learning paths based on your test results</p>
                 </div>
               </div>
-            </div>
             </>
           )}
           </div>
-          )}
+        )}
 
           {activeSection === 'roadmap' && (
             <div className={`${themeClasses.cardBackground} backdrop-blur-sm rounded-2xl p-8 shadow-lg border ${themeClasses.cardBorder}`}>
