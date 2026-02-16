@@ -5051,6 +5051,7 @@ const Dashboard = () => {
             </div>
             </>
           )}
+          </div>
           )}
 
           {activeSection === 'roadmap' && (
