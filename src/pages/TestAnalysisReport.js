@@ -63,10 +63,6 @@ const TestAnalysisReport = () => {
             console.log('[TestAnalysisReport] ✅ Analysis found in database');
             setAnalysis(result.data);
             setLoading(false);
-            // Redirect to Progress Tracking after short delay to show success
-            setTimeout(() => {
-              navigate('/dashboard?section=progress');
-            }, 1500);
             return;
           }
         }
@@ -129,10 +125,6 @@ const TestAnalysisReport = () => {
                 setGenerating(false);
                 setLoading(false);
                 clearInterval(pollInterval);
-                // Redirect to Progress Tracking after short delay
-                setTimeout(() => {
-                  navigate('/dashboard?section=progress');
-                }, 1500);
                 return;
               }
             }
