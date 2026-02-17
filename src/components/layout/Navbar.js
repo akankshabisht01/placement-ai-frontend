@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import logo from './assets/logo.png';
 import { Link, NavLink, useLocation } from 'react-router-dom';
-import { Home, User, Target, BarChart3, Rocket, LayoutDashboard, Bot, Info, MessageCircle, Zap, Moon, Sun, MonitorSmartphone, FileCheck, UserCircle2, CreditCard, ChevronDown, CloudMoon, Cloud, Sparkles, Sunrise } from 'lucide-react';
+import { Home, User, Target, BarChart3, LayoutDashboard, Bot, Info, MessageCircle, Zap, Moon, Sun, MonitorSmartphone, FileCheck, UserCircle2, CreditCard, ChevronDown, CloudMoon, Cloud, Sparkles, Sunrise } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
 import { getThemeClasses } from '../../utils/themeHelpers';
 
@@ -106,7 +106,6 @@ const Navbar = () => {
 
   const moreItems = [
     { name: 'Login', path: '/auth-selection', icon: User },
-    { name: 'Demo', path: '/prediction-demo', icon: Rocket },
     { name: 'About', path: '/about', icon: Info },
     { name: 'Feedback', path: '/feedback', icon: MessageCircle }
   ];
@@ -165,8 +164,8 @@ const Navbar = () => {
                   </div>
                 </Link>
                 
-                {/* Theme Dropdown Button */}
-                <div className="relative ml-3" ref={desktopThemeDropdownRef}>
+                {/* Theme Dropdown Button (Desktop only) */}
+                <div className="relative ml-3 hidden lg:flex" ref={desktopThemeDropdownRef}>
                   <button
                     onClick={toggleDesktopThemeDropdown}
                     className={`flex items-center gap-1.5 rounded-lg transition-all duration-200 group ${themeClasses.buttonSecondary} ${
@@ -248,17 +247,6 @@ const Navbar = () => {
                         <Sunrise size={16} />
                         <span>Solaris</span>
                       </button>
-                      <button
-                        onClick={() => handleDesktopThemeChange('system')}
-                        className={`w-full flex items-center gap-3 px-4 py-3 text-left text-sm transition-all duration-200 ${
-                          theme === 'system'
-                            ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white'
-                            : `${themeClasses.textPrimary} ${themeClasses.hover}`
-                        }`}
-                      >
-                        <MonitorSmartphone size={16} />
-                        <span>System Default</span>
-                      </button>
                     </div>
                   )}
                 </div>
@@ -293,13 +281,13 @@ const Navbar = () => {
             </div>
 
             {/* Mobile menu button */}
-            <div className="flex lg:hidden items-center gap-2">
+            <div className="flex lg:hidden items-center gap-2 justify-end">
               {/* Mobile Theme Dropdown */}
               <div className="relative" ref={mobileThemeDropdownRef}>
                 <button
                   onClick={toggleMobileThemeDropdown}
-                  className={`flex items-center gap-1 rounded-lg transition-all duration-200 ${themeClasses.buttonSecondary} ${
-                    scrolled ? 'p-1.5' : 'p-2'
+                  className={`flex items-center justify-center gap-1 rounded-lg transition-all duration-200 ${themeClasses.buttonSecondary} ${
+                    scrolled ? 'p-1.5 min-h-[32px]' : 'p-2 min-h-[40px]'
                   }`}
                   aria-label={`Toggle theme (${getThemeLabel()})`}
                   aria-expanded={isMobileThemeDropdownOpen}
@@ -377,17 +365,6 @@ const Navbar = () => {
                       <Sunrise size={16} />
                       <span>Solaris</span>
                     </button>
-                    <button
-                      onClick={() => handleMobileThemeChange('system')}
-                      className={`w-full flex items-center gap-3 px-4 py-3 text-left text-sm transition-all duration-200 ${
-                        theme === 'system'
-                          ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white'
-                          : `${themeClasses.textPrimary} ${themeClasses.hover}`
-                      }`}
-                    >
-                      <MonitorSmartphone size={16} />
-                      <span>System Default</span>
-                    </button>
                   </div>
                 )}
               </div>
@@ -395,21 +372,15 @@ const Navbar = () => {
               <button
                 onClick={toggleMenu}
                 className={`inline-flex items-center justify-center rounded-lg ${themeClasses.textPrimary} ${themeClasses.hover} focus:outline-none focus:ring-2 focus:ring-amber-500 dark:focus:ring-pink-500 transition-all duration-200 ${
-                  scrolled ? 'p-1.5' : 'p-2'
+                  scrolled ? 'p-1.5 min-h-[32px] min-w-[32px]' : 'p-2 min-h-[40px] min-w-[40px]'
                 }`}
                 aria-expanded="false"
               >
                 <span className="sr-only">Open main menu</span>
-                <div className={`relative transition-all duration-200 ${scrolled ? 'w-5 h-5' : 'w-6 h-6'}`}>
-                  <div className={`absolute inset-0 transform transition-all duration-300 ${isMenuOpen ? 'rotate-45' : 'rotate-0'}`}>
-                    <div className={`h-0.5 w-6 bg-current transform transition-all duration-300 ${isMenuOpen ? 'translate-y-0' : '-translate-y-2'}`}></div>
-                  </div>
-                  <div className={`absolute inset-0 transform transition-all duration-300 ${isMenuOpen ? 'opacity-0' : 'opacity-100'}`}>
-                    <div className="h-0.5 w-6 bg-current"></div>
-                  </div>
-                  <div className={`absolute inset-0 transform transition-all duration-300 ${isMenuOpen ? '-rotate-45' : 'rotate-0'}`}>
-                    <div className={`h-0.5 w-6 bg-current transform transition-all duration-300 ${isMenuOpen ? 'translate-y-0' : 'translate-y-2'}`}></div>
-                  </div>
+                <div className={`relative flex flex-col items-center justify-center gap-1 transition-all duration-200 ${scrolled ? 'w-5 h-5' : 'w-6 h-6'}`}>
+                  <div className={`h-0.5 w-full bg-current transform transition-all duration-300 ${isMenuOpen ? 'rotate-45 translate-y-[4.5px]' : 'rotate-0'}`}></div>
+                  <div className={`h-0.5 w-full bg-current transition-all duration-300 ${isMenuOpen ? 'opacity-0' : 'opacity-100'}`}></div>
+                  <div className={`h-0.5 w-full bg-current transform transition-all duration-300 ${isMenuOpen ? '-rotate-45 -translate-y-[4.5px]' : 'rotate-0'}`}></div>
                 </div>
               </button>
             </div>

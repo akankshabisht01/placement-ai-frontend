@@ -15,7 +15,6 @@ import Home from './pages/Home';
 import DomainSelection from './pages/DomainSelection';
 import PredictionForm from './pages/PredictionForm';
 import PredictionResult from './pages/PredictionResult';
-import PredictionDemo from './pages/PredictionDemo';
 import ATS from './pages/ATS';
 import ATSScore from './pages/ATSScore';
 import Dashboard from './pages/Dashboard';
@@ -83,7 +82,6 @@ const AppLayout = () => {
         <Route path="/predict" element={<PredictionForm />} />
         <Route path="/predict/:domainId" element={<PredictionForm />} />
         <Route path="/result" element={<PredictionResult />} />
-        <Route path="/prediction-demo" element={<PredictionDemo />} />
         <Route path="/ats" element={<ATS />} />
         <Route path="/ats-score" element={<ATSScore />} />
         <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />

@@ -189,87 +189,121 @@ const LoadingWithFacts = ({
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50 dark:from-[#1a1625] dark:via-[#1e1a2e] dark:to-[#1a1625] p-4">
-      <div className="bg-white dark:bg-[#1e1a2e] rounded-2xl shadow-xl dark:shadow-soft p-8 max-w-lg w-full border border-transparent dark:border-pink-500/20">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50 dark:from-[#1a1625] dark:via-[#1e1a2e] dark:to-[#1a1625] p-4 relative overflow-hidden">
+      {/* Fun Background Decorations */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-10 left-10 w-32 h-32 bg-gradient-to-br from-purple-400/20 to-pink-400/20 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-20 right-20 w-40 h-40 bg-gradient-to-br from-blue-400/20 to-cyan-400/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
+        <div className="absolute top-1/2 left-1/4 w-24 h-24 bg-gradient-to-br from-yellow-400/20 to-orange-400/20 rounded-full blur-2xl animate-pulse" style={{ animationDelay: '2s' }}></div>
+        
+        {/* Floating shapes */}
+        <div className="absolute top-20 right-1/4 w-6 h-6 border-4 border-purple-400/30 dark:border-purple-500/30 rounded-full animate-bounce" style={{ animationDuration: '3s' }}></div>
+        <div className="absolute bottom-32 left-1/3 w-8 h-8 border-4 border-pink-400/30 dark:border-pink-500/30 rotate-45 animate-bounce" style={{ animationDuration: '2.5s', animationDelay: '0.5s' }}></div>
+        <div className="absolute top-1/3 right-1/3 w-4 h-4 bg-cyan-400/30 dark:bg-cyan-500/30 rounded-full animate-ping" style={{ animationDuration: '2s' }}></div>
+      </div>
+      
+      <div className="bg-white dark:bg-[#1e1a2e] rounded-3xl shadow-2xl dark:shadow-soft p-8 max-w-lg w-full border-4 border-transparent dark:border-pink-500/20 relative overflow-hidden transform hover:scale-[1.02] transition-transform duration-300">
+        {/* Fun Top Border Pattern */}
+        <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-purple-500 via-pink-500 via-yellow-500 via-green-500 to-blue-500"></div>
+        
         {/* Main Loading Section */}
-        <div className="text-center mb-6">
-          <div className="relative mx-auto w-20 h-20 mb-4">
-            <div className="absolute inset-0 rounded-full border-4 border-blue-200 dark:border-blue-900"></div>
-            <div className="absolute inset-0 rounded-full border-4 border-blue-600 dark:border-blue-500 border-t-transparent animate-spin"></div>
-            <div className="absolute inset-0 flex items-center justify-center">
-              <span className="text-blue-600 dark:text-blue-400 text-xl font-bold animate-pulse">AI</span>
+        <div className="text-center mb-6 relative">
+          <div className="relative mx-auto w-24 h-24 mb-4">
+            {/* Outer glow effect */}
+            <div className="absolute inset-0 rounded-full bg-gradient-to-r from-purple-400 via-pink-400 to-blue-400 opacity-20 animate-pulse blur-md"></div>
+            
+            {/* Spinning rings */}
+            <div className="absolute inset-0 rounded-full border-4 border-transparent bg-gradient-to-r from-purple-400 via-pink-400 to-blue-400 animate-spin" style={{ 
+              backgroundClip: 'padding-box',
+              clipPath: 'polygon(50% 0%, 100% 0%, 100% 50%, 50% 50%)'
+            }}></div>
+            <div className="absolute inset-2 rounded-full border-4 border-transparent bg-gradient-to-l from-yellow-400 via-orange-400 to-red-400 animate-spin" style={{ 
+              animationDirection: 'reverse',
+              animationDuration: '1.5s',
+              backgroundClip: 'padding-box',
+              clipPath: 'polygon(50% 50%, 100% 50%, 100% 100%, 50% 100%)'
+            }}></div>
+            
+            {/* Center icon */}
+            <div className="absolute inset-0 flex items-center justify-center bg-white dark:bg-[#1e1a2e] rounded-full m-3">
+              <span className="text-2xl font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 bg-clip-text text-transparent animate-pulse">🚀</span>
             </div>
           </div>
-          <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">{title}</h3>
-          <p className="text-gray-600 dark:text-gray-400">{subtitle}</p>
-          <div className="flex justify-center gap-1 mt-4">
-            <div className="w-2 h-2 bg-blue-600 dark:bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-            <div className="w-2 h-2 bg-blue-600 dark:bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-            <div className="w-2 h-2 bg-blue-600 dark:bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+          <h3 className="text-3xl font-extrabold bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 bg-clip-text text-transparent mb-2">{title}</h3>
+          <p className="text-gray-600 dark:text-gray-400 font-medium">{subtitle}</p>
+          <div className="flex justify-center gap-2 mt-4">
+            <div className="w-3 h-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full animate-bounce shadow-lg" style={{ animationDelay: '0ms' }}></div>
+            <div className="w-3 h-3 bg-gradient-to-r from-pink-500 to-yellow-500 rounded-full animate-bounce shadow-lg" style={{ animationDelay: '150ms' }}></div>
+            <div className="w-3 h-3 bg-gradient-to-r from-yellow-500 to-blue-500 rounded-full animate-bounce shadow-lg" style={{ animationDelay: '300ms' }}></div>
           </div>
         </div>
 
         {/* Interactive Content Section */}
         {showContent && content && (
-          <div className={`mt-6 pt-6 border-t border-gray-200 dark:border-gray-700 transition-opacity duration-300 ${fadeIn ? 'opacity-100' : 'opacity-0'}`}>
+          <div className={`mt-6 pt-6 border-t-2 border-dashed border-slate-200 dark:border-slate-700 transition-all duration-500 ${fadeIn ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
             {content.type === 'fact' ? (
               /* Fact Display */
-              <div className="text-center">
-                <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-amber-100 dark:bg-amber-900/30 mb-3">
-                  <span className="text-2xl">{content.icon}</span>
+              <div className="text-center bg-gradient-to-br from-blue-50 to-slate-50 dark:from-blue-900/20 dark:to-slate-900/20 rounded-2xl p-5 border-2 border-blue-200 dark:border-blue-500/30 shadow-lg">
+                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 mb-4 animate-bounce shadow-xl" style={{ animationDuration: '2s' }}>
+                  <span className="text-3xl">{content.icon}</span>
                 </div>
-                <p className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed">
+                <div className="inline-block px-3 py-1 bg-blue-600 text-white text-xs font-bold rounded-full mb-3 shadow-md">
+                  💡 DID YOU KNOW?
+                </div>
+                <p className="text-gray-800 dark:text-gray-200 text-base font-medium leading-relaxed">
                   {content.text}
                 </p>
                 <button 
                   onClick={handleSkip}
-                  className="mt-4 text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                  className="mt-4 px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white text-sm font-bold rounded-full transition-all duration-200 shadow-md hover:shadow-xl transform hover:scale-105"
                 >
-                  Next →
+                  Next Fun Fact ✨
                 </button>
               </div>
             ) : (
               /* Question Display */
-              <div>
-                <div className="flex items-center gap-2 mb-4">
-                  <span className="text-2xl">{content.icon}</span>
-                  <p className="text-gray-800 dark:text-gray-200 font-medium text-sm">
+              <div className="bg-gradient-to-br from-slate-50 to-gray-50 dark:from-slate-900/20 dark:to-gray-900/20 rounded-2xl p-5 border-2 border-slate-200 dark:border-slate-700 shadow-lg">
+                <div className="flex items-center justify-center mb-4 bg-white dark:bg-[#1e1a2e] rounded-xl p-3 shadow-md border-2 border-dashed border-slate-300 dark:border-slate-600">
+                  <p className="text-gray-800 dark:text-gray-100 font-bold text-base">
                     {content.text}
                   </p>
                 </div>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-2 gap-3">
                   {content.options?.map((option, idx) => (
                     <button
                       key={option.option_id || idx}
                       onClick={() => handleOptionSelect(option)}
                       disabled={!!selectedOption || isSubmitting}
                       className={`
-                        p-3 rounded-lg text-left text-sm transition-all duration-200
-                        flex items-center gap-2
+                        p-4 rounded-xl text-sm font-bold transition-all duration-300
+                        flex flex-col items-center gap-2 shadow-md
+                        transform hover:scale-110 hover:-rotate-2
                         ${selectedOption?.option_id === option.option_id
-                          ? 'bg-green-100 dark:bg-green-900/40 border-2 border-green-500 text-green-800 dark:text-green-300'
+                          ? 'bg-gradient-to-br from-green-500 to-emerald-600 text-white scale-110 shadow-2xl animate-pulse'
                           : selectedOption
-                            ? 'bg-gray-100 dark:bg-gray-800/50 text-gray-400 dark:text-gray-500 cursor-not-allowed'
-                            : 'bg-gray-50 dark:bg-[#2d1f3d]/50 hover:bg-blue-50 dark:hover:bg-blue-900/30 border border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-600 text-gray-700 dark:text-gray-300'
+                            ? 'bg-gray-200 dark:bg-gray-800/50 text-gray-400 dark:text-gray-500 cursor-not-allowed scale-95'
+                            : 'bg-gradient-to-br from-white to-gray-50 dark:from-[#2d1f3d] dark:to-[#3d2f4d] hover:from-blue-50 hover:to-slate-50 dark:hover:from-blue-900/30 dark:hover:to-slate-900/30 border-2 border-slate-200 dark:border-slate-700 hover:border-blue-400 dark:hover:border-blue-500 text-gray-700 dark:text-gray-200'
                         }
                       `}
                     >
-                      <span className="text-lg">{option.icon}</span>
-                      <span className="truncate">{option.text}</span>
+                      <span className="text-3xl">{option.icon}</span>
+                      <span className="text-center leading-tight">{option.text}</span>
                     </button>
                   ))}
                 </div>
                 {selectedOption && (
-                  <p className="mt-3 text-center text-xs text-green-600 dark:text-green-400 animate-pulse">
-                    ✓ Thanks! Loading next...
-                  </p>
+                  <div className="mt-4 text-center">
+                    <div className="inline-block px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white text-sm font-bold rounded-full animate-bounce shadow-lg">
+                      🎉 Awesome! Loading next...
+                    </div>
+                  </div>
                 )}
                 {!selectedOption && (
                   <button 
                     onClick={handleSkip}
-                    className="mt-4 w-full text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                    className="mt-4 w-full py-2 text-sm font-medium text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 bg-white dark:bg-[#1e1a2e] hover:bg-gray-100 dark:hover:bg-[#2d1f3d] rounded-lg transition-all duration-200 border border-gray-300 dark:border-gray-600"
                   >
-                    Skip →
+                    Skip Question →
                   </button>
                 )}
               </div>
@@ -277,10 +311,13 @@ const LoadingWithFacts = ({
           </div>
         )}
 
-        {/* Subtle footer */}
-        <p className="mt-6 text-center text-xs text-gray-400 dark:text-gray-500">
-          This may take a few moments...
-        </p>
+        {/* Fun footer */}
+        <div className="mt-6 flex items-center justify-center gap-2">
+          <span className="text-lg animate-spin">⏳</span>
+          <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">
+            Hang tight! Magic is happening...
+          </p>
+        </div>
       </div>
     </div>
   );
@@ -442,70 +479,83 @@ export const LoadingFactsInline = ({
 
   return (
     <div 
-      className={`bg-amber-50 dark:bg-pink-900/20 rounded-xl p-4 border border-amber-200 dark:border-pink-500/30 transition-opacity duration-300 ${fadeIn ? 'opacity-100' : 'opacity-0'}`}
+      className={`relative bg-gradient-to-br from-blue-50 to-slate-50 dark:from-blue-900/20 dark:to-slate-900/20 rounded-2xl p-5 border-2 border-blue-200 dark:border-blue-500/30 shadow-xl transition-all duration-500 overflow-hidden ${fadeIn ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}
     >
-      {content.type === 'fact' ? (
-        <div className="text-center">
-          <div className="flex items-center justify-center gap-2 mb-2">
-            <span className="text-xl">{content.icon}</span>
-            <span className="text-xs font-medium text-amber-600 dark:text-pink-400 uppercase tracking-wide">
-              Did you know?
-            </span>
-          </div>
-          <p className="text-gray-700 dark:text-gray-300 text-sm">
-            {content.text}
-          </p>
-          <button 
-            onClick={handleSkip}
-            className="mt-3 text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-          >
-            Next →
-          </button>
-        </div>
-      ) : (
-        <div>
-          <div className="flex items-center justify-center gap-2 mb-3">
-            <span className="text-xl">{content.icon}</span>
-            <p className="text-gray-800 dark:text-gray-200 font-medium text-sm">
+      {/* Professional decorative elements */}
+      <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-blue-400/20 to-slate-400/20 rounded-full blur-2xl"></div>
+      <div className="absolute bottom-0 left-0 w-16 h-16 bg-gradient-to-br from-slate-400/20 to-gray-400/20 rounded-full blur-2xl"></div>
+      
+      {/* Professional top accent */}
+      <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-600 to-slate-600"></div>
+      
+      <div className="relative z-10">
+        {content.type === 'fact' ? (
+          <div className="text-center">
+            <div className="flex items-center justify-center gap-3 mb-3">
+              <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center shadow-lg animate-bounce" style={{ animationDuration: '2s' }}>
+                <span className="text-2xl">{content.icon}</span>
+              </div>
+              <span className="inline-block px-3 py-1 bg-gradient-to-r from-blue-600 to-blue-700 text-white text-xs font-bold rounded-full shadow-md animate-pulse">
+                💡 FUN FACT
+              </span>
+            </div>
+            <p className="text-gray-800 dark:text-gray-100 text-sm font-medium leading-relaxed bg-white/60 dark:bg-black/20 rounded-lg p-3 backdrop-blur-sm">
               {content.text}
             </p>
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            {content.options?.map((option) => (
-              <button
-                key={option.option_id}
-                onClick={() => handleOptionSelect(option)}
-                disabled={isSubmitting || selectedOption}
-                className={`
-                  flex items-center gap-2 p-2 rounded-lg text-xs font-medium transition-all duration-200
-                  ${selectedOption?.option_id === option.option_id
-                    ? 'bg-amber-500 dark:bg-pink-500 text-white scale-105'
-                    : selectedOption
-                      ? 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500'
-                      : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-amber-100 dark:hover:bg-pink-800/30 border border-gray-200 dark:border-gray-600'
-                  }
-                `}
-              >
-                <span>{option.icon}</span>
-                <span className="truncate">{option.text}</span>
-              </button>
-            ))}
-          </div>
-          {selectedOption && (
-            <p className="mt-2 text-center text-xs text-green-600 dark:text-green-400">
-              ✓ Thanks!
-            </p>
-          )}
-          {!selectedOption && (
             <button 
               onClick={handleSkip}
-              className="mt-3 w-full text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+              className="mt-4 px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white text-xs font-bold rounded-full transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105"
             >
-              Skip →
+              Next Fun Fact ✨
             </button>
-          )}
-        </div>
-      )}
+          </div>
+        ) : (
+          <div>
+            <div className="flex items-center justify-center mb-3 bg-white/80 dark:bg-black/30 rounded-xl p-3 shadow-md border-2 border-dashed border-slate-300 dark:border-slate-600 backdrop-blur-sm">
+              <p className="text-gray-800 dark:text-gray-100 font-bold text-sm">
+                {content.text}
+              </p>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              {content.options?.map((option) => (
+                <button
+                  key={option.option_id}
+                  onClick={() => handleOptionSelect(option)}
+                  disabled={isSubmitting || selectedOption}
+                  className={`
+                    flex flex-col items-center gap-2 p-3 rounded-xl text-xs font-bold transition-all duration-300
+                    shadow-md transform hover:scale-110 hover:-rotate-2
+                    ${selectedOption?.option_id === option.option_id
+                      ? 'bg-gradient-to-br from-green-500 to-emerald-600 text-white scale-110 shadow-2xl animate-pulse'
+                      : selectedOption
+                        ? 'bg-gray-200 dark:bg-gray-700 text-gray-400 scale-95'
+                        : 'bg-gradient-to-br from-white to-gray-50 dark:from-[#2d1f3d] dark:to-[#3d2f4d] hover:from-blue-50 hover:to-slate-50 dark:hover:from-blue-900/30 dark:hover:to-slate-900/30 border-2 border-slate-200 dark:border-slate-700 hover:border-blue-400 dark:hover:border-blue-500 text-gray-700 dark:text-gray-200'
+                    }
+                  `}
+                >
+                  <span className="text-2xl">{option.icon}</span>
+                  <span className="truncate text-center leading-tight">{option.text}</span>
+                </button>
+              ))}
+            </div>
+            {selectedOption && (
+              <div className="mt-3 text-center">
+                <div className="inline-block px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white text-xs font-bold rounded-full animate-bounce shadow-lg">
+                  🎉 Awesome!
+                </div>
+              </div>
+            )}
+            {!selectedOption && (
+              <button 
+                onClick={handleSkip}
+                className="mt-3 w-full py-2 text-xs font-medium text-gray-600 hover:text-gray-800 dark:text-gray-300 dark:hover:text-white bg-white/60 dark:bg-black/30 hover:bg-white dark:hover:bg-black/50 rounded-lg transition-all duration-200 border border-gray-300 dark:border-gray-600 backdrop-blur-sm"
+              >
+                Skip Question →
+              </button>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 };

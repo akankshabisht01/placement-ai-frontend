@@ -17,11 +17,16 @@ export const ThemeProvider = ({ children }) => {
     return savedTheme || 'system';
   });
 
+  // Track the actual active theme (resolved from system preference if needed)
+  const [activeTheme, setActiveTheme] = useState(theme);
+
   useEffect(() => {
     const root = document.documentElement;
     
     // Remove all theme classes first
     root.classList.remove('dark', 'midnight', 'aloof', 'aurora', 'solaris');
+
+    let resolvedTheme = theme;
 
     if (theme === 'dark') {
       root.classList.add('dark');
@@ -34,15 +39,22 @@ export const ThemeProvider = ({ children }) => {
     } else if (theme === 'solaris') {
       root.classList.add('solaris');
     } else if (theme === 'system') {
-      // Check system preference
+      // Check system preference and apply daylight or midnight theme
       const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
       if (prefersDark) {
-        root.classList.add('dark');
+        // Use midnight theme for dark mode
+        root.classList.add('dark', 'midnight');
+        resolvedTheme = 'midnight';
+      } else {
+        // Use daylight (light) theme for light mode
+        resolvedTheme = 'light';
       }
     }
     // If theme is 'light', dark class is already removed
     
-    localStorage.setItem('theme', theme);
+    setActiveTheme(resolvedTheme);
+    // Save resolved theme to localStorage (not 'system')
+    localStorage.setItem('theme', resolvedTheme);
   }, [theme]);
 
   // Listen for system theme changes when in system mode
@@ -52,10 +64,14 @@ export const ThemeProvider = ({ children }) => {
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
     const handleChange = (e) => {
       const root = document.documentElement;
+      root.classList.remove('dark', 'midnight');
       if (e.matches) {
-        root.classList.add('dark');
+        // Use midnight theme for dark mode
+        root.classList.add('dark', 'midnight');
+        setActiveTheme('midnight');
       } else {
-        root.classList.remove('dark');
+        // Use daylight (light) theme for light mode
+        setActiveTheme('light');
       }
     };
 
@@ -70,19 +86,18 @@ export const ThemeProvider = ({ children }) => {
       if (prevTheme === 'midnight') return 'aloof';
       if (prevTheme === 'aloof') return 'aurora';
       if (prevTheme === 'aurora') return 'solaris';
-      if (prevTheme === 'solaris') return 'system';
-      return 'light'; // system -> light
+      return 'light'; // solaris -> light
     });
   };
 
   const setThemeMode = (mode) => {
-    if (['light', 'dark', 'midnight', 'aloof', 'aurora', 'solaris', 'system'].includes(mode)) {
+    if (['light', 'dark', 'midnight', 'aloof', 'aurora', 'solaris'].includes(mode)) {
       setTheme(mode);
     }
   };
 
   return (
-    <ThemeContext.Provider value={{ theme, toggleTheme, setThemeMode }}>
+    <ThemeContext.Provider value={{ theme: activeTheme, toggleTheme, setThemeMode }}>
       {children}
     </ThemeContext.Provider>
   );

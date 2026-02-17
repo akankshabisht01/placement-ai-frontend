@@ -8423,8 +8423,13 @@ const Dashboard = () => {
                 <div className="w-3 h-3 bg-amber-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
               </div>
 
+              {/* Fun Facts/Questions Section */}
+              <div className="mt-6">
+                <LoadingFactsInline context="weekly_test_generation" minDisplayTime={8000} />
+              </div>
+
               {/* Additional Info */}
-              <p className="text-sm text-amber-600 dark:text-gray-400">
+              <p className="text-sm text-amber-600 dark:text-gray-400 mt-4">
                 This may take a few moments...
               </p>
 
@@ -8466,6 +8471,11 @@ const Dashboard = () => {
                 <div className="w-3 h-3 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
                 <div className="w-3 h-3 bg-cyan-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
                 <div className="w-3 h-3 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+              </div>
+
+              {/* Fun Facts/Questions Section */}
+              <div className="mb-6">
+                <LoadingFactsInline context="weekly_test_generation" minDisplayTime={8000} />
               </div>
 
               {/* Progress Indicator */}
@@ -8553,6 +8563,13 @@ const Dashboard = () => {
                 <div className="w-3 h-3 bg-pink-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
                 <div className="w-3 h-3 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
               </div>
+              
+              {/* Fun Facts/Questions Section */}
+              {(progressTrackingMessage.includes('Checking') || progressTrackingMessage.includes('Generating')) && (
+                <div className="mb-6">
+                  <LoadingFactsInline context="test_analysis" minDisplayTime={8000} />
+                </div>
+              )}
               
               {/* Status Info */}
               <div className="bg-purple-50 dark:bg-purple-900/20 rounded-xl p-4 border border-purple-200 dark:border-purple-500/30">

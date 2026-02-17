@@ -429,7 +429,7 @@ const Plans = () => {
               <div
                 key={plan.id}
                 className={`relative ${themeClasses.cardBackground} rounded-2xl border-2 ${themeClasses.cardBorder} ${
-                  plan.isPopular ? 'shadow-2xl shadow-glow' : 'shadow-lg'
+                  plan.isPopular ? 'shadow-glow' : 'shadow-lg'
                 } transition-all duration-300 hover:scale-105 flex flex-col`}
               >
                 {/* Popular Badge */}
