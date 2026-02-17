@@ -5356,7 +5356,7 @@ const Dashboard = () => {
                         </ol>
                       </div>
                       <button
-                        onClick={() => setActiveSection('career')}
+                        onClick={() => setActiveSection('roadmap')}
                         className="px-6 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 flex items-center gap-2 mx-auto"
                       >
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
