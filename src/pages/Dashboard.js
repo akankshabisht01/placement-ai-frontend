@@ -536,6 +536,7 @@ const Dashboard = () => {
   const [assessmentReportGenerated, setAssessmentReportGenerated] = useState(false);
   const [roadmapExists, setRoadmapExists] = useState(false);
   const [generatingRoadmap, setGeneratingRoadmap] = useState(false);
+  const [roadmapSectionLoading, setRoadmapSectionLoading] = useState(true);
   const [weeklyTestLoading, setWeeklyTestLoading] = useState(false);
   const [weeklyTestMessage, setWeeklyTestMessage] = useState(null);
   const [showTimerModal, setShowTimerModal] = useState(false);
@@ -871,58 +872,52 @@ const Dashboard = () => {
     checkSkillTestCompleted();
   }, []);
 
-  // Check if Assessment Report has been generated (quiz_analysis exists)
+  // Check if Assessment Report and Roadmap exist (combined to prevent flickering)
   useEffect(() => {
-    const checkAssessmentReportGenerated = async () => {
+    const checkRoadmapSectionStatus = async () => {
       const mobile = getUserMobile();
-      if (!mobile) return;
+      if (!mobile) {
+        setRoadmapSectionLoading(false);
+        return;
+      }
       
       const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
       const clean = mobile.split('').filter(c => /\d/.test(c)).join('');
       const phoneFormat = clean.length === 10 ? `+91 ${clean}` : mobile;
       
       try {
-        const response = await fetch(`${backendUrl}/api/check-quiz-analysis/${encodeURIComponent(phoneFormat)}`);
-        if (response.ok) {
-          const data = await response.json();
+        // Run both checks in parallel
+        const [assessmentResponse, roadmapResponse] = await Promise.all([
+          fetch(`${backendUrl}/api/check-quiz-analysis/${encodeURIComponent(phoneFormat)}`),
+          fetch(`${backendUrl}/api/get-user-courses`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ mobile }),
+          })
+        ]);
+        
+        // Process assessment check
+        if (assessmentResponse.ok) {
+          const data = await assessmentResponse.json();
           setAssessmentReportGenerated(data.exists === true);
           console.log('📊 Assessment Report generated:', data.exists);
         }
-      } catch (error) {
-        console.warn('Failed to check assessment report status:', error);
-      }
-    };
-    
-    checkAssessmentReportGenerated();
-  }, []);
-
-  // Check if Roadmap exists for user
-  useEffect(() => {
-    const checkRoadmapExists = async () => {
-      const mobile = getUserMobile();
-      if (!mobile) return;
-      
-      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
-      
-      try {
-        const response = await fetch(`${backendUrl}/api/get-user-courses`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ mobile }),
-        });
         
-        if (response.ok) {
-          const data = await response.json();
+        // Process roadmap check
+        if (roadmapResponse.ok) {
+          const data = await roadmapResponse.json();
           const hasRoadmap = data.success && data.data?.courses && Object.keys(data.data.courses).length > 0;
           setRoadmapExists(hasRoadmap);
           console.log('🗺️ Roadmap exists:', hasRoadmap);
         }
       } catch (error) {
-        console.warn('Failed to check roadmap status:', error);
+        console.warn('Failed to check roadmap section status:', error);
+      } finally {
+        setRoadmapSectionLoading(false);
       }
     };
     
-    checkRoadmapExists();
+    checkRoadmapSectionStatus();
   }, []);
 
   // Fetch skill ratings when mobile is available
@@ -5158,8 +5153,21 @@ const Dashboard = () => {
 
           {activeSection === 'roadmap' && (
             <div className="space-y-6">
-              {/* Show Locked State when Assessment Report is NOT Generated */}
-              {!assessmentReportGenerated ? (
+              {/* Show Loading while checking status */}
+              {roadmapSectionLoading ? (
+                <div className={`${themeClasses.cardBackground} backdrop-blur-sm rounded-2xl p-8 shadow-lg border ${themeClasses.cardBorder}`}>
+                  <div className="text-center py-12">
+                    <div className="w-16 h-16 mx-auto mb-4">
+                      <svg className="animate-spin h-16 w-16 text-amber-500 dark:text-pink-500" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                    </div>
+                    <p className={`${themeClasses.textSecondary}`}>Loading Career Roadmap...</p>
+                  </div>
+                </div>
+              ) : !assessmentReportGenerated ? (
+                /* Show Locked State when Assessment Report is NOT Generated */
                 <div className={`${themeClasses.cardBackground} backdrop-blur-sm rounded-2xl p-8 shadow-lg border-2 ${themeClasses.cardBorder}`}>
                   <div className="text-center py-12">
                     <div className="w-24 h-24 mx-auto mb-6 bg-gradient-to-br from-gray-400 to-gray-600 rounded-full flex items-center justify-center shadow-lg">
