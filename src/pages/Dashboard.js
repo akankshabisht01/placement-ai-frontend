@@ -8077,6 +8077,62 @@ const Dashboard = () => {
           {/* Certifications Section */}
           {activeSection === 'certifications' && (
             <div className="space-y-8">
+              {/* Show loading while checking roadmap status */}
+              {roadmapSectionLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+                  <span className={`ml-4 ${themeClasses.textSecondary}`}>Checking status...</span>
+                </div>
+              ) : !roadmapExists ? (
+                /* Locked state - roadmap not generated */
+                <div className="bg-gradient-to-br from-gray-50 to-slate-50 dark:from-gray-900/50 dark:to-slate-900/50 rounded-2xl p-8 border-2 border-gray-300 dark:border-gray-700">
+                  <div className="flex flex-col items-center text-center gap-4">
+                    <div className="w-20 h-20 bg-gradient-to-br from-gray-400 to-gray-500 rounded-full flex items-center justify-center shadow-lg">
+                      <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h3 className={`text-2xl font-bold ${themeClasses.textPrimary} mb-2`}>
+                        Certifications Locked
+                      </h3>
+                      <p className={`text-lg ${themeClasses.textSecondary} mb-4`}>
+                        Generate your Career Roadmap first to unlock Certifications
+                      </p>
+                      <div className={`${themeClasses.cardBackground} border ${themeClasses.cardBorder} rounded-xl p-4 mb-4`}>
+                        <p className={`${themeClasses.textPrimary} text-sm`}>
+                          Certifications are personalized based on your Career Roadmap. To access them:
+                        </p>
+                        <ol className="mt-3 space-y-2 text-left">
+                          <li className="flex items-start gap-2">
+                            <span className="text-purple-500 font-bold">1.</span>
+                            <span className={themeClasses.textPrimary}>Complete your <strong>Skills Test</strong></span>
+                          </li>
+                          <li className="flex items-start gap-2">
+                            <span className="text-purple-500 font-bold">2.</span>
+                            <span className={themeClasses.textPrimary}>View your <strong>Assessment Report</strong></span>
+                          </li>
+                          <li className="flex items-start gap-2">
+                            <span className="text-purple-500 font-bold">3.</span>
+                            <span className={themeClasses.textPrimary}>Generate your <strong>Career Roadmap</strong></span>
+                          </li>
+                        </ol>
+                      </div>
+                      <button
+                        onClick={() => setActiveSection('roadmap')}
+                        className="px-6 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 flex items-center gap-2 mx-auto"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+                        </svg>
+                        Go to Career Roadmap
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+              /* Show normal certifications content when roadmap exists */
+              <>
               {/* Header */}
               <div className={`bg-white/80 dark:bg-[#1e1a2e]/80 backdrop-blur-sm rounded-2xl p-8 shadow-lg border ${themeClasses.cardBorder}/50 dark:border-pink-500/20`}>
                 <div className="flex items-center justify-between mb-6">
@@ -8223,6 +8279,8 @@ const Dashboard = () => {
                   </div>
                 )}
               </div>
+              </>
+              )}
             </div>
           )}
             </div>
