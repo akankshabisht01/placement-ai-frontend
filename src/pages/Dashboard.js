@@ -534,6 +534,8 @@ const Dashboard = () => {
   const [testAvailable, setTestAvailable] = useState(false);
   const [skillTestCompleted, setSkillTestCompleted] = useState(false);
   const [assessmentReportGenerated, setAssessmentReportGenerated] = useState(false);
+  const [roadmapExists, setRoadmapExists] = useState(false);
+  const [generatingRoadmap, setGeneratingRoadmap] = useState(false);
   const [weeklyTestLoading, setWeeklyTestLoading] = useState(false);
   const [weeklyTestMessage, setWeeklyTestMessage] = useState(null);
   const [showTimerModal, setShowTimerModal] = useState(false);
@@ -892,6 +894,35 @@ const Dashboard = () => {
     };
     
     checkAssessmentReportGenerated();
+  }, []);
+
+  // Check if Roadmap exists for user
+  useEffect(() => {
+    const checkRoadmapExists = async () => {
+      const mobile = getUserMobile();
+      if (!mobile) return;
+      
+      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
+      
+      try {
+        const response = await fetch(`${backendUrl}/api/get-user-courses`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ mobile }),
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          const hasRoadmap = data.success && data.data?.courses && Object.keys(data.data.courses).length > 0;
+          setRoadmapExists(hasRoadmap);
+          console.log('🗺️ Roadmap exists:', hasRoadmap);
+        }
+      } catch (error) {
+        console.warn('Failed to check roadmap status:', error);
+      }
+    };
+    
+    checkRoadmapExists();
   }, []);
 
   // Fetch skill ratings when mobile is available
@@ -5161,17 +5192,112 @@ const Dashboard = () => {
                     </div>
                     <h2 className={`text-2xl font-bold ${themeClasses.textPrimary} mb-2`}>Career Roadmaps</h2>
                     <p className={`${themeClasses.textSecondary} mb-6`}>
-                      View your personalized learning roadmaps based on your job role skills and career goals.
+                      {roadmapExists 
+                        ? 'View your personalized learning roadmaps based on your job role skills and career goals.'
+                        : 'Generate your personalized learning roadmap based on your skills assessment results.'}
                     </p>
-                    <Link
-                      to="/roadmap"
-                      className={`inline-flex items-center px-6 py-3 ${themeClasses.buttonPrimary} text-white font-semibold rounded-xl transition-colors shadow-lg hover:shadow-xl`}
-                    >
-                      <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                      </svg>
-                      View Career Roadmaps
-                    </Link>
+                    
+                    {/* Show Generate Roadmap button when roadmap doesn't exist */}
+                    {!roadmapExists && (
+                      <button
+                        onClick={async () => {
+                          const mobile = getUserMobile();
+                          if (!mobile) {
+                            alert('Mobile number not found. Please sign in first.');
+                            return;
+                          }
+                          
+                          setGeneratingRoadmap(true);
+                          
+                          try {
+                            const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
+                            console.log('🚀 Generating roadmap for:', mobile);
+                            
+                            // Trigger roadmap webhook
+                            const response = await fetch(`${backendUrl}/api/notify-answer-response`, {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ mobile, action: 'roadmap_click' })
+                            });
+                            
+                            const result = await response.json();
+                            console.log('✅ Roadmap webhook response:', result);
+                            
+                            if (result.success) {
+                              // Poll for courses in Course collection
+                              let attempts = 0;
+                              const maxAttempts = 24; // 24 attempts x 5 seconds = 120 seconds
+                              let coursesFound = false;
+                              
+                              while (attempts < maxAttempts && !coursesFound) {
+                                await new Promise(resolve => setTimeout(resolve, 5000));
+                                attempts++;
+                                console.log(`🔄 Checking for roadmap... (Attempt ${attempts}/${maxAttempts})`);
+                                
+                                const checkResponse = await fetch(`${backendUrl}/api/get-user-courses`, {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({ mobile }),
+                                });
+                                
+                                const checkData = await checkResponse.json();
+                                
+                                if (checkData.success && checkData.data?.courses && 
+                                    Object.keys(checkData.data.courses).length > 0) {
+                                  console.log('✅ Roadmap generated successfully!');
+                                  coursesFound = true;
+                                  setRoadmapExists(true);
+                                  break;
+                                }
+                              }
+                              
+                              if (!coursesFound) {
+                                alert('Roadmap generation is taking longer than expected. Please try again in a few moments.');
+                              }
+                            } else {
+                              alert('Failed to generate roadmap. Please try again.');
+                            }
+                          } catch (error) {
+                            console.error('Error generating roadmap:', error);
+                            alert('Error generating roadmap. Please try again.');
+                          } finally {
+                            setGeneratingRoadmap(false);
+                          }
+                        }}
+                        disabled={generatingRoadmap}
+                        className={`inline-flex items-center px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-xl transition-colors shadow-lg hover:shadow-xl mb-4 ${generatingRoadmap ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      >
+                        {generatingRoadmap ? (
+                          <>
+                            <svg className="animate-spin h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            Generating Roadmap...
+                          </>
+                        ) : (
+                          <>
+                            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                            </svg>
+                            Generate Roadmap
+                          </>
+                        )}
+                      </button>
+                    )}
+                    
+                    {/* Show View Career Roadmaps button when roadmap exists */}
+                    {roadmapExists && (
+                      <Link
+                        to="/roadmap"
+                        className={`inline-flex items-center px-6 py-3 ${themeClasses.buttonPrimary} text-white font-semibold rounded-xl transition-colors shadow-lg hover:shadow-xl`}
+                      >
+                        <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                        </svg>
+                        View Career Roadmaps
+                      </Link>
+                    )}
                   </div>
                 </div>
               )}
