@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import logo from './assets/logo.png';
 import { Link, NavLink, useLocation } from 'react-router-dom';
-import { Home, User, Target, BarChart3, LayoutDashboard, Bot, Info, MessageCircle, Zap, Moon, Sun, MonitorSmartphone, FileCheck, UserCircle2, CreditCard, ChevronDown, CloudMoon, Cloud, Sparkles, Sunrise } from 'lucide-react';
+import { Home, User, Target, BarChart3, Rocket, LayoutDashboard, Bot, Info, MessageCircle, Zap, Moon, Sun, MonitorSmartphone, FileCheck, UserCircle2, CreditCard, ChevronDown, CloudMoon, Cloud, Sparkles, Sunrise } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
 import { getThemeClasses } from '../../utils/themeHelpers';
 
@@ -98,6 +98,7 @@ const Navbar = () => {
     { name: 'Predict', path: '/predict', icon: BarChart3 },
     { name: 'ATS', path: '/ats', icon: FileCheck },
     { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
+    { name: 'Interview', path: '/interview', icon: Mic },
     { name: 'Plans', path: '/plans', icon: CreditCard },
     { name: 'Domains', path: '/domains', icon: Target },
     { name: 'AI Chat', path: '/chatbot', icon: Bot },

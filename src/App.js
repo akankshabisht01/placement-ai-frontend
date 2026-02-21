@@ -37,6 +37,7 @@ import TestAnalysisReport from './pages/TestAnalysisReport';
 import Plans from './pages/Plans';
 import PaymentSuccess from './pages/PaymentSuccess';
 import AnuvaadAI from './pages/AnuvaadAI';
+import AIInterview from './pages/AIInterview';
 
 // Example Components (for demo purposes)
 import ComponentShowcase from './components/examples/ComponentShowcase';
@@ -103,6 +104,7 @@ const AppLayout = () => {
         <Route path="/feedback" element={<CustomerFeedback />} />
         <Route path="/payment-success" element={<PaymentSuccess />} />
         <Route path="/anuvaad-ai" element={<AnuvaadAI />} />
+        <Route path="/interview" element={<ProtectedRoute><AIInterview /></ProtectedRoute>} />
         
         {/* Modern UI Examples - Remove these routes in production */}
         <Route path="/component-showcase" element={<ComponentShowcase />} />

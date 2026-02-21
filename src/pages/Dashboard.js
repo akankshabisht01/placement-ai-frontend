@@ -5,6 +5,103 @@ import { useAuth } from '../contexts/AuthContext';
 import { LoadingFactsInline } from '../components/LoadingWithFacts';
 import { useTheme } from '../contexts/ThemeContext';
 import { getThemeClasses } from '../utils/themeHelpers';
+import { API_BASE_URL } from '../config/api';
+
+// Interview History Component - Shows past interview sessions
+const InterviewHistory = ({ getUserMobile, themeClasses, navigate }) => {
+  const [interviews, setInterviews] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const mobile = getUserMobile();
+    if (mobile) {
+      fetch(`${API_BASE_URL}/api/interview/history/${mobile}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) setInterviews(data.interviews || []);
+          setLoading(false);
+        })
+        .catch(() => setLoading(false));
+    } else {
+      setLoading(false);
+    }
+  }, [getUserMobile]);
+
+  if (loading) {
+    return (
+      <div className={`${themeClasses.cardBackground} rounded-2xl p-6 border ${themeClasses.cardBorder}`}>
+        <div className="flex items-center justify-center py-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+          <span className={`ml-3 ${themeClasses.textSecondary}`}>Loading interview history...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (interviews.length === 0) {
+    return (
+      <div className={`${themeClasses.cardBackground} rounded-2xl p-6 border ${themeClasses.cardBorder} text-center`}>
+        <div className="text-4xl mb-3">🎯</div>
+        <h3 className={`text-lg font-semibold ${themeClasses.textPrimary} mb-2`}>No Interviews Yet</h3>
+        <p className={`text-sm ${themeClasses.textSecondary} mb-4`}>Start your first AI mock interview to practice and improve your skills!</p>
+        <button onClick={() => navigate('/interview')}
+          className={`${themeClasses.buttonPrimary} font-semibold py-2.5 px-6 rounded-xl text-sm`}>
+          Take Your First Interview
+        </button>
+      </div>
+    );
+  }
+
+  const totalInterviews = interviews.length;
+  const avgScore = interviews.reduce((sum, iv) => sum + (iv.feedback?.overall_score || 0), 0) / totalInterviews;
+  const bestScore = Math.max(...interviews.map(iv => iv.feedback?.overall_score || 0));
+
+  return (
+    <div className={`${themeClasses.cardBackground} rounded-2xl p-6 border ${themeClasses.cardBorder}`}>
+      <h3 className={`text-lg font-semibold ${themeClasses.textPrimary} mb-4`}>📋 Interview History</h3>
+      
+      {/* Stats */}
+      <div className="grid grid-cols-3 gap-3 mb-5">
+        <div className={`text-center p-3 rounded-xl ${themeClasses.sectionBackground}`}>
+          <div className={`text-xl font-bold ${themeClasses.textPrimary}`}>{totalInterviews}</div>
+          <div className={`text-xs ${themeClasses.textSecondary}`}>Total</div>
+        </div>
+        <div className={`text-center p-3 rounded-xl ${themeClasses.sectionBackground}`}>
+          <div className={`text-xl font-bold ${themeClasses.textPrimary}`}>{Math.round(avgScore)}</div>
+          <div className={`text-xs ${themeClasses.textSecondary}`}>Avg Score</div>
+        </div>
+        <div className={`text-center p-3 rounded-xl ${themeClasses.sectionBackground}`}>
+          <div className={`text-xl font-bold text-green-500`}>{bestScore}</div>
+          <div className={`text-xs ${themeClasses.textSecondary}`}>Best</div>
+        </div>
+      </div>
+
+      {/* Recent interviews */}
+      <div className="space-y-3">
+        {interviews.slice(0, 5).map((iv, i) => {
+          const score = iv.feedback?.overall_score || 0;
+          const date = iv.started_at ? new Date(iv.started_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A';
+          return (
+            <div key={i} className={`flex items-center justify-between p-3 rounded-xl ${themeClasses.sectionBackground} hover:scale-[1.01] transition-transform`}>
+              <div className="flex items-center gap-3">
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm ${score >= 70 ? 'bg-green-500/20 text-green-500' : score >= 50 ? 'bg-yellow-500/20 text-yellow-500' : 'bg-red-500/20 text-red-500'}`}>
+                  {score}
+                </div>
+                <div>
+                  <p className={`text-sm font-medium ${themeClasses.textPrimary}`}>{iv.position || 'Software Developer'}</p>
+                  <p className={`text-xs ${themeClasses.textSecondary}`}>{date} • {iv.feedback?.questions_answered || 0} questions</p>
+                </div>
+              </div>
+              <span className={`text-xs font-medium px-2 py-1 rounded-lg ${score >= 70 ? 'bg-green-500/10 text-green-500' : score >= 50 ? 'bg-yellow-500/10 text-yellow-500' : 'bg-red-500/10 text-red-500'}`}>
+                {score >= 70 ? 'Good' : score >= 50 ? 'Average' : 'Needs Work'}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
 
 // Monthly Retake Button Component - Shows retake button if score < 50%
 const MonthlyRetakeButton = ({ getUserMobile, month, onAnalysisClick }) => {
@@ -508,7 +605,9 @@ const Dashboard = () => {
           'overview': 'overview',
           'resume': 'resume',
           'roadmap': 'roadmap',
-          'progress': 'progress'
+          'progress': 'progress',
+          'interview': 'interview',
+          'ai-interview': 'interview'
         };
         return mapping[s] || s;
       }
@@ -1288,7 +1387,9 @@ const Dashboard = () => {
           'overview': 'overview',
           'resume': 'resume',
           'roadmap': 'roadmap',
-          'progress': 'progress'
+          'progress': 'progress',
+          'interview': 'interview',
+          'ai-interview': 'interview'
         };
         const target = mapping[s] || s;
         setActiveSection(target);
@@ -3318,6 +3419,11 @@ const Dashboard = () => {
       icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-4l-2-2H5a2 2 0 00-2 2z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10v6m-3-3h6" /></svg>
     },
     { 
+      id: 'interview', 
+      label: 'AI Interview', 
+      icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" /></svg>
+    },
+    { 
       id: 'progress', 
       label: 'Progress Tracking', 
       icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
@@ -3635,6 +3741,7 @@ const Dashboard = () => {
                         {item.id === 'skilltest' && 'Initial assessment'}
                         {item.id === 'roadmap' && 'Career path'}
                         {item.id === 'weeklytest' && 'Weekly tests'}
+                        {item.id === 'interview' && 'Mock interviews'}
                         {item.id === 'progress' && 'Track growth'}
                       </span>
                     </div>
@@ -7184,6 +7291,77 @@ const Dashboard = () => {
                     )}
                   </div>
                 )}
+              </div>
+            </div>
+          )}
+
+          {activeSection === 'interview' && (
+            <div className="space-y-6">
+              {/* Interview Section Header */}
+              <div className={`bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-950/30 dark:to-indigo-950/30 rounded-2xl p-6 border border-purple-100 dark:border-purple-900/50`}>
+                <div className="flex items-center gap-3 mb-5">
+                  <div className={`w-14 h-14 ${themeClasses.gradient} rounded-xl flex items-center justify-center shadow-lg`}>
+                    <svg className={`w-7 h-7 ${themeClasses.textPrimary}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h2 className={`text-2xl font-bold ${themeClasses.textPrimary}`}>AI Mock Interview</h2>
+                    <p className={`text-sm ${themeClasses.textSecondary}`}>Practice interviews with AI and receive instant feedback</p>
+                  </div>
+                </div>
+
+                {/* Start Interview Button */}
+                <button
+                  onClick={() => navigate('/interview')}
+                  className={`w-full sm:w-auto ${themeClasses.buttonPrimary} font-semibold py-3 px-8 rounded-xl transition-all duration-200 flex items-center justify-center gap-3 shadow-lg hover:shadow-xl hover:scale-[1.02]`}
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  Start New Interview
+                </button>
+              </div>
+
+              {/* Features Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {[
+                  { icon: '🎤', title: 'Voice Powered', desc: 'Speak naturally with the AI interviewer using your microphone. Real-time speech recognition.', color: 'from-blue-500/10 to-cyan-500/10 border-blue-200 dark:border-blue-800' },
+                  { icon: '🧠', title: 'Smart Questions', desc: 'AI generates role-specific questions that adapt based on your responses and experience.', color: 'from-purple-500/10 to-pink-500/10 border-purple-200 dark:border-purple-800' },
+                  { icon: '📊', title: 'Instant Feedback', desc: 'Get detailed scoring on communication, technical skills, and areas for improvement.', color: 'from-green-500/10 to-emerald-500/10 border-green-200 dark:border-green-800' }
+                ].map((feature, i) => (
+                  <div key={i} className={`bg-gradient-to-br ${feature.color} rounded-xl p-5 border`}>
+                    <div className="text-3xl mb-3">{feature.icon}</div>
+                    <h3 className={`font-semibold ${themeClasses.textPrimary} mb-1`}>{feature.title}</h3>
+                    <p className={`text-sm ${themeClasses.textSecondary}`}>{feature.desc}</p>
+                  </div>
+                ))}
+              </div>
+
+              {/* Interview History */}
+              <InterviewHistory getUserMobile={getUserMobile} themeClasses={themeClasses} navigate={navigate} />
+
+              {/* Tips */}
+              <div className={`${themeClasses.cardBackground} rounded-2xl p-6 border ${themeClasses.cardBorder}`}>
+                <h3 className={`text-lg font-semibold ${themeClasses.textPrimary} mb-4 flex items-center gap-2`}>
+                  💡 Interview Tips
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {[
+                    'Use the STAR method (Situation, Task, Action, Result) for behavioral questions',
+                    'Speak clearly and at a moderate pace for best voice recognition',
+                    'Take a moment to think before answering complex questions',
+                    'Provide specific examples from your experience',
+                    'Practice in a quiet environment for best audio quality',
+                    'Review your feedback after each interview to track improvement'
+                  ].map((tip, i) => (
+                    <div key={i} className={`flex items-start gap-2 p-3 rounded-lg ${themeClasses.sectionBackground}`}>
+                      <span className="text-amber-500 mt-0.5 flex-shrink-0">✦</span>
+                      <span className={`text-sm ${themeClasses.textSecondary}`}>{tip}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           )}
