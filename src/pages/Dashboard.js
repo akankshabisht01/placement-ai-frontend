@@ -739,6 +739,8 @@ const Dashboard = () => {
   const [projectTitle, setProjectTitle] = useState('');
   const [projectDescription, setProjectDescription] = useState('');
   const [projectFile, setProjectFile] = useState([]);
+  const [projectRepoLink, setProjectRepoLink] = useState('');
+  const [submissionType, setSubmissionType] = useState('file'); // 'file' or 'repo'
   const [hoveredFileIndex, setHoveredFileIndex] = useState(null);
   const [submittingProject, setSubmittingProject] = useState(false);
   const [projectHistory, setProjectHistory] = useState([]);
@@ -747,6 +749,7 @@ const Dashboard = () => {
   const [projectSubmitError, setProjectSubmitError] = useState(null);
   const [projectEvaluation, setProjectEvaluation] = useState(null);
   const [showEvaluation, setShowEvaluation] = useState(false);
+  const [generatingDescription, setGeneratingDescription] = useState(false);
   
   // Current Month Project states
   const [currentMonthProject, setCurrentMonthProject] = useState(null);
@@ -1063,6 +1066,51 @@ const Dashboard = () => {
     setProjectFile(projectFile.filter((_, index) => index !== indexToRemove));
   };
   
+  // Generate description using AI
+  const handleGenerateDescription = async () => {
+    if (!projectTitle.trim()) {
+      setProjectSubmitError('Please enter a project title first');
+      return;
+    }
+    
+    setGeneratingDescription(true);
+    setProjectSubmitError(null);
+    
+    try {
+      const formData = new FormData();
+      formData.append('title', projectTitle.trim());
+      formData.append('mobile', getUserMobile());
+      
+      // Append files if available
+      if (projectFile && projectFile.length > 0) {
+        for (let i = 0; i < projectFile.length; i++) {
+          formData.append('files[]', projectFile[i]);
+        }
+      }
+      
+      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000'}/api/generate-project-description`, {
+        method: 'POST',
+        body: formData
+      });
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        setProjectDescription(result.data.description);
+        console.log('✅ AI generated description:', result.data.description);
+        console.log('📊 Analyzed', result.data.filesAnalyzed, 'files');
+        console.log('🔧 Detected:', result.data.detectedTechnologies);
+      } else {
+        setProjectSubmitError(result.message || 'Failed to generate description');
+      }
+    } catch (error) {
+      console.error('Error generating description:', error);
+      setProjectSubmitError('Error generating description. Please try again.');
+    } finally {
+      setGeneratingDescription(false);
+    }
+  };
+  
   // Submit project for evaluation
   const handleProjectSubmit = async (e) => {
     e.preventDefault();
@@ -1070,6 +1118,17 @@ const Dashboard = () => {
     // Validation
     if (!projectTitle.trim() || !projectDescription.trim()) {
       setProjectSubmitError('Please provide both project title and description');
+      return;
+    }
+
+    // Additional validation based on submission type
+    if (submissionType === 'repo' && !projectRepoLink.trim()) {
+      setProjectSubmitError('Please provide a repository link');
+      return;
+    }
+
+    if (submissionType === 'file' && projectFile.length === 0) {
+      setProjectSubmitError('Please upload at least one file or switch to repository link option');
       return;
     }
     
@@ -1082,12 +1141,16 @@ const Dashboard = () => {
       formData.append('mobile', getUserMobile());
       formData.append('title', projectTitle.trim());
       formData.append('description', projectDescription.trim());
+      formData.append('submissionType', submissionType);
       
-      if (projectFile && projectFile.length > 0) {
+      if (submissionType === 'file' && projectFile && projectFile.length > 0) {
         // Append multiple files
         for (let i = 0; i < projectFile.length; i++) {
           formData.append('files[]', projectFile[i]);
         }
+      } else if (submissionType === 'repo' && projectRepoLink.trim()) {
+        // Append repository link
+        formData.append('repoLink', projectRepoLink.trim());
       }
       
       const response = await fetch(`${process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000'}/api/submit-project`, {
@@ -1123,6 +1186,7 @@ const Dashboard = () => {
         setProjectTitle('');
         setProjectDescription('');
         setProjectFile([]);
+        setProjectRepoLink('');
         if (document.getElementById('project-file-input')) {
           document.getElementById('project-file-input').value = '';
         }
@@ -6487,22 +6551,20 @@ const Dashboard = () => {
 
                 {/* How to Use - Steps Guide */}
                 <div className={`${themeClasses.sectionBackground} rounded-xl p-5 mb-6 border-2 ${themeClasses.cardBorder} shadow-lg`}>
-                  <div className="flex items-center gap-2 mb-4">
-                    <div className={`w-8 h-8 ${themeClasses.accent} rounded-lg flex items-center justify-center animate-pulse`}>
-                      <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                    </div>
-                    <h4 className={`font-bold text-lg ${themeClasses.textPrimary}`}>📋 Submission Guide</h4>
-                  </div>
-                  <ol className="space-y-3 text-sm">
+                  <h3 className={`text-base font-bold ${themeClasses.textPrimary} mb-4 flex items-center gap-2`}>
+                    <svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    How to Submit Your Project
+                  </h3>
+                  <ol className="space-y-3">
                     <li className={`flex items-start gap-3 ${themeClasses.cardBackground} p-3 rounded-lg border ${themeClasses.cardBorder}`}>
                       <span className={`flex-shrink-0 w-7 h-7 ${themeClasses.gradient} text-white rounded-full flex items-center justify-center text-sm font-bold shadow-md`}>1</span>
                       <span className={themeClasses.textPrimary}><strong className={themeClasses.accent}>Add Project Title & Description</strong> - Give your project a meaningful name and brief description</span>
                     </li>
                     <li className={`flex items-start gap-3 ${themeClasses.cardBackground} p-3 rounded-lg border ${themeClasses.cardBorder}`}>
                       <span className={`flex-shrink-0 w-7 h-7 ${themeClasses.gradient} text-white rounded-full flex items-center justify-center text-sm font-bold shadow-md`}>2</span>
-                      <span className={themeClasses.textPrimary}><strong className={themeClasses.accent}>Upload Your Files</strong> - Upload code files (.py, .js, .java), datasets (.csv, .xlsx), or dashboards (.pbix, .html)</span>
+                      <span className={themeClasses.textPrimary}><strong className={themeClasses.accent}>Choose Submission Method</strong> - Either upload files (code, datasets, screenshots) or share your GitHub/GitLab repository link</span>
                     </li>
                     <li className={`flex items-start gap-3 ${themeClasses.cardBackground} p-3 rounded-lg border ${themeClasses.cardBorder}`}>
                       <span className={`flex-shrink-0 w-7 h-7 ${themeClasses.gradient} text-white rounded-full flex items-center justify-center text-sm font-bold shadow-md`}>3</span>
@@ -6532,121 +6594,295 @@ const Dashboard = () => {
 
                     {/* Project Description */}
                     <div>
-                      <label className={`block text-sm font-semibold ${themeClasses.textPrimary} mb-2`}>
-                        Project Description <span className="text-red-500">*</span>
-                      </label>
+                      <div className="flex items-center justify-between mb-2">
+                        <label className={`block text-sm font-semibold ${themeClasses.textPrimary}`}>
+                          Project Description <span className="text-red-500">*</span>
+                        </label>
+                        <button
+                          type="button"
+                          onClick={handleGenerateDescription}
+                          disabled={generatingDescription || !projectTitle.trim()}
+                          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                            generatingDescription || !projectTitle.trim()
+                              ? 'bg-gray-300 dark:bg-gray-700 text-gray-500 cursor-not-allowed'
+                              : 'bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white shadow-md hover:shadow-lg'
+                          }`}
+                          title={!projectTitle.trim() ? 'Enter project title first' : 'Generate description using AI'}
+                        >
+                          {generatingDescription ? (
+                            <>
+                              <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                              </svg>
+                              Generating...
+                            </>
+                          ) : (
+                            <>
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                              </svg>
+                              AI
+                            </>
+                          )}
+                        </button>
+                      </div>
                       <textarea
                         value={projectDescription}
                         onChange={(e) => setProjectDescription(e.target.value)}
-                        placeholder="Describe your project, technologies used, and key features..."
+                        placeholder="Describe your project, technologies used, and key features... or click 'AI' to generate automatically"
                         rows={4}
                         className={`w-full px-4 py-3 rounded-lg border ${themeClasses.cardBorder} ${themeClasses.cardBackground} ${themeClasses.textPrimary} focus:outline-none focus:ring-2 focus:ring-blue-500`}
                       />
+                      <p className={`mt-1 text-xs ${themeClasses.textSecondary}`}>
+                        💡 Tip: Upload files first, then click "AI" to generate a description based on your files and title
+                      </p>
                     </div>
 
-                    {/* File Upload */}
+                    {/* Submission Type Choice */}
                     <div>
-                      <label className={`block text-sm font-semibold ${themeClasses.textPrimary} mb-2`}>
-                        Upload Project Files (Max 10 files)
+                      <label className={`block text-sm font-semibold ${themeClasses.textPrimary} mb-3`}>
+                        Choose Submission Method <span className="text-red-500">*</span>
                       </label>
-                      
-                      {/* Selected Files Display */}
-                      {projectFile.length > 0 && (
-                        <div className="mb-4 grid grid-cols-3 gap-4">
-                          {projectFile.map((file, idx) => {
-                            const isImage = file.type.startsWith('image/');
-                            const imageUrl = isImage ? URL.createObjectURL(file) : null;
-                            const isHovered = hoveredFileIndex === idx;
-                            
-                            return (
-                              <div
-                                key={idx}
-                                className={`relative rounded-lg border ${themeClasses.cardBorder} ${themeClasses.cardBackground} overflow-hidden group`}
-                                onMouseEnter={() => setHoveredFileIndex(idx)}
-                                onMouseLeave={() => setHoveredFileIndex(null)}
-                              >
-                                {/* Thumbnail */}
-                                <div className="w-full h-24 flex items-center justify-center bg-gray-50 dark:bg-gray-800">
-                                  {isImage ? (
-                                    <img 
-                                      src={imageUrl} 
-                                      alt={file.name} 
-                                      className="w-full h-full object-cover"
-                                    />
-                                  ) : (
-                                    <svg className="w-12 h-12 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                    </svg>
-                                  )}
-                                </div>
-                                
-                                {/* File Info */}
-                                <div className="p-2">
-                                  <p className={`text-xs ${themeClasses.textPrimary} truncate`} title={file.name}>
-                                    {file.name}
-                                  </p>
-                                  <p className={`text-xs ${themeClasses.textSecondary}`}>
-                                    {(file.size / 1024).toFixed(1)} KB
-                                  </p>
-                                </div>
-                                
-                                {/* Delete Button */}
-                                <button
-                                  type="button"
-                                  onClick={() => removeFile(idx)}
-                                  className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                                >
-                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                  </svg>
-                                </button>
-                                
-                                {/* Hover Preview for Images */}
-                                {isImage && isHovered && (
-                                  <div className="fixed inset-0 flex items-center justify-center pointer-events-none z-50">
-                                    <img 
-                                      src={imageUrl} 
-                                      alt={file.name} 
-                                      className="max-w-md max-h-96 rounded-lg shadow-2xl border-4 border-white"
-                                    />
-                                  </div>
-                                )}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
-                      
-                      {/* Upload Button */}
-                      <div className={`border-2 border-dashed ${themeClasses.cardBorder} rounded-lg p-6 text-center`}>
-                        <input
-                          type="file"
-                          id="project-file-input"
-                          onChange={handleFileChange}
-                          className="hidden"
-                          multiple
-                          accept=".py,.js,.jsx,.ts,.tsx,.java,.cpp,.c,.html,.css,.csv,.xlsx,.pbix,.zip,.rar,.png,.jpg,.jpeg,.gif,.pdf,.docx,.pptx,.md,.txt,.json,.xml,.yaml,.yml,.env,.gitignore"
-                        />
-                        <label htmlFor="project-file-input" className="cursor-pointer">
-                          <div className="flex flex-col items-center gap-3">
-                            <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center">
-                              <svg className="w-8 h-8 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <div className="grid grid-cols-2 gap-4">
+                        {/* File Upload Option */}
+                        <button
+                          type="button"
+                          onClick={() => setSubmissionType('file')}
+                          className={`relative p-4 rounded-lg border-2 transition-all ${
+                            submissionType === 'file'
+                              ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/30'
+                              : `border-gray-300 dark:border-gray-700 ${themeClasses.cardBackground} hover:border-blue-400`
+                          }`}
+                        >
+                          <div className="flex flex-col items-center gap-2">
+                            <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
+                              submissionType === 'file'
+                                ? 'bg-blue-500 text-white'
+                                : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
+                            }`}>
+                              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                               </svg>
                             </div>
-                            <p className={`font-semibold ${themeClasses.textPrimary}`}>
-                              {projectFile.length > 0 ? 'Add More Files' : 'Click to upload or drag and drop'}
-                            </p>
-                            <p className={`text-xs ${themeClasses.textSecondary}`}>
-                              {projectFile.length}/10 files selected
-                            </p>
-                            <p className={`text-xs ${themeClasses.textSecondary}`}>
-                              Code, Screenshots, Excel, Power BI, PDFs, etc.
-                            </p>
+                            <span className={`font-semibold ${submissionType === 'file' ? 'text-blue-600 dark:text-blue-400' : themeClasses.textPrimary}`}>
+                              Upload Files
+                            </span>
+                            <span className={`text-xs text-center ${themeClasses.textSecondary}`}>
+                              Upload code, screenshots, or documents
+                            </span>
                           </div>
-                        </label>
+                          {submissionType === 'file' && (
+                            <div className="absolute top-2 right-2">
+                              <svg className="w-6 h-6 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                              </svg>
+                            </div>
+                          )}
+                        </button>
+
+                        {/* Repository Link Option */}
+                        <button
+                          type="button"
+                          onClick={() => setSubmissionType('repo')}
+                          className={`relative p-4 rounded-lg border-2 transition-all ${
+                            submissionType === 'repo'
+                              ? 'border-purple-500 bg-purple-50 dark:bg-purple-950/30'
+                              : `border-gray-300 dark:border-gray-700 ${themeClasses.cardBackground} hover:border-purple-400`
+                          }`}
+                        >
+                          <div className="flex flex-col items-center gap-2">
+                            <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
+                              submissionType === 'repo'
+                                ? 'bg-purple-500 text-white'
+                                : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
+                            }`}>
+                              <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                              </svg>
+                            </div>
+                            <span className={`font-semibold ${submissionType === 'repo' ? 'text-purple-600 dark:text-purple-400' : themeClasses.textPrimary}`}>
+                              Repository Link
+                            </span>
+                            <span className={`text-xs text-center ${themeClasses.textSecondary}`}>
+                              Share your GitHub/GitLab repository
+                            </span>
+                          </div>
+                          {submissionType === 'repo' && (
+                            <div className="absolute top-2 right-2">
+                              <svg className="w-6 h-6 text-purple-500" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                              </svg>
+                            </div>
+                          )}
+                        </button>
                       </div>
                     </div>
+
+                    {/* File Upload - shown when submissionType is 'file' */}
+                    {submissionType === 'file' && (
+                      <div>
+                        <label className={`block text-sm font-semibold ${themeClasses.textPrimary} mb-2`}>
+                          Upload Project Files (Max 10 files)
+                        </label>
+                        
+                        {/* Selected Files Display */}
+                        {projectFile.length > 0 && (
+                          <div className="mb-4 grid grid-cols-3 gap-4">
+                            {projectFile.map((file, idx) => {
+                              const isImage = file.type.startsWith('image/');
+                              const imageUrl = isImage ? URL.createObjectURL(file) : null;
+                              const isHovered = hoveredFileIndex === idx;
+                              
+                              return (
+                                <div
+                                  key={idx}
+                                  className={`relative rounded-lg border ${themeClasses.cardBorder} ${themeClasses.cardBackground} overflow-hidden group`}
+                                  onMouseEnter={() => setHoveredFileIndex(idx)}
+                                  onMouseLeave={() => setHoveredFileIndex(null)}
+                                >
+                                  {/* Thumbnail */}
+                                  <div className="w-full h-24 flex items-center justify-center bg-gray-50 dark:bg-gray-800">
+                                    {isImage ? (
+                                      <img 
+                                        src={imageUrl} 
+                                        alt={file.name} 
+                                        className="w-full h-full object-cover"
+                                      />
+                                    ) : (
+                                      <svg className="w-12 h-12 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                      </svg>
+                                    )}
+                                  </div>
+                                  
+                                  {/* File Info */}
+                                  <div className="p-2">
+                                    <p className={`text-xs ${themeClasses.textPrimary} truncate`} title={file.name}>
+                                      {file.name}
+                                    </p>
+                                    <p className={`text-xs ${themeClasses.textSecondary}`}>
+                                      {(file.size / 1024).toFixed(1)} KB
+                                    </p>
+                                  </div>
+                                  
+                                  {/* Delete Button */}
+                                  <button
+                                    type="button"
+                                    onClick={() => removeFile(idx)}
+                                    className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                                  >
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                  </button>
+                                  
+                                  {/* Hover Preview for Images */}
+                                  {isImage && isHovered && (
+                                    <div className="fixed inset-0 flex items-center justify-center pointer-events-none z-50">
+                                      <img 
+                                        src={imageUrl} 
+                                        alt={file.name} 
+                                        className="max-w-md max-h-96 rounded-lg shadow-2xl border-4 border-white"
+                                      />
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                        
+                        {/* Upload Button */}
+                        <div className={`border-2 border-dashed ${themeClasses.cardBorder} rounded-lg p-6 text-center`}>
+                          <input
+                            type="file"
+                            id="project-file-input"
+                            onChange={handleFileChange}
+                            className="hidden"
+                            multiple
+                            accept=".py,.js,.jsx,.ts,.tsx,.java,.cpp,.c,.html,.css,.csv,.xlsx,.pbix,.zip,.rar,.png,.jpg,.jpeg,.gif,.pdf,.docx,.pptx,.md,.txt,.json,.xml,.yaml,.yml,.env,.gitignore"
+                          />
+                          <label htmlFor="project-file-input" className="cursor-pointer">
+                            <div className="flex flex-col items-center gap-3">
+                              <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center">
+                                <svg className="w-8 h-8 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                                </svg>
+                              </div>
+                              <p className={`font-semibold ${themeClasses.textPrimary}`}>
+                                {projectFile.length > 0 ? 'Add More Files' : 'Click to upload or drag and drop'}
+                              </p>
+                              <p className={`text-xs ${themeClasses.textSecondary}`}>
+                                {projectFile.length}/10 files selected
+                              </p>
+                              <p className={`text-xs ${themeClasses.textSecondary}`}>
+                                Code, Screenshots, Excel, Power BI, PDFs, etc.
+                              </p>
+                            </div>
+                          </label>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Repository Link Input - shown when submissionType is 'repo' */}
+                    {submissionType === 'repo' && (
+                      <div>
+                        <label className={`block text-sm font-semibold ${themeClasses.textPrimary} mb-2`}>
+                          Repository URL <span className="text-red-500">*</span>
+                        </label>
+                        <div className="relative">
+                          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                            <svg className="w-5 h-5 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
+                              <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                            </svg>
+                          </div>
+                          <input
+                            type="url"
+                            value={projectRepoLink}
+                            onChange={(e) => setProjectRepoLink(e.target.value)}
+                            placeholder="https://github.com/username/repository"
+                            className={`w-full pl-12 pr-4 py-3 rounded-lg border ${themeClasses.cardBorder} ${themeClasses.cardBackground} ${themeClasses.textPrimary} focus:outline-none focus:ring-2 focus:ring-purple-500`}
+                          />
+                        </div>
+                        <p className={`mt-2 text-xs ${themeClasses.textSecondary}`}>
+                          💡 Tip: Paste your GitHub, GitLab, Bitbucket, or any public repository link
+                        </p>
+                        <div className={`mt-3 ${themeClasses.sectionBackground} rounded-lg p-3 border ${themeClasses.cardBorder}`}>
+                          <div className="space-y-2">
+                            <div>
+                              <p className={`text-xs ${themeClasses.textSecondary} mb-2`}>
+                                <strong>Requirements:</strong>
+                              </p>
+                              <ul className={`text-xs ${themeClasses.textSecondary} space-y-1 ml-4`}>
+                                <li>• Repository must be <strong className="text-purple-600 dark:text-purple-400">public</strong></li>
+                                <li>• Maximum size: <strong className="text-purple-600 dark:text-purple-400">1 GB</strong></li>
+                                <li>• Repository will be temporarily cloned for analysis then deleted</li>
+                              </ul>
+                            </div>
+                            <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
+                              <p className={`text-xs ${themeClasses.textSecondary} mb-2`}>
+                                <strong>Supported platforms:</strong>
+                              </p>
+                              <div className="flex flex-wrap gap-2">
+                                <span className={`px-2 py-1 rounded text-xs ${themeClasses.cardBackground} border ${themeClasses.cardBorder}`}>
+                                  GitHub
+                                </span>
+                                <span className={`px-2 py-1 rounded text-xs ${themeClasses.cardBackground} border ${themeClasses.cardBorder}`}>
+                                  GitLab
+                                </span>
+                                <span className={`px-2 py-1 rounded text-xs ${themeClasses.cardBackground} border ${themeClasses.cardBorder}`}>
+                                  Bitbucket
+                                </span>
+                                <span className={`px-2 py-1 rounded text-xs ${themeClasses.cardBackground} border ${themeClasses.cardBorder}`}>
+                                  Other Git repos
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
 
                     {/* Error Message */}
                     {projectSubmitError && (
@@ -6658,9 +6894,9 @@ const Dashboard = () => {
                     {/* Submit Button */}
                     <button
                       onClick={handleProjectSubmit}
-                      disabled={submittingProject || !projectTitle.trim() || !projectDescription.trim()}
+                      disabled={submittingProject || !projectTitle.trim() || !projectDescription.trim() || (submissionType === 'repo' && !projectRepoLink.trim())}
                       className={`w-full py-4 rounded-lg font-semibold transition-all ${
-                        submittingProject || !projectTitle.trim() || !projectDescription.trim()
+                        submittingProject || !projectTitle.trim() || !projectDescription.trim() || (submissionType === 'repo' && !projectRepoLink.trim())
                           ? 'bg-gray-400 cursor-not-allowed'
                           : 'bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600'
                       } text-white shadow-lg`}
