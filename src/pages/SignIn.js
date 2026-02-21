@@ -25,6 +25,16 @@ const SignIn = () => {
   const [otpMessage, setOtpMessage] = useState('');
   const [errors, setErrors] = useState({});
   const [userEmail, setUserEmail] = useState(''); // Store actual email for OTP
+  
+  // Forgot password states
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [forgotPasswordStep, setForgotPasswordStep] = useState('email'); // 'email', 'otp', 'newPassword'
+  const [forgotPasswordEmail, setForgotPasswordEmail] = useState('');
+  const [forgotPasswordOtp, setForgotPasswordOtp] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [forgotPasswordMessage, setForgotPasswordMessage] = useState('');
+  const [forgotPasswordError, setForgotPasswordError] = useState('');
 
   const domainId = searchParams.get('domain');
   const roleId = searchParams.get('role');
@@ -79,6 +89,117 @@ const SignIn = () => {
     setOtp('');
     setIsVerified(false);
     setUserEmail('');
+  };
+
+  // Forgot Password Handlers
+  const handleForgotPasswordClick = () => {
+    setShowForgotPassword(true);
+    setForgotPasswordStep('email');
+    setForgotPasswordEmail('');
+    setForgotPasswordOtp('');
+    setNewPassword('');
+    setConfirmPassword('');
+    setForgotPasswordMessage('');
+    setForgotPasswordError('');
+  };
+
+  const handleCloseForgotPassword = () => {
+    setShowForgotPassword(false);
+    setForgotPasswordStep('email');
+    setForgotPasswordError('');
+    setForgotPasswordMessage('');
+  };
+
+  const handleSendResetOTP = async () => {
+    if (!forgotPasswordEmail.trim()) {
+      setForgotPasswordError('Please enter your email address');
+      return;
+    }
+    
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(forgotPasswordEmail)) {
+      setForgotPasswordError('Please enter a valid email address');
+      return;
+    }
+
+    setIsLoading(true);
+    setForgotPasswordError('');
+    setForgotPasswordMessage('');
+
+    try {
+      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
+      const response = await fetch(`${backendUrl}/api/forgot-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: forgotPasswordEmail })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setForgotPasswordMessage('OTP sent to your email');
+        setForgotPasswordStep('otp');
+        startCountdown();
+      } else {
+        setForgotPasswordError(data.message || 'Failed to send OTP');
+      }
+    } catch (error) {
+      console.error('Error sending reset OTP:', error);
+      setForgotPasswordError('Failed to send OTP. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleResetPassword = async () => {
+    // Validate OTP
+    if (!forgotPasswordOtp || forgotPasswordOtp.length !== 6) {
+      setForgotPasswordError('Please enter the 6-digit OTP');
+      return;
+    }
+
+    // Validate passwords
+    if (!newPassword || newPassword.length < 6) {
+      setForgotPasswordError('Password must be at least 6 characters');
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setForgotPasswordError('Passwords do not match');
+      return;
+    }
+
+    setIsLoading(true);
+    setForgotPasswordError('');
+
+    try {
+      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
+      const response = await fetch(`${backendUrl}/api/reset-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: forgotPasswordEmail,
+          otp: forgotPasswordOtp,
+          newPassword: newPassword
+        })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setForgotPasswordMessage('Password reset successfully! You can now sign in.');
+        setTimeout(() => {
+          handleCloseForgotPassword();
+          setSignInMethod('password');
+        }, 2000);
+      } else {
+        setForgotPasswordError(data.message || 'Failed to reset password');
+      }
+    } catch (error) {
+      console.error('Error resetting password:', error);
+      setForgotPasswordError('Failed to reset password. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const validateForm = () => {
@@ -454,6 +575,16 @@ const SignIn = () => {
                     {errors.password}
                   </p>
                 )}
+                {/* Forgot Password Link */}
+                <div className="text-right mt-2">
+                  <button
+                    type="button"
+                    onClick={handleForgotPasswordClick}
+                    className="text-sm text-amber-600 dark:text-pink-400 hover:text-amber-700 dark:hover:text-pink-300 transition-colors duration-200"
+                  >
+                    Forgot Password?
+                  </button>
+                </div>
               </div>
             )}
 
@@ -638,6 +769,169 @@ const SignIn = () => {
           </form>
         </div>
       </div>
+      
+      {/* Forgot Password Modal */}
+      {showForgotPassword && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className={`w-full max-w-md ${themeClasses.cardBg} rounded-2xl shadow-2xl p-6 relative`}>
+            {/* Close Button */}
+            <button
+              onClick={handleCloseForgotPassword}
+              className={`absolute top-4 right-4 ${themeClasses.textSecondary} hover:${themeClasses.textPrimary} transition-colors`}
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+            
+            {/* Header */}
+            <div className="text-center mb-6">
+              <span className="text-4xl block mb-2">🔐</span>
+              <h3 className={`text-xl font-bold ${themeClasses.textPrimary}`}>Reset Password</h3>
+              <p className={`text-sm ${themeClasses.textSecondary} mt-1`}>
+                {forgotPasswordStep === 'email' && "Enter your email to receive a reset code"}
+                {forgotPasswordStep === 'otp' && "Enter the OTP and your new password"}
+              </p>
+            </div>
+            
+            {/* Step 1: Email Input */}
+            {forgotPasswordStep === 'email' && (
+              <div className="space-y-4">
+                <div>
+                  <label className={`block text-sm font-medium ${themeClasses.textPrimary} mb-2`}>
+                    Email Address *
+                  </label>
+                  <input
+                    type="email"
+                    value={forgotPasswordEmail}
+                    onChange={(e) => setForgotPasswordEmail(e.target.value)}
+                    placeholder="Enter your registered email"
+                    className={`w-full px-4 py-3 border rounded-xl bg-white dark:bg-[#1e1a2e] text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:border-current transition-colors duration-200 ${themeClasses.cardBorder}`}
+                  />
+                </div>
+                
+                <button
+                  onClick={handleSendResetOTP}
+                  disabled={isLoading}
+                  className={`w-full bg-gradient-to-r from-amber-500 to-orange-500 dark:from-pink-500 dark:to-purple-500 text-white font-bold py-3 px-6 rounded-xl hover:from-amber-600 hover:to-orange-600 dark:hover:from-pink-600 dark:hover:to-purple-600 transition-all duration-300 shadow-lg flex items-center justify-center ${
+                    isLoading ? 'opacity-50 cursor-not-allowed' : ''
+                  }`}
+                >
+                  {isLoading ? (
+                    <>
+                      <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Sending...
+                    </>
+                  ) : (
+                    <>
+                      <span className="mr-2">📧</span>
+                      Send Reset Code
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
+            
+            {/* Step 2: OTP & New Password */}
+            {forgotPasswordStep === 'otp' && (
+              <div className="space-y-4">
+                <div>
+                  <label className={`block text-sm font-medium ${themeClasses.textPrimary} mb-2`}>
+                    Enter OTP *
+                  </label>
+                  <input
+                    type="text"
+                    value={forgotPasswordOtp}
+                    onChange={(e) => setForgotPasswordOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    placeholder="Enter 6-digit OTP"
+                    maxLength={6}
+                    className={`w-full px-4 py-3 border rounded-xl bg-white dark:bg-[#1e1a2e] text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:border-current transition-colors duration-200 text-center text-xl tracking-widest ${themeClasses.cardBorder}`}
+                  />
+                  {/* Resend OTP */}
+                  <div className="text-center mt-2">
+                    <button
+                      type="button"
+                      onClick={handleSendResetOTP}
+                      disabled={!canResendOtp || isLoading}
+                      className={`text-sm ${canResendOtp && !isLoading ? 'text-amber-600 dark:text-pink-400 hover:text-amber-700 dark:hover:text-pink-300' : 'text-gray-400 cursor-not-allowed'}`}
+                    >
+                      {!canResendOtp ? `Resend OTP in ${countdown}s` : 'Resend OTP'}
+                    </button>
+                  </div>
+                </div>
+                
+                <div>
+                  <label className={`block text-sm font-medium ${themeClasses.textPrimary} mb-2`}>
+                    New Password *
+                  </label>
+                  <input
+                    type="password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="Enter new password (min 6 chars)"
+                    className={`w-full px-4 py-3 border rounded-xl bg-white dark:bg-[#1e1a2e] text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:border-current transition-colors duration-200 ${themeClasses.cardBorder}`}
+                  />
+                </div>
+                
+                <div>
+                  <label className={`block text-sm font-medium ${themeClasses.textPrimary} mb-2`}>
+                    Confirm Password *
+                  </label>
+                  <input
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="Confirm new password"
+                    className={`w-full px-4 py-3 border rounded-xl bg-white dark:bg-[#1e1a2e] text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:border-current transition-colors duration-200 ${themeClasses.cardBorder}`}
+                  />
+                </div>
+                
+                <button
+                  onClick={handleResetPassword}
+                  disabled={isLoading}
+                  className={`w-full bg-gradient-to-r from-amber-500 to-orange-500 dark:from-pink-500 dark:to-purple-500 text-white font-bold py-3 px-6 rounded-xl hover:from-amber-600 hover:to-orange-600 dark:hover:from-pink-600 dark:hover:to-purple-600 transition-all duration-300 shadow-lg flex items-center justify-center ${
+                    isLoading ? 'opacity-50 cursor-not-allowed' : ''
+                  }`}
+                >
+                  {isLoading ? (
+                    <>
+                      <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Resetting...
+                    </>
+                  ) : (
+                    <>
+                      <span className="mr-2">✓</span>
+                      Reset Password
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
+            
+            {/* Messages */}
+            {forgotPasswordError && (
+              <p className="text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 text-sm mt-4 flex items-center p-3 rounded-lg">
+                <span className="mr-2">⚠️</span>
+                {forgotPasswordError}
+              </p>
+            )}
+            {forgotPasswordMessage && (
+              <p className="text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 text-sm mt-4 flex items-center p-3 rounded-lg">
+                <svg className="w-4 h-4 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                </svg>
+                {forgotPasswordMessage}
+              </p>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
