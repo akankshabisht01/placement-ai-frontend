@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import logo from './assets/logo.png';
 import { Link, NavLink, useLocation } from 'react-router-dom';
-import { Home, User, Target, BarChart3, Rocket, LayoutDashboard, Bot, Info, MessageCircle, Zap, Moon, Sun, MonitorSmartphone, FileCheck, UserCircle2, CreditCard, ChevronDown, CloudMoon, Cloud, Sparkles, Sunrise } from 'lucide-react';
+import { Home, User, Target, BarChart3, Rocket, LayoutDashboard, Bot, Info, MessageCircle, Zap, Moon, Sun, MonitorSmartphone, FileCheck, UserCircle2, CreditCard, ChevronDown, CloudMoon, Cloud, Sparkles, Sunrise, Mic } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
 import { getThemeClasses } from '../../utils/themeHelpers';
 
