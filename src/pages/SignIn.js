@@ -150,13 +150,44 @@ const SignIn = () => {
     }
   };
 
-  const handleResetPassword = async () => {
+  const handleVerifyResetOTP = async () => {
     // Validate OTP
     if (!forgotPasswordOtp || forgotPasswordOtp.length !== 6) {
       setForgotPasswordError('Please enter the 6-digit OTP');
       return;
     }
 
+    setIsLoading(true);
+    setForgotPasswordError('');
+
+    try {
+      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
+      const response = await fetch(`${backendUrl}/api/verify-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: forgotPasswordEmail,
+          otp: forgotPasswordOtp
+        })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setForgotPasswordMessage('OTP verified! Set your new password.');
+        setForgotPasswordStep('newPassword');
+      } else {
+        setForgotPasswordError(data.message || 'Invalid OTP');
+      }
+    } catch (error) {
+      console.error('Error verifying OTP:', error);
+      setForgotPasswordError('Failed to verify OTP. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleResetPassword = async () => {
     // Validate passwords
     if (!newPassword || newPassword.length < 6) {
       setForgotPasswordError('Password must be at least 6 characters');
@@ -173,12 +204,12 @@ const SignIn = () => {
 
     try {
       const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
-      const response = await fetch(`${backendUrl}/api/reset-password`, {
+      // Use a direct password update since OTP is already verified
+      const response = await fetch(`${backendUrl}/api/update-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           email: forgotPasswordEmail,
-          otp: forgotPasswordOtp,
           newPassword: newPassword
         })
       });
@@ -772,8 +803,8 @@ const SignIn = () => {
       
       {/* Forgot Password Modal */}
       {showForgotPassword && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className={`w-full max-w-md ${themeClasses.cardBg} rounded-2xl shadow-2xl p-6 relative`}>
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="w-full max-w-md bg-white dark:bg-[#0f0a1f] rounded-2xl shadow-2xl p-6 relative border border-gray-200 dark:border-gray-700">
             {/* Close Button */}
             <button
               onClick={handleCloseForgotPassword}
@@ -787,10 +818,11 @@ const SignIn = () => {
             {/* Header */}
             <div className="text-center mb-6">
               <span className="text-4xl block mb-2">🔐</span>
-              <h3 className={`text-xl font-bold ${themeClasses.textPrimary}`}>Reset Password</h3>
-              <p className={`text-sm ${themeClasses.textSecondary} mt-1`}>
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white">Reset Password</h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                 {forgotPasswordStep === 'email' && "Enter your email to receive a reset code"}
-                {forgotPasswordStep === 'otp' && "Enter the OTP and your new password"}
+                {forgotPasswordStep === 'otp' && "Enter the 6-digit OTP sent to your email"}
+                {forgotPasswordStep === 'newPassword' && "Create your new password"}
               </p>
             </div>
             
@@ -798,7 +830,7 @@ const SignIn = () => {
             {forgotPasswordStep === 'email' && (
               <div className="space-y-4">
                 <div>
-                  <label className={`block text-sm font-medium ${themeClasses.textPrimary} mb-2`}>
+                  <label className="block text-sm font-medium text-gray-900 dark:text-white mb-2">
                     Email Address *
                   </label>
                   <input
@@ -806,7 +838,7 @@ const SignIn = () => {
                     value={forgotPasswordEmail}
                     onChange={(e) => setForgotPasswordEmail(e.target.value)}
                     placeholder="Enter your registered email"
-                    className={`w-full px-4 py-3 border rounded-xl bg-white dark:bg-[#1e1a2e] text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:border-current transition-colors duration-200 ${themeClasses.cardBorder}`}
+                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-[#1a1625] text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-amber-500 dark:focus:ring-pink-500 focus:border-transparent transition-colors duration-200"
                   />
                 </div>
                 
@@ -835,11 +867,11 @@ const SignIn = () => {
               </div>
             )}
             
-            {/* Step 2: OTP & New Password */}
+            {/* Step 2: OTP Verification */}
             {forgotPasswordStep === 'otp' && (
               <div className="space-y-4">
                 <div>
-                  <label className={`block text-sm font-medium ${themeClasses.textPrimary} mb-2`}>
+                  <label className="block text-sm font-medium text-gray-900 dark:text-white mb-2">
                     Enter OTP *
                   </label>
                   <input
@@ -848,7 +880,7 @@ const SignIn = () => {
                     onChange={(e) => setForgotPasswordOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
                     placeholder="Enter 6-digit OTP"
                     maxLength={6}
-                    className={`w-full px-4 py-3 border rounded-xl bg-white dark:bg-[#1e1a2e] text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:border-current transition-colors duration-200 text-center text-xl tracking-widest ${themeClasses.cardBorder}`}
+                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-[#1a1625] text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-amber-500 dark:focus:ring-pink-500 focus:border-transparent transition-colors duration-200 text-center text-xl tracking-widest"
                   />
                   {/* Resend OTP */}
                   <div className="text-center mt-2">
@@ -863,8 +895,36 @@ const SignIn = () => {
                   </div>
                 </div>
                 
+                <button
+                  onClick={handleVerifyResetOTP}
+                  disabled={isLoading}
+                  className={`w-full bg-gradient-to-r from-amber-500 to-orange-500 dark:from-pink-500 dark:to-purple-500 text-white font-bold py-3 px-6 rounded-xl hover:from-amber-600 hover:to-orange-600 dark:hover:from-pink-600 dark:hover:to-purple-600 transition-all duration-300 shadow-lg flex items-center justify-center ${
+                    isLoading ? 'opacity-50 cursor-not-allowed' : ''
+                  }`}
+                >
+                  {isLoading ? (
+                    <>
+                      <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Verifying...
+                    </>
+                  ) : (
+                    <>
+                      <span className="mr-2">✓</span>
+                      Verify OTP
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
+            
+            {/* Step 3: New Password */}
+            {forgotPasswordStep === 'newPassword' && (
+              <div className="space-y-4">
                 <div>
-                  <label className={`block text-sm font-medium ${themeClasses.textPrimary} mb-2`}>
+                  <label className="block text-sm font-medium text-gray-900 dark:text-white mb-2">
                     New Password *
                   </label>
                   <input
@@ -872,12 +932,12 @@ const SignIn = () => {
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
                     placeholder="Enter new password (min 6 chars)"
-                    className={`w-full px-4 py-3 border rounded-xl bg-white dark:bg-[#1e1a2e] text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:border-current transition-colors duration-200 ${themeClasses.cardBorder}`}
+                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-[#1a1625] text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-amber-500 dark:focus:ring-pink-500 focus:border-transparent transition-colors duration-200"
                   />
                 </div>
                 
                 <div>
-                  <label className={`block text-sm font-medium ${themeClasses.textPrimary} mb-2`}>
+                  <label className="block text-sm font-medium text-gray-900 dark:text-white mb-2">
                     Confirm Password *
                   </label>
                   <input
@@ -885,7 +945,7 @@ const SignIn = () => {
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     placeholder="Confirm new password"
-                    className={`w-full px-4 py-3 border rounded-xl bg-white dark:bg-[#1e1a2e] text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:border-current transition-colors duration-200 ${themeClasses.cardBorder}`}
+                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-[#1a1625] text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-amber-500 dark:focus:ring-pink-500 focus:border-transparent transition-colors duration-200"
                   />
                 </div>
                 
@@ -906,8 +966,8 @@ const SignIn = () => {
                     </>
                   ) : (
                     <>
-                      <span className="mr-2">✓</span>
-                      Reset Password
+                      <span className="mr-2">🔒</span>
+                      Set New Password
                     </>
                   )}
                 </button>
@@ -916,13 +976,13 @@ const SignIn = () => {
             
             {/* Messages */}
             {forgotPasswordError && (
-              <p className="text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 text-sm mt-4 flex items-center p-3 rounded-lg">
+              <p className="text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/50 border border-red-200 dark:border-red-700 text-sm mt-4 flex items-center p-3 rounded-lg">
                 <span className="mr-2">⚠️</span>
                 {forgotPasswordError}
               </p>
             )}
             {forgotPasswordMessage && (
-              <p className="text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 text-sm mt-4 flex items-center p-3 rounded-lg">
+              <p className="text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/50 border border-green-200 dark:border-green-700 text-sm mt-4 flex items-center p-3 rounded-lg">
                 <svg className="w-4 h-4 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                 </svg>
