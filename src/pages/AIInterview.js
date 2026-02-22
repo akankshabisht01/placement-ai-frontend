@@ -1145,13 +1145,13 @@ const AIInterview = () => {
   return (
     <div className={`h-screen ${themeClasses.pageBackground} transition-colors duration-300 flex flex-col overflow-hidden`}>
 
-      {/* ===== VIDEO AREA (main focus) ===== */}
-      <div className="flex-1 flex overflow-hidden relative">
-        {/* Video Grid - 2 equal tiles */}
-        <div className={`flex-1 grid grid-cols-1 md:grid-cols-2 gap-2 p-3 ${showChat ? 'md:mr-0' : ''}`}>
+      {/* ===== VIDEO AREA (reduced height for better proportions) ===== */}
+      <div className="flex-1 flex overflow-hidden relative px-6 pt-6 pb-4" style={{ maxHeight: '70vh' }}>
+        {/* Video Grid - 2 equal tiles with constrained size */}
+        <div className={`flex-1 grid grid-cols-1 md:grid-cols-2 gap-4 max-w-5xl mx-auto ${showChat ? 'md:mr-0' : ''}`}>
           
           {/* AI Interviewer Tile */}
-          <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-indigo-950 to-slate-900 border border-indigo-500/20 shadow-xl flex flex-col">
+          <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-indigo-950 to-slate-900 border border-indigo-500/20 shadow-xl flex flex-col aspect-video">
             <div className="flex-1 min-h-0">
               <Suspense fallback={
                 <div className="w-full h-full flex items-center justify-center">
@@ -1181,7 +1181,7 @@ const AIInterview = () => {
           </div>
 
           {/* User Webcam Tile */}
-          <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-gray-900 to-gray-950 border border-gray-700/30 shadow-xl">
+          <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-gray-900 to-gray-950 border border-gray-700/30 shadow-xl aspect-video">
             {/* Always render video element - use opacity instead of hidden for proper stream handling */}
             <video 
               ref={videoRef} 
@@ -1292,29 +1292,29 @@ const AIInterview = () => {
         )}
       </div>
 
-      {/* ===== BOTTOM CONTROL BAR (Zoom-style) ===== */}
-      <div className={`${themeClasses.cardBackground} border-t ${themeClasses.cardBorder} px-4 py-3`}>
-        <div className="flex items-center justify-between max-w-4xl mx-auto">
+      {/* ===== BOTTOM CONTROL BAR (Enhanced Zoom-style) ===== */}
+      <div className={`${themeClasses.cardBackground} border-t ${themeClasses.cardBorder} px-6 py-5`}>
+        <div className="flex items-center justify-between max-w-5xl mx-auto">
           {/* Left: Meeting info */}
-          <div className="flex items-center gap-3 min-w-0">
-            <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg ${timeRemaining <= 60 ? 'bg-red-500/20 text-red-400' : `${themeClasses.sectionBackground} ${themeClasses.textSecondary}`} font-mono text-sm font-bold`}>
-              <Clock size={14} />
+          <div className="flex items-center gap-4 min-w-0">
+            <div className={`flex items-center gap-2 px-4 py-2.5 rounded-xl ${timeRemaining <= 60 ? 'bg-red-500/20 text-red-400' : `${themeClasses.sectionBackground} ${themeClasses.textSecondary}`} font-mono text-base font-bold`}>
+              <Clock size={18} />
               {formatTime(timeRemaining)}
             </div>
             <div className="hidden sm:block">
-              <p className={`text-xs ${themeClasses.textSecondary} truncate`}>
+              <p className={`text-sm ${themeClasses.textSecondary} truncate`}>
                 {isAISpeaking ? '🔊 Alex is speaking...' : isProcessing ? '🤔 Alex is thinking...' : isListening ? '👂 Listening...' : `Interview • ${setupPosition}`}
               </p>
             </div>
           </div>
 
           {/* Center: Main controls */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             {/* Mic */}
             <button onClick={() => { if (isListening) stopListening(); else startListening(); }}
               title={isListening ? 'Mute' : 'Unmute'}
-              className={`p-3 rounded-full transition-all ${isListening ? 'bg-gray-600/50 hover:bg-gray-600/70 text-white' : 'bg-red-500 hover:bg-red-600 text-white'}`}>
-              {isListening ? <Mic size={20} /> : <MicOff size={20} />}
+              className={`p-4 rounded-full transition-all ${isListening ? 'bg-gray-600/50 hover:bg-gray-600/70 text-white' : 'bg-red-500 hover:bg-red-600 text-white'}`}>
+              {isListening ? <Mic size={24} /> : <MicOff size={24} />}
             </button>
             {/* Camera */}
             <button onClick={async () => {
@@ -1347,37 +1347,37 @@ const AIInterview = () => {
               }
             }}
               title={cameraEnabled ? 'Stop Video' : 'Start Video'}
-              className={`p-3 rounded-full transition-all ${cameraEnabled ? 'bg-gray-600/50 hover:bg-gray-600/70 text-white' : 'bg-red-500 hover:bg-red-600 text-white'}`}>
-              {cameraEnabled ? <Video size={20} /> : <VideoOff size={20} />}
+              className={`p-4 rounded-full transition-all ${cameraEnabled ? 'bg-gray-600/50 hover:bg-gray-600/70 text-white' : 'bg-red-500 hover:bg-red-600 text-white'}`}>
+              {cameraEnabled ? <Video size={24} /> : <VideoOff size={24} />}
             </button>
             {/* Audio/Speaker */}
             <button onClick={() => { setAudioEnabled(!audioEnabled); if (audioEnabled) { synthRef.current?.cancel(); setIsAISpeaking(false); } }}
               title={audioEnabled ? 'Mute Speaker' : 'Unmute Speaker'}
-              className={`p-3 rounded-full transition-all ${audioEnabled ? 'bg-gray-600/50 hover:bg-gray-600/70 text-white' : 'bg-red-500 hover:bg-red-600 text-white'}`}>
-              {audioEnabled ? <Volume2 size={20} /> : <VolumeX size={20} />}
+              className={`p-4 rounded-full transition-all ${audioEnabled ? 'bg-gray-600/50 hover:bg-gray-600/70 text-white' : 'bg-red-500 hover:bg-red-600 text-white'}`}>
+              {audioEnabled ? <Volume2 size={24} /> : <VolumeX size={24} />}
             </button>
             {/* Chat toggle */}
             <button onClick={() => setShowChat(!showChat)}
               title="Chat"
-              className={`p-3 rounded-full transition-all relative ${showChat ? 'bg-blue-500/30 text-blue-400' : 'bg-gray-600/50 hover:bg-gray-600/70 text-white'}`}>
-              <MessageCircle size={20} />
+              className={`p-4 rounded-full transition-all relative ${showChat ? 'bg-blue-500/30 text-blue-400' : 'bg-gray-600/50 hover:bg-gray-600/70 text-white'}`}>
+              <MessageCircle size={24} />
               {conversationHistory.length > 0 && !showChat && (
-                <div className="absolute -top-1 -right-1 w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
-                  <span className="text-[9px] text-white font-bold">{conversationHistory.length}</span>
+                <div className="absolute -top-1 -right-1 w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
+                  <span className="text-[10px] text-white font-bold">{conversationHistory.length}</span>
                 </div>
               )}
             </button>
             {/* End call */}
             <button onClick={endInterview}
               title="End Interview"
-              className="p-3 px-6 bg-red-500 hover:bg-red-600 text-white rounded-full font-medium text-sm flex items-center gap-1.5 transition-colors ml-2">
-              <StopCircle size={18} /> End
+              className="p-4 px-8 bg-red-500 hover:bg-red-600 text-white rounded-full font-semibold text-base flex items-center gap-2 transition-colors ml-3 shadow-lg">
+              <StopCircle size={22} /> End
             </button>
           </div>
 
           {/* Right: Response count */}
           <div className="flex items-center gap-2">
-            <span className={`text-xs ${themeClasses.textSecondary} hidden sm:block`}>
+            <span className={`text-sm ${themeClasses.textSecondary} hidden sm:block`}>
               {conversationHistory.filter(m => m.role === 'user').length} responses
             </span>
           </div>
