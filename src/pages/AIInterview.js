@@ -157,7 +157,7 @@ const AIInterview = () => {
   const [timeRemaining, setTimeRemaining] = useState(600); // 10 min
   const [feedback, setFeedback] = useState(null);
   const [webcamStream, setWebcamStream] = useState(null);
-  const [cameraEnabled, setCameraEnabled] = useState(false);
+  const [cameraEnabled, setCameraEnabled] = useState(true);
   const [feedbackTab, setFeedbackTab] = useState('overview');
   const [showChat, setShowChat] = useState(false);
 
@@ -590,17 +590,12 @@ const AIInterview = () => {
                 </select>
               </div>
 
-              {/* Options */}
+              {/* Audio Option */}
               <div className="flex flex-wrap gap-4">
                 <button onClick={() => setAudioEnabled(!audioEnabled)}
                   className={`flex items-center gap-2 px-4 py-2 rounded-xl border transition-all ${audioEnabled ? 'bg-green-500/20 border-green-500/50 text-green-400' : `${themeClasses.cardBackground} ${themeClasses.cardBorder} ${themeClasses.textSecondary}`}`}>
                   {audioEnabled ? <Volume2 size={18} /> : <VolumeX size={18} />}
                   <span className="text-sm font-medium">{audioEnabled ? 'Audio On' : 'Audio Off'}</span>
-                </button>
-                <button onClick={() => setCameraEnabled(!cameraEnabled)}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-xl border transition-all ${cameraEnabled ? 'bg-blue-500/20 border-blue-500/50 text-blue-400' : `${themeClasses.cardBackground} ${themeClasses.cardBorder} ${themeClasses.textSecondary}`}`}>
-                  {cameraEnabled ? <Video size={18} /> : <VideoOff size={18} />}
-                  <span className="text-sm font-medium">{cameraEnabled ? 'Camera On' : 'Camera Off'}</span>
                 </button>
               </div>
 
