@@ -1141,75 +1141,70 @@ const AIInterview = () => {
     );
   }
 
-  // === Active Interview Screen (Zoom-like layout) ===
+  // === Active Interview Screen (Picture-in-Picture layout) ===
   return (
     <div className={`h-screen ${themeClasses.pageBackground} transition-colors duration-300 flex flex-col overflow-hidden`}>
 
-      {/* ===== VIDEO AREA (reduced height for better proportions) ===== */}
-      <div className="flex-1 flex overflow-hidden relative px-6 pt-6 pb-4" style={{ maxHeight: '70vh' }}>
-        {/* Video Grid - 2 equal tiles with constrained size */}
-        <div className={`flex-1 grid grid-cols-1 md:grid-cols-2 gap-4 max-w-5xl mx-auto ${showChat ? 'md:mr-0' : ''}`}>
-          
-          {/* AI Interviewer Tile */}
-          <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-indigo-950 to-slate-900 border border-indigo-500/20 shadow-xl flex flex-col aspect-video">
-            <div className="flex-1 min-h-0">
-              <Suspense fallback={
-                <div className="w-full h-full flex items-center justify-center">
-                  <div className="text-6xl animate-pulse">🤖</div>
-                </div>
-              }>
-                <Canvas camera={{ position: [0, 0.5, 3.2], fov: 50 }} style={{ width: '100%', height: '100%' }}>
-                  <ambientLight intensity={0.6} />
-                  <directionalLight position={[2, 3, 2]} intensity={0.8} />
-                  <pointLight position={[-2, 2, 1]} intensity={0.4} color="#818cf8" />
-                  <AnimatedAvatar isSpeaking={isAISpeaking} />
-                  <OrbitControls enableZoom={false} enablePan={false} minPolarAngle={Math.PI / 3} maxPolarAngle={Math.PI / 2} />
-                </Canvas>
-              </Suspense>
+      {/* ===== MAIN VIDEO AREA - User's camera fullscreen ===== */}
+      <div className="flex-1 relative overflow-hidden">
+        
+        {/* User's Camera - Full Screen Background */}
+        <div className="absolute inset-0 bg-gradient-to-br from-gray-900 to-gray-950">
+          {/* Always render video element */}
+          <video 
+            ref={videoRef} 
+            autoPlay 
+            muted 
+            playsInline 
+            className={`w-full h-full object-cover transition-opacity duration-200 -scale-x-100 ${cameraEnabled && webcamStream ? 'opacity-100' : 'opacity-0'}`} 
+          />
+          {/* Show placeholder when camera is off */}
+          <div className={`absolute inset-0 flex flex-col items-center justify-center text-gray-500 transition-opacity duration-200 ${cameraEnabled && webcamStream ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
+            <div className="w-32 h-32 rounded-full bg-gray-800 flex items-center justify-center mb-4">
+              <span className="text-6xl">👤</span>
             </div>
-            {/* Name label - bottom left like Zoom */}
-            <div className="absolute bottom-3 left-3 flex items-center gap-2">
-              <div className="flex items-center gap-1.5 bg-black/60 text-white text-sm px-3 py-1.5 rounded-lg backdrop-blur-sm">
-                <span className="font-medium">🤖 Alex</span>
-                {isAISpeaking && <Volume2 size={14} className="text-blue-400 animate-pulse" />}
-              </div>
-            </div>
-            {/* Speaking indicator - subtle glow border */}
-            {isAISpeaking && (
-              <div className="absolute inset-0 rounded-2xl border-2 border-blue-500/50 pointer-events-none animate-pulse" />
-            )}
+            <span className={`text-lg ${themeClasses.textSecondary}`}>{setupName || 'You'}</span>
+            <span className="text-sm text-gray-600 mt-1">Camera is off</span>
           </div>
+          {/* User name label - bottom left */}
+          <div className="absolute bottom-4 left-4 flex items-center gap-2 z-10">
+            <div className="flex items-center gap-2 bg-black/60 text-white px-4 py-2 rounded-xl backdrop-blur-sm">
+              <span className="font-medium text-base">👤 {setupName || 'You'}</span>
+              {isListening && <Mic size={16} className="text-green-400 animate-pulse" />}
+            </div>
+          </div>
+          {/* Listening indicator border */}
+          {isListening && (
+            <div className="absolute inset-0 border-4 border-green-500/40 pointer-events-none" />
+          )}
+        </div>
 
-          {/* User Webcam Tile */}
-          <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-gray-900 to-gray-950 border border-gray-700/30 shadow-xl aspect-video">
-            {/* Always render video element - use opacity instead of hidden for proper stream handling */}
-            <video 
-              ref={videoRef} 
-              autoPlay 
-              muted 
-              playsInline 
-              className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-200 -scale-x-100 ${cameraEnabled && webcamStream ? 'opacity-100 z-10' : 'opacity-0 z-0'}`} 
-            />
-            {/* Show placeholder when camera is off */}
-            <div className={`w-full h-full flex flex-col items-center justify-center text-gray-500 transition-opacity duration-200 ${cameraEnabled && webcamStream ? 'opacity-0' : 'opacity-100'}`}>
-              <div className="w-24 h-24 rounded-full bg-gray-800 flex items-center justify-center mb-4">
-                <span className="text-4xl">👤</span>
-              </div>
-              <span className={`text-sm ${themeClasses.textSecondary}`}>{setupName || 'You'}</span>
-              <span className="text-xs text-gray-600 mt-1">Camera is off</span>
+        {/* AI Avatar - Floating PiP in top-left */}
+        <div className="absolute top-4 left-4 w-64 h-48 md:w-80 md:h-56 rounded-2xl overflow-hidden bg-gradient-to-br from-indigo-950 to-slate-900 border-2 border-indigo-500/30 shadow-2xl z-20">
+          <Suspense fallback={
+            <div className="w-full h-full flex items-center justify-center">
+              <div className="text-4xl animate-pulse">🤖</div>
             </div>
-            {/* Name label - bottom left like Zoom */}
-            <div className="absolute bottom-3 left-3 flex items-center gap-2">
-              <div className="flex items-center gap-1.5 bg-black/60 text-white text-sm px-3 py-1.5 rounded-lg backdrop-blur-sm">
-                <span className="font-medium">👤 {setupName || 'You'}</span>
-                {isListening && <Mic size={14} className="text-green-400 animate-pulse" />}
-              </div>
+          }>
+            <Canvas camera={{ position: [0, 0.5, 3.2], fov: 50 }} style={{ width: '100%', height: '100%' }}>
+              <ambientLight intensity={0.6} />
+              <directionalLight position={[2, 3, 2]} intensity={0.8} />
+              <pointLight position={[-2, 2, 1]} intensity={0.4} color="#818cf8" />
+              <AnimatedAvatar isSpeaking={isAISpeaking} />
+              <OrbitControls enableZoom={false} enablePan={false} minPolarAngle={Math.PI / 3} maxPolarAngle={Math.PI / 2} />
+            </Canvas>
+          </Suspense>
+          {/* AI name label */}
+          <div className="absolute bottom-2 left-2 flex items-center gap-2">
+            <div className="flex items-center gap-1.5 bg-black/70 text-white text-xs px-2 py-1 rounded-lg backdrop-blur-sm">
+              <span className="font-medium">🤖 Alex</span>
+              {isAISpeaking && <Volume2 size={12} className="text-blue-400 animate-pulse" />}
             </div>
-            {/* Speaking/Listening indicator */}
-            {isListening && (
-              <div className="absolute inset-0 rounded-2xl border-2 border-green-500/50 pointer-events-none" />
-            )}
           </div>
+          {/* Speaking glow */}
+          {isAISpeaking && (
+            <div className="absolute inset-0 rounded-2xl border-2 border-blue-400/60 pointer-events-none animate-pulse" />
+          )}
         </div>
 
         {/* === SUBTITLE / CAPTION BAR (between video and controls) === */}
