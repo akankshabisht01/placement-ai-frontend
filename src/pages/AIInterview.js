@@ -1151,7 +1151,7 @@ const AIInterview = () => {
               autoPlay 
               muted 
               playsInline 
-              className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-200 ${cameraEnabled && webcamStream ? 'opacity-100 z-10' : 'opacity-0 z-0'}`} 
+              className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-200 -scale-x-100 ${cameraEnabled && webcamStream ? 'opacity-100 z-10' : 'opacity-0 z-0'}`} 
             />
             {/* Show placeholder when camera is off */}
             <div className={`w-full h-full flex flex-col items-center justify-center text-gray-500 transition-opacity duration-200 ${cameraEnabled && webcamStream ? 'opacity-0' : 'opacity-100'}`}>
