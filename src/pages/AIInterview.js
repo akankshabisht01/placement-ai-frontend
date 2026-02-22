@@ -182,11 +182,25 @@ const AIInterview = () => {
   // === Clean transcript: remove consecutive duplicate words/phrases ===
   const cleanTranscript = useCallback((text) => {
     if (!text) return '';
-    // Split into words
-    const words = text.trim().split(/\s+/);
+    
+    let result = text.trim();
+    
+    // First pass: Remove repeated phrases (4, 3, 2 words) - do multiple times
+    for (let pass = 0; pass < 3; pass++) {
+      // Remove repeated 4-word phrases like "I have experience in I have experience in"
+      result = result.replace(/(\b\w+\s+\w+\s+\w+\s+\w+\b)\s+\1/gi, '$1');
+      // Remove repeated 3-word phrases like "I have experience I have experience"
+      result = result.replace(/(\b\w+\s+\w+\s+\w+\b)\s+\1/gi, '$1');
+      // Remove repeated 2-word phrases like "I have I have"
+      result = result.replace(/(\b\w+\s+\w+\b)\s+\1/gi, '$1');
+      // Remove single repeated words like "the the" or "I I"
+      result = result.replace(/\b(\w+)\s+\1\b/gi, '$1');
+    }
+    
+    // Second pass: Remove consecutive duplicate words
+    const words = result.split(/\s+/);
     if (words.length === 0) return '';
     
-    // Remove consecutive duplicate words (e.g., "I am I am" -> "I am")
     const cleaned = [words[0]];
     for (let i = 1; i < words.length; i++) {
       if (words[i].toLowerCase() !== words[i - 1].toLowerCase()) {
@@ -194,14 +208,7 @@ const AIInterview = () => {
       }
     }
     
-    // Also detect repeated phrases (2-3 word patterns)
-    let result = cleaned.join(' ');
-    // Remove repeated 2-word phrases like "I am I am"
-    result = result.replace(/(\b\w+\s+\w+\b)\s+\1/gi, '$1');
-    // Remove repeated 3-word phrases
-    result = result.replace(/(\b\w+\s+\w+\s+\w+\b)\s+\1/gi, '$1');
-    
-    return result.trim();
+    return cleaned.join(' ').trim();
   }, []);
 
   const useBrowserRecognition = !!(window.SpeechRecognition || window.webkitSpeechRecognition);
@@ -326,8 +333,11 @@ const AIInterview = () => {
         const t = event.results[i][0].transcript;
         if (event.results[i].isFinal) final += t; else interim += t;
       }
-      if (final) { accumulatedTranscript += ' ' + final; accumulatedTranscript = accumulatedTranscript.trim(); }
-      const displayText = (accumulatedTranscript + ' ' + interim).trim();
+      if (final) { 
+        accumulatedTranscript += ' ' + final; 
+        accumulatedTranscript = cleanTranscript(accumulatedTranscript); // Clean immediately to remove duplicates
+      }
+      const displayText = cleanTranscript((accumulatedTranscript + ' ' + interim).trim());
       setInterimTranscript(displayText || interim || '');
 
       if (final && accumulatedTranscript.trim().length > 2) {
