@@ -289,7 +289,7 @@ const AIInterview = () => {
 
     let silenceTimer = null;
     let accumulatedTranscript = '';
-    const SILENCE_THRESHOLD = 1500;
+    const SILENCE_THRESHOLD = 2500; // Increased from 1500ms to give users more time to finish speaking
 
     recognition.onstart = () => { setIsListening(true); setError(null); accumulatedTranscript = ''; };
 
