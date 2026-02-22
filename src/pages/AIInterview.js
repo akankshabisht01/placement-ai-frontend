@@ -551,14 +551,6 @@ const AIInterview = () => {
     return (
       <div className={`min-h-screen ${themeClasses.pageBackground} py-8 px-4 transition-colors duration-300`}>
         <div className="max-w-2xl mx-auto">
-          {/* Back Button */}
-          <button
-            onClick={() => navigate(-1)}
-            className={`mb-4 flex items-center gap-2 ${themeClasses.textSecondary} hover:${themeClasses.textPrimary} transition-colors duration-200`}
-          >
-            <ArrowLeft size={20} />
-            <span>Back</span>
-          </button>
           <div className={`${themeClasses.cardBackground} rounded-3xl shadow-2xl p-8 border ${themeClasses.cardBorder}`}>
             {/* Header */}
             <div className="text-center mb-8">
@@ -638,6 +630,15 @@ const AIInterview = () => {
                 ) : (
                   <><Play className="w-6 h-6" /> Start Interview</>
                 )}
+              </button>
+
+              {/* Back Button */}
+              <button
+                onClick={() => navigate(-1)}
+                className={`w-full py-3 px-6 rounded-xl border ${themeClasses.cardBorder} ${themeClasses.textSecondary} hover:${themeClasses.textPrimary} transition-all duration-200 flex items-center justify-center gap-2`}
+              >
+                <ArrowLeft size={18} />
+                <span>Back</span>
               </button>
             </div>
 
