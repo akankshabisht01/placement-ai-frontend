@@ -176,6 +176,7 @@ const AIInterview = () => {
   const isAISpeakingRef = useRef(false);
   const isListeningRef = useRef(false);
   const interviewStartedRef = useRef(false);
+  const webcamStreamRef = useRef(null);
 
   const useBrowserRecognition = !!(window.SpeechRecognition || window.webkitSpeechRecognition);
 
@@ -249,7 +250,11 @@ const AIInterview = () => {
       if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
       if (recognitionRef.current) { try { recognitionRef.current.abort(); } catch (e) {} }
       if (synthRef.current) synthRef.current.cancel();
-      if (webcamStream) webcamStream.getTracks().forEach(t => t.stop());
+      // Use ref for reliable cleanup on unmount
+      if (webcamStreamRef.current) {
+        webcamStreamRef.current.getTracks().forEach(t => t.stop());
+        webcamStreamRef.current = null;
+      }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -467,11 +472,12 @@ const AIInterview = () => {
     if (!setupName.trim()) { setError('Please enter your name'); return; }
     setIsProcessing(true); setError(null);
 
-    // Setup camera - store stream locally so we can use it in setTimeout
+    // Setup camera - store stream locally and in ref for reliable cleanup
     let cameraStream = null;
     if (cameraEnabled) {
       try {
         cameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false });
+        webcamStreamRef.current = cameraStream;
         setWebcamStream(cameraStream);
       } catch (e) { console.warn('Camera not available:', e); setCameraEnabled(false); }
     }
@@ -518,12 +524,24 @@ const AIInterview = () => {
   // === End Interview ===
   const endInterview = async () => {
     setInterviewEnded(true); setInterviewStarted(false);
+    interviewStartedRef.current = false;
     if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
     if (recognitionRef.current) { try { recognitionRef.current.abort(); } catch (e) {} }
     if (synthRef.current) synthRef.current.cancel();
     setIsAISpeaking(false); setIsListening(false);
 
-    if (webcamStream) { webcamStream.getTracks().forEach(t => t.stop()); setWebcamStream(null); }
+    // Stop camera and clear video element - use ref for reliable cleanup
+    const streamToStop = webcamStreamRef.current || webcamStream;
+    if (streamToStop) { 
+      console.log('[Camera] Stopping camera tracks');
+      streamToStop.getTracks().forEach(t => t.stop()); 
+      webcamStreamRef.current = null;
+      setWebcamStream(null); 
+    }
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
+    setCameraEnabled(false);
 
     const currentSessionId = sessionIdRef.current || sessionId;
     if (currentSessionId) {
@@ -1282,16 +1300,20 @@ const AIInterview = () => {
             {/* Camera */}
             <button onClick={async () => {
               console.log('[Camera] Toggle clicked, current state:', { cameraEnabled, hasStream: !!webcamStream });
-              if (cameraEnabled && webcamStream) {
+              const streamToStop = webcamStreamRef.current || webcamStream;
+              if (cameraEnabled && streamToStop) {
                 console.log('[Camera] Stopping camera...');
-                webcamStream.getTracks().forEach(t => t.stop());
+                streamToStop.getTracks().forEach(t => t.stop());
+                webcamStreamRef.current = null;
                 setWebcamStream(null);
                 setCameraEnabled(false);
+                if (videoRef.current) videoRef.current.srcObject = null;
               } else {
                 try {
                   console.log('[Camera] Requesting camera access...');
                   const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } }, audio: false });
                   console.log('[Camera] Got stream:', stream.id);
+                  webcamStreamRef.current = stream;
                   setWebcamStream(stream);
                   setCameraEnabled(true);
                   // Also directly set to video element in case effect doesn't fire immediately
