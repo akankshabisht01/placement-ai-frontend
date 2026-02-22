@@ -177,6 +177,32 @@ const AIInterview = () => {
   const isListeningRef = useRef(false);
   const interviewStartedRef = useRef(false);
   const webcamStreamRef = useRef(null);
+  const lastSubmittedTextRef = useRef('');
+
+  // === Clean transcript: remove consecutive duplicate words/phrases ===
+  const cleanTranscript = useCallback((text) => {
+    if (!text) return '';
+    // Split into words
+    const words = text.trim().split(/\s+/);
+    if (words.length === 0) return '';
+    
+    // Remove consecutive duplicate words (e.g., "I am I am" -> "I am")
+    const cleaned = [words[0]];
+    for (let i = 1; i < words.length; i++) {
+      if (words[i].toLowerCase() !== words[i - 1].toLowerCase()) {
+        cleaned.push(words[i]);
+      }
+    }
+    
+    // Also detect repeated phrases (2-3 word patterns)
+    let result = cleaned.join(' ');
+    // Remove repeated 2-word phrases like "I am I am"
+    result = result.replace(/(\b\w+\s+\w+\b)\s+\1/gi, '$1');
+    // Remove repeated 3-word phrases
+    result = result.replace(/(\b\w+\s+\w+\s+\w+\b)\s+\1/gi, '$1');
+    
+    return result.trim();
+  }, []);
 
   const useBrowserRecognition = !!(window.SpeechRecognition || window.webkitSpeechRecognition);
 
@@ -306,10 +332,19 @@ const AIInterview = () => {
 
       if (final && accumulatedTranscript.trim().length > 2) {
         silenceTimer = setTimeout(() => {
-          const text = accumulatedTranscript.trim();
+          let text = accumulatedTranscript.trim();
+          // Clean duplicate words/phrases
+          text = cleanTranscript(text);
           const words = text.split(/\s+/).length;
+          // Skip if identical to last submitted text (prevents resubmission)
+          if (text.toLowerCase() === lastSubmittedTextRef.current.toLowerCase()) {
+            console.log('[Speech] Skipping duplicate submission:', text);
+            accumulatedTranscript = '';
+            return;
+          }
           if (text.length > 5 && words >= 2 && !isProcessingRef.current) {
             setIsProcessing(true); isProcessingRef.current = true;
+            lastSubmittedTextRef.current = text;
             accumulatedTranscript = '';
             setInterimTranscript('');
             try { recognition.stop(); } catch (e) {}
@@ -337,8 +372,16 @@ const AIInterview = () => {
       setIsListening(false); setInterimTranscript('');
       if (isProcessingRef.current) { accumulatedTranscript = ''; return; }
       if (accumulatedTranscript.trim().length > 5) {
-        const text = accumulatedTranscript.trim();
+        let text = accumulatedTranscript.trim();
+        text = cleanTranscript(text);
+        // Skip if identical to last submitted
+        if (text.toLowerCase() === lastSubmittedTextRef.current.toLowerCase()) {
+          console.log('[Speech] Skipping duplicate on end:', text);
+          accumulatedTranscript = '';
+          return;
+        }
         setIsProcessing(true); isProcessingRef.current = true;
+        lastSubmittedTextRef.current = text;
         accumulatedTranscript = '';
         handleUserSpeech(text);
       } else {
@@ -496,6 +539,7 @@ const AIInterview = () => {
 
       if (data.success) {
         setSessionId(data.session_id); sessionIdRef.current = data.session_id;
+        lastSubmittedTextRef.current = ''; // Reset for new session
         setInterviewStarted(true);
         interviewStartedRef.current = true;
         setConversationHistory([{ role: 'assistant', content: data.message }]);
