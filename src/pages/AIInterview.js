@@ -1140,24 +1140,22 @@ const AIInterview = () => {
 
           {/* User Webcam Tile */}
           <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-gray-900 to-gray-950 border border-gray-700/30 shadow-xl">
-            {/* Always render video element, hide when not needed */}
+            {/* Always render video element - use opacity instead of hidden for proper stream handling */}
             <video 
               ref={videoRef} 
               autoPlay 
               muted 
               playsInline 
-              className={`w-full h-full object-cover ${cameraEnabled && webcamStream ? '' : 'hidden'}`} 
+              className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-200 ${cameraEnabled && webcamStream ? 'opacity-100 z-10' : 'opacity-0 z-0'}`} 
             />
             {/* Show placeholder when camera is off */}
-            {(!cameraEnabled || !webcamStream) && (
-              <div className="w-full h-full flex flex-col items-center justify-center text-gray-500">
-                <div className="w-24 h-24 rounded-full bg-gray-800 flex items-center justify-center mb-4">
-                  <span className="text-4xl">👤</span>
-                </div>
-                <span className={`text-sm ${themeClasses.textSecondary}`}>{setupName || 'You'}</span>
-                <span className="text-xs text-gray-600 mt-1">Camera is off</span>
+            <div className={`w-full h-full flex flex-col items-center justify-center text-gray-500 transition-opacity duration-200 ${cameraEnabled && webcamStream ? 'opacity-0' : 'opacity-100'}`}>
+              <div className="w-24 h-24 rounded-full bg-gray-800 flex items-center justify-center mb-4">
+                <span className="text-4xl">👤</span>
               </div>
-            )}
+              <span className={`text-sm ${themeClasses.textSecondary}`}>{setupName || 'You'}</span>
+              <span className="text-xs text-gray-600 mt-1">Camera is off</span>
+            </div>
             {/* Name label - bottom left like Zoom */}
             <div className="absolute bottom-3 left-3 flex items-center gap-2">
               <div className="flex items-center gap-1.5 bg-black/60 text-white text-sm px-3 py-1.5 rounded-lg backdrop-blur-sm">
