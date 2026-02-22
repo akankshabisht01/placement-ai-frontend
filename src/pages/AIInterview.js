@@ -234,14 +234,14 @@ const AIInterview = () => {
 
   // Webcam - attach stream to video element when available
   useEffect(() => {
-    if (webcamStream && videoRef.current) {
-      console.log('[Camera] Setting video srcObject');
+    if (webcamStream && videoRef.current && cameraEnabled) {
+      console.log('[Camera] Setting video srcObject, interviewStarted:', interviewStarted);
       videoRef.current.srcObject = webcamStream;
       videoRef.current.play()
         .then(() => console.log('[Camera] Video playing'))
         .catch((e) => console.warn('[Camera] Video play error:', e));
     }
-  }, [webcamStream, cameraEnabled]); // Added cameraEnabled to trigger when video element renders
+  }, [webcamStream, cameraEnabled, interviewStarted]); // Added interviewStarted to trigger when interview screen renders
 
   // Cleanup on unmount
   useEffect(() => {
@@ -467,11 +467,12 @@ const AIInterview = () => {
     if (!setupName.trim()) { setError('Please enter your name'); return; }
     setIsProcessing(true); setError(null);
 
-    // Setup camera
+    // Setup camera - store stream locally so we can use it in setTimeout
+    let cameraStream = null;
     if (cameraEnabled) {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false });
-        setWebcamStream(stream);
+        cameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false });
+        setWebcamStream(cameraStream);
       } catch (e) { console.warn('Camera not available:', e); setCameraEnabled(false); }
     }
 
@@ -490,9 +491,18 @@ const AIInterview = () => {
       if (data.success) {
         setSessionId(data.session_id); sessionIdRef.current = data.session_id;
         setInterviewStarted(true);
+        interviewStartedRef.current = true;
         setConversationHistory([{ role: 'assistant', content: data.message }]);
         setCurrentMessage(data.message);
         setIsProcessing(false);
+        // Ensure video stream is attached after interview screen renders
+        setTimeout(() => {
+          if (videoRef.current && cameraStream) {
+            console.log('[Camera] Attaching stream after interview start');
+            videoRef.current.srcObject = cameraStream;
+            videoRef.current.play().catch(e => console.warn('[Camera] Play error:', e));
+          }
+        }, 100);
         if (audioEnabled) speakText(data.message);
         else setTimeout(() => startListening(), 1000);
       } else {
