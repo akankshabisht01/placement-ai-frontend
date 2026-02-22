@@ -69,8 +69,8 @@ const AppLayout = () => {
     return 'page-main light-main';
   };
   
-  // Hide navbar on test pages
-  const hideNavbar = location.pathname === '/skills-test' || location.pathname === '/weekly-test' || location.pathname === '/monthly-test';
+  // Hide navbar on test pages and interview (full-screen experience)
+  const hideNavbar = location.pathname === '/skills-test' || location.pathname === '/weekly-test' || location.pathname === '/monthly-test' || location.pathname === '/interview';
   
   return (
     <div className={`${shellClass()} flex flex-col min-h-screen transition-colors duration-300`}>
