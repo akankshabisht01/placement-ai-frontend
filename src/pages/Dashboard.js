@@ -7298,45 +7298,56 @@ const Dashboard = () => {
           {activeSection === 'interview' && (
             <div className="space-y-6">
               {/* Interview Section Header */}
-              <div className={`bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-950/30 dark:to-indigo-950/30 rounded-2xl p-6 border border-purple-100 dark:border-purple-900/50`}>
-                <div className="flex items-center gap-3 mb-5">
-                  <div className={`w-14 h-14 ${themeClasses.gradient} rounded-xl flex items-center justify-center shadow-lg`}>
-                    <svg className={`w-7 h-7 ${themeClasses.textPrimary}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+              <div className={`${themeClasses.cardBackground} rounded-2xl p-6 border ${themeClasses.cardBorder} shadow-sm`}>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                  <div className="flex items-center gap-4">
+                    <div className={`w-14 h-14 ${themeClasses.gradient} rounded-xl flex items-center justify-center shadow-lg`}>
+                      <svg className={`w-7 h-7 ${themeClasses.textPrimary}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h2 className={`text-2xl font-bold ${themeClasses.textPrimary}`}>AI Mock Interview</h2>
+                      <p className={`text-sm ${themeClasses.textSecondary}`}>Practice interviews with AI and receive instant feedback</p>
+                    </div>
+                  </div>
+                  {/* Start Interview Button */}
+                  <button
+                    onClick={() => navigate('/interview')}
+                    className={`${themeClasses.buttonPrimary} font-semibold py-3 px-6 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl hover:scale-[1.02]`}
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                  </div>
-                  <div>
-                    <h2 className={`text-2xl font-bold ${themeClasses.textPrimary}`}>AI Mock Interview</h2>
-                    <p className={`text-sm ${themeClasses.textSecondary}`}>Practice interviews with AI and receive instant feedback</p>
-                  </div>
+                    Start New Interview
+                  </button>
                 </div>
-
-                {/* Start Interview Button */}
-                <button
-                  onClick={() => navigate('/interview')}
-                  className={`w-full sm:w-auto ${themeClasses.buttonPrimary} font-semibold py-3 px-8 rounded-xl transition-all duration-200 flex items-center justify-center gap-3 shadow-lg hover:shadow-xl hover:scale-[1.02]`}
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  Start New Interview
-                </button>
               </div>
 
               {/* Features Grid */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {[
-                  { icon: '🎤', title: 'Voice Powered', desc: 'Speak naturally with the AI interviewer using your microphone. Real-time speech recognition.', color: 'from-blue-500/10 to-cyan-500/10 border-blue-200 dark:border-blue-800' },
-                  { icon: '🧠', title: 'Smart Questions', desc: 'AI generates role-specific questions that adapt based on your responses and experience.', color: 'from-purple-500/10 to-pink-500/10 border-purple-200 dark:border-purple-800' },
-                  { icon: '📊', title: 'Instant Feedback', desc: 'Get detailed scoring on communication, technical skills, and areas for improvement.', color: 'from-green-500/10 to-emerald-500/10 border-green-200 dark:border-green-800' }
-                ].map((feature, i) => (
-                  <div key={i} className={`bg-gradient-to-br ${feature.color} rounded-xl p-5 border`}>
-                    <div className="text-3xl mb-3">{feature.icon}</div>
-                    <h3 className={`font-semibold ${themeClasses.textPrimary} mb-1`}>{feature.title}</h3>
-                    <p className={`text-sm ${themeClasses.textSecondary}`}>{feature.desc}</p>
+                <div className={`${themeClasses.cardBackground} rounded-xl p-5 border ${themeClasses.cardBorder} shadow-sm hover:shadow-md transition-shadow`}>
+                  <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center mb-4">
+                    <span className="text-2xl">🎤</span>
                   </div>
-                ))}
+                  <h3 className={`font-semibold ${themeClasses.textPrimary} mb-2`}>Voice Powered</h3>
+                  <p className={`text-sm ${themeClasses.textSecondary}`}>Speak naturally with the AI interviewer using your microphone. Real-time speech recognition.</p>
+                </div>
+                <div className={`${themeClasses.cardBackground} rounded-xl p-5 border ${themeClasses.cardBorder} shadow-sm hover:shadow-md transition-shadow`}>
+                  <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900/30 rounded-xl flex items-center justify-center mb-4">
+                    <span className="text-2xl">🧠</span>
+                  </div>
+                  <h3 className={`font-semibold ${themeClasses.textPrimary} mb-2`}>Smart Questions</h3>
+                  <p className={`text-sm ${themeClasses.textSecondary}`}>AI generates role-specific questions that adapt based on your responses and experience.</p>
+                </div>
+                <div className={`${themeClasses.cardBackground} rounded-xl p-5 border ${themeClasses.cardBorder} shadow-sm hover:shadow-md transition-shadow`}>
+                  <div className="w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-xl flex items-center justify-center mb-4">
+                    <span className="text-2xl">📊</span>
+                  </div>
+                  <h3 className={`font-semibold ${themeClasses.textPrimary} mb-2`}>Instant Feedback</h3>
+                  <p className={`text-sm ${themeClasses.textSecondary}`}>Get detailed scoring on communication, technical skills, and areas for improvement.</p>
+                </div>
               </div>
 
               {/* Interview History */}
