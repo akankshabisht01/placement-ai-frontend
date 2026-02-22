@@ -501,6 +501,16 @@ const AIInterview = () => {
         setConversationHistory([{ role: 'assistant', content: data.message }]);
         setCurrentMessage(data.message);
         setIsProcessing(false);
+        
+        // Request fullscreen for immersive interview experience
+        try {
+          if (document.documentElement.requestFullscreen) {
+            document.documentElement.requestFullscreen();
+          } else if (document.documentElement.webkitRequestFullscreen) {
+            document.documentElement.webkitRequestFullscreen();
+          }
+        } catch (e) { console.warn('[Fullscreen] Could not enter fullscreen:', e); }
+        
         // Ensure video stream is attached after interview screen renders
         setTimeout(() => {
           if (videoRef.current && cameraStream) {
@@ -529,6 +539,15 @@ const AIInterview = () => {
     if (recognitionRef.current) { try { recognitionRef.current.abort(); } catch (e) {} }
     if (synthRef.current) synthRef.current.cancel();
     setIsAISpeaking(false); setIsListening(false);
+
+    // Exit fullscreen when interview ends
+    try {
+      if (document.fullscreenElement) {
+        document.exitFullscreen();
+      } else if (document.webkitFullscreenElement) {
+        document.webkitExitFullscreen();
+      }
+    } catch (e) { console.warn('[Fullscreen] Could not exit fullscreen:', e); }
 
     // Stop camera and clear video element - use ref for reliable cleanup
     const streamToStop = webcamStreamRef.current || webcamStream;
