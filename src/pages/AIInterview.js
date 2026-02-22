@@ -232,13 +232,16 @@ const AIInterview = () => {
     }
   }, [conversationHistory, currentMessage, interimTranscript]);
 
-  // Webcam
+  // Webcam - attach stream to video element when available
   useEffect(() => {
     if (webcamStream && videoRef.current) {
+      console.log('[Camera] Setting video srcObject');
       videoRef.current.srcObject = webcamStream;
-      videoRef.current.play().catch(() => {});
+      videoRef.current.play()
+        .then(() => console.log('[Camera] Video playing'))
+        .catch((e) => console.warn('[Camera] Video play error:', e));
     }
-  }, [webcamStream]);
+  }, [webcamStream, cameraEnabled]); // Added cameraEnabled to trigger when video element renders
 
   // Cleanup on unmount
   useEffect(() => {
@@ -440,12 +443,21 @@ const AIInterview = () => {
         if (audioEnabled) speakText(data.message);
         else setTimeout(() => { if (interviewStartedRef.current) startListening(); }, 500);
       } else {
-        setError(data.error || 'Failed to get response');
-        setTimeout(() => { if (interviewStartedRef.current) startListening(); }, 2000);
+        // Check if session expired
+        if (data.session_expired) {
+          setError('Session expired. Please restart the interview.');
+          // Remove the user message we optimistically added
+          setConversationHistory(prev => prev.slice(0, -1));
+        } else {
+          setError(data.error || 'Failed to get response');
+          setTimeout(() => { if (interviewStartedRef.current) startListening(); }, 2000);
+        }
       }
     } catch (err) {
       setIsProcessing(false); isProcessingRef.current = false;
       setError('Connection error. Retrying...');
+      // Remove the user message we optimistically added
+      setConversationHistory(prev => prev.slice(0, -1));
       setTimeout(() => { setError(null); if (interviewStartedRef.current) startListening(); }, 2000);
     }
   };
@@ -1119,9 +1131,16 @@ const AIInterview = () => {
 
           {/* User Webcam Tile */}
           <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-gray-900 to-gray-950 border border-gray-700/30 shadow-xl">
-            {cameraEnabled && webcamStream ? (
-              <video ref={videoRef} autoPlay muted playsInline className="w-full h-full object-cover" />
-            ) : (
+            {/* Always render video element, hide when not needed */}
+            <video 
+              ref={videoRef} 
+              autoPlay 
+              muted 
+              playsInline 
+              className={`w-full h-full object-cover ${cameraEnabled && webcamStream ? '' : 'hidden'}`} 
+            />
+            {/* Show placeholder when camera is off */}
+            {(!cameraEnabled || !webcamStream) && (
               <div className="w-full h-full flex flex-col items-center justify-center text-gray-500">
                 <div className="w-24 h-24 rounded-full bg-gray-800 flex items-center justify-center mb-4">
                   <span className="text-4xl">👤</span>
@@ -1250,16 +1269,28 @@ const AIInterview = () => {
             </button>
             {/* Camera */}
             <button onClick={async () => {
+              console.log('[Camera] Toggle clicked, current state:', { cameraEnabled, hasStream: !!webcamStream });
               if (cameraEnabled && webcamStream) {
+                console.log('[Camera] Stopping camera...');
                 webcamStream.getTracks().forEach(t => t.stop());
                 setWebcamStream(null);
                 setCameraEnabled(false);
               } else {
                 try {
-                  const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false });
+                  console.log('[Camera] Requesting camera access...');
+                  const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } }, audio: false });
+                  console.log('[Camera] Got stream:', stream.id);
                   setWebcamStream(stream);
                   setCameraEnabled(true);
-                } catch (e) { console.warn('Camera error:', e); }
+                  // Also directly set to video element in case effect doesn't fire immediately
+                  if (videoRef.current) {
+                    videoRef.current.srcObject = stream;
+                    videoRef.current.play().catch(e => console.warn('[Camera] Immediate play error:', e));
+                  }
+                } catch (e) { 
+                  console.error('[Camera] Error getting camera:', e);
+                  setError('Camera access denied or unavailable. Please check your browser permissions.');
+                }
               }
             }}
               title={cameraEnabled ? 'Stop Video' : 'Start Video'}
