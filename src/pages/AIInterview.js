@@ -1199,15 +1199,18 @@ const AIInterview = () => {
   return (
     <div className={`h-screen ${themeClasses.pageBackground} transition-colors duration-300 flex flex-col overflow-hidden`}>
 
-      {/* ===== MAIN VIDEO AREA - User's camera fullscreen ===== */}
-      <div className="flex-1 relative overflow-hidden">
+      {/* ===== MAIN CONTENT AREA (Video + Chat side by side) ===== */}
+      <div className="flex-1 flex overflow-hidden">
         
-        {/* User's Camera - Full Screen Background */}
-        <div className="absolute inset-0 bg-gradient-to-br from-gray-900 to-gray-950">
-          {/* Always render video element */}
-          <video 
-            ref={videoRef} 
-            autoPlay 
+        {/* ===== VIDEO AREA - User's camera fullscreen ===== */}
+        <div className="flex-1 relative overflow-hidden">
+        
+          {/* User's Camera - Full Screen Background */}
+          <div className="absolute inset-0 bg-gradient-to-br from-gray-900 to-gray-950">
+            {/* Always render video element */}
+            <video 
+              ref={videoRef} 
+              autoPlay 
             muted 
             playsInline 
             className={`w-full h-full object-cover transition-opacity duration-200 -scale-x-100 ${cameraEnabled && webcamStream ? 'opacity-100' : 'opacity-0'}`} 
@@ -1285,61 +1288,64 @@ const AIInterview = () => {
             </div>
           </div>
         )}
+        </div>
+        {/* END VIDEO AREA */}
 
-        {/* Chat Sidebar (toggleable, like Zoom's chat panel) */}
-        {showChat && (
-          <div className={`w-full md:w-96 ${themeClasses.cardBackground} border-l ${themeClasses.cardBorder} flex flex-col absolute md:relative inset-0 md:inset-auto z-10`}>
-            {/* Chat header */}
-            <div className={`px-4 py-3 border-b ${themeClasses.cardBorder} flex items-center justify-between`}>
-              <span className={`text-sm font-semibold ${themeClasses.textPrimary}`}>Chat</span>
-              <button onClick={() => setShowChat(false)} className={`p-1 rounded-lg ${themeClasses.hover} ${themeClasses.textSecondary}`}>
-                ✕
+      </div>
+
+      {/* Chat Sidebar - FIXED to RIGHT SIDE of screen */}
+      {showChat && (
+        <div className={`fixed right-0 top-0 bottom-[88px] w-80 ${themeClasses.cardBackground} border-l ${themeClasses.cardBorder} flex flex-col z-50 shadow-2xl`}>
+          {/* Chat header */}
+          <div className={`px-4 py-3 border-b ${themeClasses.cardBorder} flex items-center justify-between`}>
+            <span className={`text-sm font-semibold ${themeClasses.textPrimary}`}>Chat</span>
+            <button onClick={() => setShowChat(false)} className={`p-1 rounded-lg ${themeClasses.hover} ${themeClasses.textSecondary}`}>
+              ✕
+            </button>
+          </div>
+          {/* Messages - scrollable */}
+          <div ref={chatContainerRef} className="flex-1 overflow-y-auto p-3 space-y-3">
+            {conversationHistory.map((msg, i) => (
+              <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                <div className={`max-w-[85%] rounded-2xl px-3 py-2 ${
+                  msg.role === 'user'
+                    ? `${themeClasses.gradient} ${themeClasses.textPrimary} shadow`
+                    : `${themeClasses.sectionBackground} ${themeClasses.textPrimary} border ${themeClasses.cardBorder}`
+                }`}>
+                  <div className="flex items-center gap-1.5 mb-0.5">
+                    <span className="text-[10px] font-semibold opacity-60">{msg.role === 'user' ? setupName : '🤖 Alex'}</span>
+                  </div>
+                  <p className="text-xs leading-relaxed whitespace-pre-wrap">{msg.content}</p>
+                </div>
+              </div>
+            ))}
+            {isProcessing && (
+              <div className="flex justify-start">
+                <div className={`${themeClasses.sectionBackground} border ${themeClasses.cardBorder} rounded-2xl px-3 py-2`}>
+                  <div className="flex items-center gap-2">
+                    <Loader2 className={`w-3 h-3 animate-spin ${themeClasses.textSecondary}`} />
+                    <span className={`text-xs ${themeClasses.textSecondary}`}>Thinking...</span>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+          {/* Text input inside chat */}
+          <div className={`p-2 border-t ${themeClasses.cardBorder}`}>
+            <div className="flex gap-2">
+              <input type="text" value={textInput} onChange={(e) => setTextInput(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') handleTextSubmit(); }}
+                placeholder="Type a message..."
+                className={`flex-1 px-3 py-2 rounded-lg border ${themeClasses.cardBorder} ${themeClasses.cardBackground} ${themeClasses.textPrimary} focus:outline-none focus:ring-1 focus:ring-blue-500 text-xs`}
+                disabled={isProcessing} />
+              <button onClick={handleTextSubmit} disabled={isProcessing || !textInput.trim()}
+                className={`${themeClasses.buttonPrimary} p-2 rounded-lg disabled:opacity-50`}>
+                <Send size={14} />
               </button>
             </div>
-            {/* Messages */}
-            <div ref={chatContainerRef} className="flex-1 overflow-y-auto p-3 space-y-3">
-              {conversationHistory.map((msg, i) => (
-                <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                  <div className={`max-w-[85%] rounded-2xl px-3 py-2 ${
-                    msg.role === 'user'
-                      ? `${themeClasses.gradient} ${themeClasses.textPrimary} shadow`
-                      : `${themeClasses.sectionBackground} ${themeClasses.textPrimary} border ${themeClasses.cardBorder}`
-                  }`}>
-                    <div className="flex items-center gap-1.5 mb-0.5">
-                      <span className="text-[10px] font-semibold opacity-60">{msg.role === 'user' ? setupName : '🤖 Alex'}</span>
-                    </div>
-                    <p className="text-xs leading-relaxed whitespace-pre-wrap">{msg.content}</p>
-                  </div>
-                </div>
-              ))}
-              {isProcessing && (
-                <div className="flex justify-start">
-                  <div className={`${themeClasses.sectionBackground} border ${themeClasses.cardBorder} rounded-2xl px-3 py-2`}>
-                    <div className="flex items-center gap-2">
-                      <Loader2 className={`w-3 h-3 animate-spin ${themeClasses.textSecondary}`} />
-                      <span className={`text-xs ${themeClasses.textSecondary}`}>Thinking...</span>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-            {/* Text input inside chat */}
-            <div className={`p-2 border-t ${themeClasses.cardBorder}`}>
-              <div className="flex gap-2">
-                <input type="text" value={textInput} onChange={(e) => setTextInput(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === 'Enter') handleTextSubmit(); }}
-                  placeholder="Type a message..."
-                  className={`flex-1 px-3 py-2 rounded-lg border ${themeClasses.cardBorder} ${themeClasses.cardBackground} ${themeClasses.textPrimary} focus:outline-none focus:ring-1 focus:ring-blue-500 text-xs`}
-                  disabled={isProcessing} />
-                <button onClick={handleTextSubmit} disabled={isProcessing || !textInput.trim()}
-                  className={`${themeClasses.buttonPrimary} p-2 rounded-lg disabled:opacity-50`}>
-                  <Send size={14} />
-                </button>
-              </div>
-            </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* ===== BOTTOM CONTROL BAR (Enhanced Zoom-style) ===== */}
       <div className={`${themeClasses.cardBackground} border-t ${themeClasses.cardBorder} px-6 py-5`}>
