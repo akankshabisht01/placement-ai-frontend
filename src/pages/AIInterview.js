@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useRef, useCallback, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Mic, MicOff, Volume2, VolumeX, Video, VideoOff, Send, StopCircle, Play, MessageCircle, AlertCircle, Loader2, Clock, ChevronRight, Award, Target, TrendingUp, BookOpen, Star, Users, Briefcase, Zap, ArrowLeft } from 'lucide-react';
+import { Mic, MicOff, Volume2, VolumeX, Video, VideoOff, Send, StopCircle, Play, MessageCircle, AlertCircle, Loader2, Clock, ChevronRight, Award, Target, TrendingUp, BookOpen, Star, Users, Briefcase, Zap, ArrowLeft, Eye, Activity } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { getThemeClasses } from '../utils/themeHelpers';
 import { useAuth } from '../contexts/AuthContext';
 import { API_BASE_URL } from '../config/api';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
+import useConfidenceAnalyzer from '../hooks/useConfidenceAnalyzer';
+import ConfidenceIndicator from '../components/interview/ConfidenceIndicator';
 
 // ============ 3D Animated Avatar Component ============
 function AnimatedAvatar({ isSpeaking }) {
@@ -160,6 +162,7 @@ const AIInterview = () => {
   const [cameraEnabled, setCameraEnabled] = useState(true);
   const [feedbackTab, setFeedbackTab] = useState('overview');
   const [showChat, setShowChat] = useState(false);
+  const [confidenceSummary, setConfidenceSummary] = useState(null);
 
   // Setup form state
   const [setupName, setSetupName] = useState('');
@@ -178,6 +181,15 @@ const AIInterview = () => {
   const interviewStartedRef = useRef(false);
   const webcamStreamRef = useRef(null);
   const lastSubmittedTextRef = useRef('');
+
+  // === Client-side Confidence Analysis (runs in browser, ZERO server impact) ===
+  const {
+    confidenceData,
+    isReady: isConfidenceReady,
+    error: confidenceError,
+    getSessionSummary,
+    resetAnalysis
+  } = useConfidenceAnalyzer(videoRef, interviewStarted && cameraEnabled && webcamStream !== null);
 
   // === Clean transcript: remove consecutive duplicate words/phrases ===
   const cleanTranscript = useCallback((text) => {
@@ -587,6 +599,11 @@ const AIInterview = () => {
 
   // === End Interview ===
   const endInterview = async () => {
+    // Get confidence summary BEFORE stopping camera (while analysis is still valid)
+    const confSummary = getSessionSummary();
+    setConfidenceSummary(confSummary);
+    console.log('[ConfidenceAnalyzer] Session summary:', confSummary);
+    
     setInterviewEnded(true); setInterviewStarted(false);
     interviewStartedRef.current = false;
     if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
@@ -622,7 +639,10 @@ const AIInterview = () => {
         const response = await fetch(`${API_BASE_URL}/api/interview/end`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ session_id: currentSessionId })
+          body: JSON.stringify({ 
+            session_id: currentSessionId,
+            confidence_analysis: confSummary.framesAnalyzed > 0 ? confSummary : null
+          })
         });
         const data = await response.json();
         if (data.success) setFeedback(data.feedback);
@@ -643,6 +663,8 @@ const AIInterview = () => {
     setConversationHistory([]); setCurrentMessage(''); setFeedback(null);
     setTimeRemaining(600); setError(null); setIsProcessing(false);
     setIsListening(false); setIsAISpeaking(false); setInterimTranscript('');
+    setConfidenceSummary(null);
+    resetAnalysis(); // Reset confidence analyzer
   };
 
   // ====== RENDER ======
@@ -859,6 +881,69 @@ const AIInterview = () => {
                   {/* ===== OVERVIEW TAB ===== */}
                   {activeTab === 'overview' && (
                     <>
+                      {/* Confidence Analysis (Client-Side MediaPipe Results) */}
+                      {confidenceSummary && confidenceSummary.framesAnalyzed > 0 && (
+                        <div className={`p-6 rounded-xl ${themeClasses.sectionBackground} border ${themeClasses.cardBorder}`}>
+                          <h3 className={`text-lg font-semibold ${themeClasses.textPrimary} mb-4 flex items-center gap-2`}>
+                            <Eye size={18} className="text-purple-400" /> Body Language Analysis
+                          </h3>
+                          <p className={`text-xs ${themeClasses.textSecondary} mb-4`}>
+                            Analyzed {confidenceSummary.framesAnalyzed} frames during your {confidenceSummary.duration}s interview
+                          </p>
+                          <div className="grid grid-cols-3 gap-4">
+                            <div className="text-center">
+                              <div className={`text-3xl font-bold ${
+                                confidenceSummary.avgEyeContact >= 70 ? 'text-green-400' : 
+                                confidenceSummary.avgEyeContact >= 50 ? 'text-yellow-400' : 'text-red-400'
+                              }`}>
+                                {confidenceSummary.avgEyeContact}%
+                              </div>
+                              <div className={`text-xs ${themeClasses.textSecondary} mt-1 flex items-center justify-center gap-1`}>
+                                <Eye size={12} /> Eye Contact
+                              </div>
+                            </div>
+                            <div className="text-center">
+                              <div className={`text-3xl font-bold ${
+                                confidenceSummary.avgHeadStability >= 70 ? 'text-green-400' : 
+                                confidenceSummary.avgHeadStability >= 50 ? 'text-yellow-400' : 'text-red-400'
+                              }`}>
+                                {confidenceSummary.avgHeadStability}%
+                              </div>
+                              <div className={`text-xs ${themeClasses.textSecondary} mt-1 flex items-center justify-center gap-1`}>
+                                <Activity size={12} /> Head Stability
+                              </div>
+                            </div>
+                            <div className="text-center">
+                              <div className={`text-3xl font-bold ${
+                                confidenceSummary.avgOverall >= 70 ? 'text-green-400' : 
+                                confidenceSummary.avgOverall >= 50 ? 'text-yellow-400' : 'text-red-400'
+                              }`}>
+                                {confidenceSummary.avgOverall}%
+                              </div>
+                              <div className={`text-xs ${themeClasses.textSecondary} mt-1`}>
+                                Overall Confidence
+                              </div>
+                            </div>
+                          </div>
+                          <div className={`mt-4 p-3 rounded-lg ${
+                            confidenceSummary.avgOverall >= 70 ? 'bg-green-500/10 border border-green-500/20' :
+                            confidenceSummary.avgOverall >= 50 ? 'bg-yellow-500/10 border border-yellow-500/20' :
+                            'bg-red-500/10 border border-red-500/20'
+                          }`}>
+                            <p className={`text-sm ${
+                              confidenceSummary.avgOverall >= 70 ? 'text-green-400' :
+                              confidenceSummary.avgOverall >= 50 ? 'text-yellow-400' : 'text-red-400'
+                            }`}>
+                              {confidenceSummary.avgOverall >= 70 
+                                ? '✨ Excellent body language! You maintained great eye contact and appeared confident throughout.'
+                                : confidenceSummary.avgOverall >= 50
+                                ? '👍 Good body language overall. Try to maintain more consistent eye contact with the camera.'
+                                : '💡 Tip: Practice looking directly at the camera and minimizing head movements for a more confident appearance.'}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+
                       {/* Strengths */}
                       {(analysis.strengths || feedback.strengths || []).length > 0 && (
                         <div className={`p-6 rounded-xl ${themeClasses.sectionBackground} border ${themeClasses.cardBorder}`}>
@@ -1233,6 +1318,18 @@ const AIInterview = () => {
           {/* Listening indicator border */}
           {isListening && (
             <div className="absolute inset-0 border-4 border-green-500/40 pointer-events-none" />
+          )}
+          
+          {/* Confidence Indicator - Top Right (only when camera is on) */}
+          {cameraEnabled && webcamStream && (
+            <div className="absolute top-4 right-4 z-30">
+              <ConfidenceIndicator 
+                confidenceData={confidenceData}
+                isReady={isConfidenceReady}
+                error={confidenceError}
+                compact={true}
+              />
+            </div>
           )}
         </div>
 
