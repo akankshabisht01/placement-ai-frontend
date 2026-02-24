@@ -6,12 +6,104 @@ import { getThemeClasses } from '../utils/themeHelpers';
 import { useAuth } from '../contexts/AuthContext';
 import { API_BASE_URL } from '../config/api';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { OrbitControls } from '@react-three/drei';
+import { OrbitControls, useGLTF, useAnimations } from '@react-three/drei';
 import * as THREE from 'three';
 import useConfidenceAnalyzer from '../hooks/useConfidenceAnalyzer';
 import ConfidenceIndicator from '../components/interview/ConfidenceIndicator';
 
-// ============ 3D Realistic Interviewer Avatar (with face texture) ============
+// ============ 3D GLB Model Interviewer Avatar ============
+function GLBInterviewerAvatar({ isSpeaking }) {
+  const groupRef = useRef();
+  const morphTargetsRef = useRef([]);
+  const { scene, animations } = useGLTF('/models/interviewer-compressed.glb');
+  const { actions, mixer } = useAnimations(animations, groupRef);
+  
+  // Find morph targets for lip sync
+  useEffect(() => {
+    const targets = [];
+    scene.traverse((child) => {
+      if (child.isMesh && child.morphTargetInfluences && child.morphTargetDictionary) {
+        targets.push({
+          mesh: child,
+          dictionary: child.morphTargetDictionary,
+          influences: child.morphTargetInfluences
+        });
+        console.log('[LipSync] Found morph targets:', Object.keys(child.morphTargetDictionary));
+      }
+    });
+    morphTargetsRef.current = targets;
+  }, [scene]);
+  
+  useEffect(() => {
+    // Play idle animation if available
+    const idleAction = actions['Idle'] || actions['idle'] || Object.values(actions)[0];
+    if (idleAction) {
+      idleAction.reset().fadeIn(0.5).play();
+    }
+    return () => {
+      Object.values(actions).forEach(action => action?.stop());
+    };
+  }, [actions]);
+  
+  // Subtle breathing and lip sync animation
+  useFrame((state) => {
+    const time = state.clock.getElapsedTime();
+    if (groupRef.current) {
+      // Subtle breathing
+      groupRef.current.position.y = Math.sin(time * 1.2) * 0.01 - 0.5;
+      // Subtle sway
+      groupRef.current.rotation.y = Math.sin(time * 0.3) * 0.05;
+    }
+    
+    // Lip sync animation when speaking
+    morphTargetsRef.current.forEach(({ mesh, dictionary }) => {
+      // Common mouth morph target names
+      const mouthTargets = [
+        'mouthOpen', 'jawOpen', 'viseme_aa', 'viseme_O', 'viseme_E',
+        'A', 'O', 'E', 'mouth_open', 'Jaw_Open', 'MouthOpen',
+        'viseme_PP', 'viseme_FF', 'viseme_TH', 'viseme_DD'
+      ];
+      
+      mouthTargets.forEach(targetName => {
+        if (dictionary[targetName] !== undefined) {
+          const idx = dictionary[targetName];
+          if (isSpeaking) {
+            // Subtle speech movement - gentle mouth opening
+            const variation = Math.abs(Math.sin(time * 6)) * 0.15 + 
+                            Math.abs(Math.sin(time * 4)) * 0.1;
+            mesh.morphTargetInfluences[idx] = variation;
+          } else {
+            // Smoothly close mouth
+            mesh.morphTargetInfluences[idx] *= 0.85;
+          }
+        }
+      });
+    });
+    
+    // Update animation mixer
+    if (mixer) {
+      mixer.update(0.016);
+    }
+  });
+  
+  return (
+    <group ref={groupRef} position={[0, -0.5, 0]} scale={[5, 5, 5]}>
+      <primitive object={scene} />
+      {/* Speaking indicator */}
+      {isSpeaking && (
+        <mesh position={[0, 0.5, 0]}>
+          <ringGeometry args={[0.15, 0.17, 32]} />
+          <meshBasicMaterial color="#4fc3f7" transparent opacity={0.5} side={THREE.DoubleSide} />
+        </mesh>
+      )}
+    </group>
+  );
+}
+
+// Preload the GLB model
+useGLTF.preload('/models/interviewer-compressed.glb');
+
+// ============ 3D Realistic Interviewer Avatar (Fallback with primitives) ============
 function RealisticInterviewerAvatar({ isSpeaking, faceImageUrl }) {
   const groupRef = useRef();
   const headRef = useRef();
@@ -1641,12 +1733,8 @@ const AIInterview = () => {
                 <directionalLight position={[3, 4, 2]} intensity={1.0} castShadow />
                 <directionalLight position={[-2, 2, 1]} intensity={0.4} color="#818cf8" />
                 <pointLight position={[0, 2, 3]} intensity={0.3} color="#60a5fa" />
-                {/* Use Realistic 3D Professional Avatar by default, Robot as fallback */}
-                {useRealisticAvatar ? (
-                  <RealisticInterviewerAvatar isSpeaking={isAISpeaking} />
-                ) : (
-                  <AnimatedAvatar isSpeaking={isAISpeaking} />
-                )}
+                {/* Use GLB 3D Model Avatar for realistic look */}
+                <GLBInterviewerAvatar isSpeaking={isAISpeaking} />
                 <OrbitControls 
                   enableZoom={false} 
                   enablePan={false} 
