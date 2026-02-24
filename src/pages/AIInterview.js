@@ -1367,157 +1367,157 @@ const AIInterview = () => {
   return (
     <div className={`h-screen ${themeClasses.pageBackground} transition-colors duration-300 flex flex-col overflow-hidden`}>
 
-      {/* ===== MAIN CONTENT AREA (Video + Chat side by side) ===== */}
+      {/* ===== MAIN CONTENT AREA (Split Screen - Interviewer | User) ===== */}
       <div className="flex-1 flex overflow-hidden">
         
-        {/* ===== VIDEO AREA - User's camera fullscreen ===== */}
-        <div className="flex-1 relative overflow-hidden">
+        {/* ===== SPLIT VIDEO AREA - 50/50 Layout ===== */}
+        <div className="flex-1 flex relative overflow-hidden">
         
-          {/* User's Camera - Full Screen Background */}
-          <div className="absolute inset-0 bg-gradient-to-br from-gray-900 to-gray-950">
+          {/* LEFT HALF - AI Interviewer */}
+          <div className="w-1/2 relative bg-gradient-to-br from-indigo-950 to-slate-900 border-r-2 border-indigo-500/30">
+            {/* Realistic Avatar Mode - FREE with lip sync */}
+            {useRealisticAvatar ? (
+              <div className="w-full h-full relative">
+                {/* Interviewer Image - Full Half */}
+                <img 
+                  src={INTERVIEWER_IMAGE} 
+                  alt="AI Interviewer Alex" 
+                  className="w-full h-full object-cover"
+                />
+                
+                {/* Lip Sync Mouth Overlay - Animated when speaking */}
+                {isAISpeaking && (
+                  <div className="absolute inset-0 pointer-events-none">
+                    {/* Subtle mouth movement indicator overlay */}
+                    <div 
+                      className="absolute bottom-[38%] left-1/2 transform -translate-x-1/2"
+                      style={{
+                        width: `${16 + mouthOpenness * 12}px`,
+                        height: `${6 + mouthOpenness * 14}px`,
+                        backgroundColor: 'rgba(139, 69, 69, 0.3)',
+                        borderRadius: '50%',
+                        transition: 'all 0.05s ease-out',
+                        filter: 'blur(3px)',
+                      }}
+                    />
+                  </div>
+                )}
+                
+                {/* Speaking Audio Waves Indicator */}
+                {isAISpeaking && (
+                  <div className="absolute bottom-20 left-1/2 transform -translate-x-1/2 flex items-end gap-1.5">
+                    {[...Array(7)].map((_, i) => (
+                      <div
+                        key={i}
+                        className="w-1.5 bg-blue-400 rounded-full"
+                        style={{
+                          height: `${12 + Math.sin((Date.now() / 100) + i * 0.8) * 12 + mouthOpenness * 16}px`,
+                          opacity: 0.8,
+                          transition: 'height 0.1s ease-out',
+                        }}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            ) : (
+              /* Default 3D Robot Avatar Mode */
+              <Suspense fallback={
+                <div className="w-full h-full flex items-center justify-center">
+                  <div className="text-6xl animate-pulse">🤖</div>
+                </div>
+              }>
+                <Canvas camera={{ position: [0, 0.5, 3.2], fov: 50 }} style={{ width: '100%', height: '100%' }}>
+                  <ambientLight intensity={0.6} />
+                  <directionalLight position={[2, 3, 2]} intensity={0.8} />
+                  <pointLight position={[-2, 2, 1]} intensity={0.4} color="#818cf8" />
+                  <AnimatedAvatar isSpeaking={isAISpeaking} />
+                  <OrbitControls enableZoom={false} enablePan={false} minPolarAngle={Math.PI / 3} maxPolarAngle={Math.PI / 2} />
+                </Canvas>
+              </Suspense>
+            )}
+            {/* AI name label */}
+            <div className="absolute bottom-4 left-4 flex items-center gap-2 z-10">
+              <div className="flex items-center gap-2 bg-black/70 text-white px-4 py-2.5 rounded-xl backdrop-blur-sm">
+                <span className="font-medium text-base">{useRealisticAvatar ? '👔' : '🤖'} Alex</span>
+                {isAISpeaking && <Volume2 size={18} className="text-blue-400 animate-pulse" />}
+              </div>
+            </div>
+            {/* Speaking glow border */}
+            {isAISpeaking && (
+              <div className="absolute inset-0 border-4 border-blue-400/50 pointer-events-none animate-pulse" />
+            )}
+          </div>
+
+          {/* RIGHT HALF - User's Camera */}
+          <div className="w-1/2 relative bg-gradient-to-br from-gray-900 to-gray-950">
             {/* Always render video element */}
             <video 
               ref={videoRef} 
               autoPlay 
-            muted 
-            playsInline 
-            className={`w-full h-full object-cover transition-opacity duration-200 -scale-x-100 ${cameraEnabled && webcamStream ? 'opacity-100' : 'opacity-0'}`} 
-          />
-          {/* Show placeholder when camera is off */}
-          <div className={`absolute inset-0 flex flex-col items-center justify-center text-gray-500 transition-opacity duration-200 ${cameraEnabled && webcamStream ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
-            <div className="w-32 h-32 rounded-full bg-gray-800 flex items-center justify-center mb-4">
-              <span className="text-6xl">👤</span>
-            </div>
-            <span className={`text-lg ${themeClasses.textSecondary}`}>{setupName || 'You'}</span>
-            <span className="text-sm text-gray-600 mt-1">Camera is off</span>
-          </div>
-          {/* User name label - bottom left */}
-          <div className="absolute bottom-4 left-4 flex items-center gap-2 z-10">
-            <div className="flex items-center gap-2 bg-black/60 text-white px-4 py-2 rounded-xl backdrop-blur-sm">
-              <span className="font-medium text-base">👤 {setupName || 'You'}</span>
-              {isListening && <Mic size={16} className="text-green-400 animate-pulse" />}
-            </div>
-          </div>
-          {/* Listening indicator border */}
-          {isListening && (
-            <div className="absolute inset-0 border-4 border-green-500/40 pointer-events-none" />
-          )}
-          
-          {/* Confidence Indicator - Top Right (only when camera is on) */}
-          {cameraEnabled && webcamStream && (
-            <div className="absolute top-4 right-4 z-30">
-              <ConfidenceIndicator 
-                confidenceData={confidenceData}
-                isReady={isConfidenceReady}
-                error={confidenceError}
-                compact={true}
-              />
-            </div>
-          )}
-        </div>
-
-        {/* AI Avatar - Floating PiP in top-left */}
-        <div className="absolute top-4 left-4 w-64 h-48 md:w-80 md:h-56 rounded-2xl overflow-hidden bg-gradient-to-br from-indigo-950 to-slate-900 border-2 border-indigo-500/30 shadow-2xl z-20">
-          {/* Realistic Avatar Mode - FREE with lip sync */}
-          {useRealisticAvatar ? (
-            <div className="w-full h-full relative">
-              {/* Interviewer Image */}
-              <img 
-                src={INTERVIEWER_IMAGE} 
-                alt="AI Interviewer Alex" 
-                className="w-full h-full object-cover"
-              />
-              
-              {/* Lip Sync Mouth Overlay - Animated when speaking */}
-              {isAISpeaking && (
-                <div className="absolute inset-0 pointer-events-none">
-                  {/* Subtle mouth movement indicator overlay */}
-                  <div 
-                    className="absolute bottom-[38%] left-1/2 transform -translate-x-1/2"
-                    style={{
-                      width: `${12 + mouthOpenness * 8}px`,
-                      height: `${4 + mouthOpenness * 10}px`,
-                      backgroundColor: 'rgba(139, 69, 69, 0.3)',
-                      borderRadius: '50%',
-                      transition: 'all 0.05s ease-out',
-                      filter: 'blur(2px)',
-                    }}
-                  />
-                </div>
-              )}
-              
-              {/* Speaking Audio Waves Indicator */}
-              {isAISpeaking && (
-                <div className="absolute bottom-12 left-1/2 transform -translate-x-1/2 flex items-end gap-1">
-                  {[...Array(5)].map((_, i) => (
-                    <div
-                      key={i}
-                      className="w-1 bg-blue-400 rounded-full"
-                      style={{
-                        height: `${8 + Math.sin((Date.now() / 100) + i * 0.8) * 8 + mouthOpenness * 12}px`,
-                        opacity: 0.8,
-                        transition: 'height 0.1s ease-out',
-                      }}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
-          ) : (
-            /* Default 3D Robot Avatar Mode */
-            <Suspense fallback={
-              <div className="w-full h-full flex items-center justify-center">
-                <div className="text-4xl animate-pulse">🤖</div>
+              muted 
+              playsInline 
+              className={`w-full h-full object-cover transition-opacity duration-200 -scale-x-100 ${cameraEnabled && webcamStream ? 'opacity-100' : 'opacity-0'}`} 
+            />
+            {/* Show placeholder when camera is off */}
+            <div className={`absolute inset-0 flex flex-col items-center justify-center text-gray-500 transition-opacity duration-200 ${cameraEnabled && webcamStream ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
+              <div className="w-32 h-32 rounded-full bg-gray-800 flex items-center justify-center mb-4">
+                <span className="text-6xl">👤</span>
               </div>
-            }>
-              <Canvas camera={{ position: [0, 0.5, 3.2], fov: 50 }} style={{ width: '100%', height: '100%' }}>
-                <ambientLight intensity={0.6} />
-                <directionalLight position={[2, 3, 2]} intensity={0.8} />
-                <pointLight position={[-2, 2, 1]} intensity={0.4} color="#818cf8" />
-                <AnimatedAvatar isSpeaking={isAISpeaking} />
-                <OrbitControls enableZoom={false} enablePan={false} minPolarAngle={Math.PI / 3} maxPolarAngle={Math.PI / 2} />
-              </Canvas>
-            </Suspense>
-          )}
-          {/* AI name label */}
-          <div className="absolute bottom-2 left-2 flex items-center gap-2">
-            <div className="flex items-center gap-1.5 bg-black/70 text-white text-xs px-2 py-1 rounded-lg backdrop-blur-sm">
-              <span className="font-medium">{useRealisticAvatar ? '👔' : '🤖'} Alex</span>
-              {isAISpeaking && <Volume2 size={12} className="text-blue-400 animate-pulse" />}
+              <span className={`text-lg ${themeClasses.textSecondary}`}>{setupName || 'You'}</span>
+              <span className="text-sm text-gray-600 mt-1">Camera is off</span>
             </div>
+            {/* User name label - bottom left */}
+            <div className="absolute bottom-4 left-4 flex items-center gap-2 z-10">
+              <div className="flex items-center gap-2 bg-black/60 text-white px-4 py-2.5 rounded-xl backdrop-blur-sm">
+                <span className="font-medium text-base">👤 {setupName || 'You'}</span>
+                {isListening && <Mic size={18} className="text-green-400 animate-pulse" />}
+              </div>
+            </div>
+            {/* Listening indicator border */}
+            {isListening && (
+              <div className="absolute inset-0 border-4 border-green-500/40 pointer-events-none" />
+            )}
+            
+            {/* Confidence Indicator - Top Right (only when camera is on) */}
+            {cameraEnabled && webcamStream && (
+              <div className="absolute top-4 right-4 z-30">
+                <ConfidenceIndicator 
+                  confidenceData={confidenceData}
+                  isReady={isConfidenceReady}
+                  error={confidenceError}
+                  compact={true}
+                />
+              </div>
+            )}
           </div>
-          {/* Speaking glow */}
-          {isAISpeaking && (
-            <div className="absolute inset-0 rounded-2xl border-2 border-blue-400/60 pointer-events-none animate-pulse" />
-          )}
-        </div>
 
-        {/* === SUBTITLE / CAPTION BAR (between video and controls) === */}
-        {(currentMessage || (isListening && interimTranscript)) && (
-          <div className="absolute bottom-0 left-0 right-0 z-20 pointer-events-none">
-            <div className="max-w-3xl mx-auto px-4 pb-3 space-y-2">
-              {/* AI message subtitle */}
-              {currentMessage && (
-                <div className="flex items-start gap-2 bg-black/70 backdrop-blur-md text-white px-4 py-2.5 rounded-xl shadow-lg">
-                  <span className="text-blue-400 font-semibold text-sm flex-shrink-0">{useRealisticAvatar ? '👔' : '🤖'} Alex:</span>
-                  <p className="text-sm leading-relaxed">{currentMessage.slice(0, 300)}{currentMessage.length > 300 ? '...' : ''}</p>
-                </div>
-              )}
-              {/* User speech subtitle */}
-              {isListening && interimTranscript && (
-                <div className="flex items-start gap-2 bg-black/60 backdrop-blur-md text-white px-4 py-2.5 rounded-xl shadow-lg">
-                  <div className="flex items-center gap-1.5 flex-shrink-0">
-                    <div className="w-2 h-2 bg-red-400 rounded-full animate-pulse" />
-                    <span className="text-green-400 font-semibold text-sm">You:</span>
+          {/* === SUBTITLE / CAPTION BAR (centered at bottom, spanning both halves) === */}
+          {(currentMessage || (isListening && interimTranscript)) && (
+            <div className="absolute bottom-0 left-0 right-0 z-20 pointer-events-none">
+              <div className="max-w-3xl mx-auto px-4 pb-3 space-y-2">
+                {/* AI message subtitle */}
+                {currentMessage && (
+                  <div className="flex items-start gap-2 bg-black/70 backdrop-blur-md text-white px-4 py-2.5 rounded-xl shadow-lg">
+                    <span className="text-blue-400 font-semibold text-sm flex-shrink-0">{useRealisticAvatar ? '👔' : '🤖'} Alex:</span>
+                    <p className="text-sm leading-relaxed">{currentMessage.slice(0, 300)}{currentMessage.length > 300 ? '...' : ''}</p>
                   </div>
-                  <p className="text-sm leading-relaxed italic">{interimTranscript}</p>
-                </div>
-              )}
+                )}
+                {/* User speech subtitle */}
+                {isListening && interimTranscript && (
+                  <div className="flex items-start gap-2 bg-black/60 backdrop-blur-md text-white px-4 py-2.5 rounded-xl shadow-lg">
+                    <div className="flex items-center gap-1.5 flex-shrink-0">
+                      <div className="w-2 h-2 bg-red-400 rounded-full animate-pulse" />
+                      <span className="text-green-400 font-semibold text-sm">You:</span>
+                    </div>
+                    <p className="text-sm leading-relaxed italic">{interimTranscript}</p>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
-        )}
+          )}
         </div>
-        {/* END VIDEO AREA */}
+        {/* END SPLIT VIDEO AREA */}
 
       </div>
 
