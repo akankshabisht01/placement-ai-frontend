@@ -164,6 +164,13 @@ const AIInterview = () => {
   const [showChat, setShowChat] = useState(false);
   const [confidenceSummary, setConfidenceSummary] = useState(null);
 
+  // D-ID Avatar state (realistic talking face)
+  const [useVideoAvatar, setUseVideoAvatar] = useState(false); // Toggle between TTS and video
+  const [avatarAvailable, setAvatarAvailable] = useState(false); // Is D-ID configured?
+  const [interviewerImageUrl, setInterviewerImageUrl] = useState(null);
+  const [interviewerVideoUrl, setInterviewerVideoUrl] = useState(null);
+  const [isGeneratingVideo, setIsGeneratingVideo] = useState(false);
+
   // Setup form state
   const [setupName, setSetupName] = useState('');
   const [setupPosition, setSetupPosition] = useState('Software Developer');
@@ -173,6 +180,7 @@ const AIInterview = () => {
   const synthRef = useRef(window.speechSynthesis);
   const timerIntervalRef = useRef(null);
   const videoRef = useRef(null);
+  const interviewerVideoRef = useRef(null); // Ref for interviewer video element
   const chatContainerRef = useRef(null);
   const sessionIdRef = useRef(null);
   const isProcessingRef = useRef(false);
@@ -244,6 +252,25 @@ const AIInterview = () => {
       if (!name && predRaw) { const d = JSON.parse(predRaw); name = d.name || ''; }
       if (name) setSetupName(name);
     } catch (e) { /* ignore */ }
+  }, []);
+
+  // Check D-ID avatar availability on mount
+  useEffect(() => {
+    const checkAvatarStatus = async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/interview/avatar-status`);
+        const data = await response.json();
+        setAvatarAvailable(data.available);
+        if (data.interviewer_image) {
+          setInterviewerImageUrl(data.interviewer_image);
+        }
+        console.log('[D-ID] Avatar status:', data.available ? 'Available' : 'Not available');
+      } catch (e) {
+        console.log('[D-ID] Could not check avatar status:', e.message);
+        setAvatarAvailable(false);
+      }
+    };
+    checkAvatarStatus();
   }, []);
 
   // Preload voices
@@ -420,9 +447,61 @@ const AIInterview = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // === TTS ===
-  const speakText = useCallback((text) => {
-    if (!audioEnabled || !synthRef.current) return;
+  // === D-ID Video Generation ===
+  const generateInterviewerVideo = useCallback(async (text) => {
+    if (!useVideoAvatar || !avatarAvailable) return false;
+    
+    try {
+      setIsGeneratingVideo(true);
+      setIsAISpeaking(true);
+      
+      const response = await fetch(`${API_BASE_URL}/api/interview/generate-video`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text, session_id: sessionIdRef.current })
+      });
+      
+      const data = await response.json();
+      
+      if (data.success && data.video_url) {
+        setInterviewerVideoUrl(data.video_url);
+        setIsGeneratingVideo(false);
+        // Video will play via the video element onEnded handler
+        return true;
+      } else {
+        console.log('[D-ID] Video generation failed, falling back to TTS:', data.error);
+        setIsGeneratingVideo(false);
+        return false; // Fall back to TTS
+      }
+    } catch (e) {
+      console.error('[D-ID] Error generating video:', e);
+      setIsGeneratingVideo(false);
+      return false; // Fall back to TTS
+    }
+  }, [useVideoAvatar, avatarAvailable]);
+
+  // Handler when interviewer video ends
+  const handleInterviewerVideoEnded = useCallback(() => {
+    setIsAISpeaking(false);
+    isAISpeakingRef.current = false;
+    setInterviewerVideoUrl(null); // Clear video so image shows
+    if (interviewStartedRef.current && !showTextInput) {
+      setTimeout(() => { if (!isAISpeakingRef.current) startListening(); }, 200);
+    }
+  }, [showTextInput]);
+
+  // === TTS (with optional D-ID video) ===
+  const speakText = useCallback(async (text) => {
+    if (!audioEnabled) return;
+    
+    // Try D-ID video first if enabled
+    if (useVideoAvatar && avatarAvailable) {
+      const videoGenerated = await generateInterviewerVideo(text);
+      if (videoGenerated) return; // Video will handle speaking
+    }
+    
+    // Fall back to browser TTS
+    if (!synthRef.current) return;
     synthRef.current.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.rate = 1.0; utterance.pitch = 1.0; utterance.volume = 1.0;
@@ -449,7 +528,7 @@ const AIInterview = () => {
     };
     synthRef.current.speak(utterance);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [audioEnabled, showTextInput]);
+  }, [audioEnabled, showTextInput, useVideoAvatar, avatarAvailable, generateInterviewerVideo]);
 
   // === Start Listening ===
   const startListening = useCallback(() => {
@@ -720,7 +799,34 @@ const AIInterview = () => {
                   {audioEnabled ? <Volume2 size={18} /> : <VolumeX size={18} />}
                   <span className="text-sm font-medium">{audioEnabled ? 'Audio On' : 'Audio Off'}</span>
                 </button>
+
+                {/* Video Avatar Toggle - only show if D-ID is available */}
+                {avatarAvailable && (
+                  <button onClick={() => setUseVideoAvatar(!useVideoAvatar)}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-xl border transition-all ${useVideoAvatar ? 'bg-purple-500/20 border-purple-500/50 text-purple-400' : `${themeClasses.cardBackground} ${themeClasses.cardBorder} ${themeClasses.textSecondary}`}`}>
+                    <Video size={18} />
+                    <span className="text-sm font-medium">{useVideoAvatar ? 'Video Avatar On' : 'Video Avatar Off'}</span>
+                  </button>
+                )}
               </div>
+
+              {/* Video Avatar Info */}
+              {avatarAvailable && useVideoAvatar && (
+                <div className="bg-purple-500/10 border border-purple-500/30 rounded-xl p-4">
+                  <div className="flex items-start gap-3">
+                    <div className="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0">
+                      <img src={interviewerImageUrl} alt="AI Interviewer" className="w-full h-full object-cover" />
+                    </div>
+                    <div>
+                      <p className="text-purple-400 font-medium text-sm">Realistic Video Interview</p>
+                      <p className={`text-xs ${themeClasses.textSecondary} mt-1`}>
+                        Your interviewer will speak with realistic lip-sync animation. 
+                        Note: Each response may take 3-5 seconds to generate.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Browser support check */}
               {!useBrowserRecognition && (
@@ -1335,24 +1441,65 @@ const AIInterview = () => {
 
         {/* AI Avatar - Floating PiP in top-left */}
         <div className="absolute top-4 left-4 w-64 h-48 md:w-80 md:h-56 rounded-2xl overflow-hidden bg-gradient-to-br from-indigo-950 to-slate-900 border-2 border-indigo-500/30 shadow-2xl z-20">
-          <Suspense fallback={
-            <div className="w-full h-full flex items-center justify-center">
-              <div className="text-4xl animate-pulse">🤖</div>
+          {/* D-ID Video Avatar Mode */}
+          {useVideoAvatar && avatarAvailable ? (
+            <div className="w-full h-full relative">
+              {/* Show video when available, otherwise show image */}
+              {interviewerVideoUrl ? (
+                <video
+                  ref={interviewerVideoRef}
+                  src={interviewerVideoUrl}
+                  autoPlay
+                  playsInline
+                  onEnded={handleInterviewerVideoEnded}
+                  onError={() => {
+                    console.error('[D-ID] Video playback error');
+                    setInterviewerVideoUrl(null);
+                    setIsAISpeaking(false);
+                  }}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full relative">
+                  <img 
+                    src={interviewerImageUrl} 
+                    alt="AI Interviewer" 
+                    className="w-full h-full object-cover"
+                  />
+                  {/* Loading overlay when generating video */}
+                  {isGeneratingVideo && (
+                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                      <div className="flex flex-col items-center gap-2">
+                        <Loader2 className="w-8 h-8 text-purple-400 animate-spin" />
+                        <span className="text-white text-xs">Generating...</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
-          }>
-            <Canvas camera={{ position: [0, 0.5, 3.2], fov: 50 }} style={{ width: '100%', height: '100%' }}>
-              <ambientLight intensity={0.6} />
-              <directionalLight position={[2, 3, 2]} intensity={0.8} />
-              <pointLight position={[-2, 2, 1]} intensity={0.4} color="#818cf8" />
-              <AnimatedAvatar isSpeaking={isAISpeaking} />
-              <OrbitControls enableZoom={false} enablePan={false} minPolarAngle={Math.PI / 3} maxPolarAngle={Math.PI / 2} />
-            </Canvas>
-          </Suspense>
+          ) : (
+            /* Default 3D Avatar Mode */
+            <Suspense fallback={
+              <div className="w-full h-full flex items-center justify-center">
+                <div className="text-4xl animate-pulse">🤖</div>
+              </div>
+            }>
+              <Canvas camera={{ position: [0, 0.5, 3.2], fov: 50 }} style={{ width: '100%', height: '100%' }}>
+                <ambientLight intensity={0.6} />
+                <directionalLight position={[2, 3, 2]} intensity={0.8} />
+                <pointLight position={[-2, 2, 1]} intensity={0.4} color="#818cf8" />
+                <AnimatedAvatar isSpeaking={isAISpeaking} />
+                <OrbitControls enableZoom={false} enablePan={false} minPolarAngle={Math.PI / 3} maxPolarAngle={Math.PI / 2} />
+              </Canvas>
+            </Suspense>
+          )}
           {/* AI name label */}
           <div className="absolute bottom-2 left-2 flex items-center gap-2">
             <div className="flex items-center gap-1.5 bg-black/70 text-white text-xs px-2 py-1 rounded-lg backdrop-blur-sm">
-              <span className="font-medium">🤖 Alex</span>
+              <span className="font-medium">{useVideoAvatar && avatarAvailable ? '👔' : '🤖'} Alex</span>
               {isAISpeaking && <Volume2 size={12} className="text-blue-400 animate-pulse" />}
+              {isGeneratingVideo && <Loader2 size={12} className="text-purple-400 animate-spin" />}
             </div>
           </div>
           {/* Speaking glow */}
