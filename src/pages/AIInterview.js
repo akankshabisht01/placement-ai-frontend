@@ -7,10 +7,305 @@ import { useAuth } from '../contexts/AuthContext';
 import { API_BASE_URL } from '../config/api';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
+import * as THREE from 'three';
 import useConfidenceAnalyzer from '../hooks/useConfidenceAnalyzer';
 import ConfidenceIndicator from '../components/interview/ConfidenceIndicator';
 
-// ============ 3D Animated Avatar Component ============
+// ============ 3D Realistic Interviewer Avatar (with face texture) ============
+function RealisticInterviewerAvatar({ isSpeaking, faceImageUrl }) {
+  const groupRef = useRef();
+  const headRef = useRef();
+  const mouthRef = useRef();
+  const bodyRef = useRef();
+  const leftArmRef = useRef();
+  const rightArmRef = useRef();
+  const clipboardRef = useRef();
+  const jawRef = useRef();
+  
+  // Subtle breathing and idle animation
+  useFrame((state) => {
+    const time = state.clock.getElapsedTime();
+    
+    // Subtle body breathing
+    if (groupRef.current) {
+      groupRef.current.position.y = Math.sin(time * 1.2) * 0.015;
+    }
+    
+    // Natural head movement - looking around subtly
+    if (headRef.current) {
+      headRef.current.rotation.y = Math.sin(time * 0.4) * 0.08;
+      headRef.current.rotation.x = Math.sin(time * 0.3) * 0.03;
+      headRef.current.rotation.z = Math.sin(time * 0.25) * 0.02;
+    }
+    
+    // Jaw/mouth animation when speaking
+    if (jawRef.current) {
+      if (isSpeaking) {
+        const mouthOpen = Math.abs(Math.sin(time * 12)) * 0.08 + Math.abs(Math.sin(time * 8)) * 0.04;
+        jawRef.current.position.y = -0.32 - mouthOpen;
+        jawRef.current.rotation.x = mouthOpen * 0.5;
+      } else {
+        jawRef.current.position.y = -0.32;
+        jawRef.current.rotation.x = 0;
+      }
+    }
+    
+    // Clipboard/writing hand subtle movement
+    if (clipboardRef.current) {
+      clipboardRef.current.rotation.z = Math.sin(time * 2) * 0.03;
+      if (isSpeaking) {
+        clipboardRef.current.rotation.x = Math.sin(time * 1.5) * 0.02;
+      }
+    }
+    
+    // Body subtle sway
+    if (bodyRef.current) {
+      bodyRef.current.rotation.y = Math.sin(time * 0.2) * 0.02;
+    }
+  });
+
+  // Navy suit color
+  const suitColor = '#1a237e';
+  const suitDarkColor = '#0d1b4a';
+  const shirtColor = '#e3f2fd';
+  const tieColor = '#1565c0';
+  const skinColor = '#e8beac';
+  const hairColor = '#5d4037';
+
+  return (
+    <group ref={groupRef} position={[0, -0.3, 0]}>
+      {/* === BODY - Professional Suit === */}
+      <group ref={bodyRef}>
+        {/* Torso - Navy Suit Jacket */}
+        <mesh position={[0, 0, 0]}>
+          <boxGeometry args={[0.85, 1.0, 0.45]} />
+          <meshStandardMaterial color={suitColor} roughness={0.7} />
+        </mesh>
+        
+        {/* Suit Lapels */}
+        <mesh position={[-0.22, 0.25, 0.23]} rotation={[0, 0, 0.3]}>
+          <boxGeometry args={[0.15, 0.45, 0.05]} />
+          <meshStandardMaterial color={suitDarkColor} roughness={0.6} />
+        </mesh>
+        <mesh position={[0.22, 0.25, 0.23]} rotation={[0, 0, -0.3]}>
+          <boxGeometry args={[0.15, 0.45, 0.05]} />
+          <meshStandardMaterial color={suitDarkColor} roughness={0.6} />
+        </mesh>
+        
+        {/* Shirt (visible between lapels) */}
+        <mesh position={[0, 0.2, 0.22]}>
+          <boxGeometry args={[0.25, 0.5, 0.06]} />
+          <meshStandardMaterial color={shirtColor} roughness={0.5} />
+        </mesh>
+        
+        {/* Tie */}
+        <mesh position={[0, 0.15, 0.26]}>
+          <boxGeometry args={[0.08, 0.55, 0.03]} />
+          <meshStandardMaterial color={tieColor} roughness={0.6} />
+        </mesh>
+        {/* Tie knot */}
+        <mesh position={[0, 0.43, 0.27]}>
+          <boxGeometry args={[0.1, 0.06, 0.04]} />
+          <meshStandardMaterial color={tieColor} roughness={0.6} />
+        </mesh>
+        
+        {/* Shoulders */}
+        <mesh position={[-0.5, 0.35, 0]}>
+          <sphereGeometry args={[0.18, 16, 16]} />
+          <meshStandardMaterial color={suitColor} roughness={0.7} />
+        </mesh>
+        <mesh position={[0.5, 0.35, 0]}>
+          <sphereGeometry args={[0.18, 16, 16]} />
+          <meshStandardMaterial color={suitColor} roughness={0.7} />
+        </mesh>
+        
+        {/* Left Arm (resting) */}
+        <group ref={leftArmRef}>
+          <mesh position={[-0.58, 0.05, 0.05]} rotation={[0.1, 0, 0.15]}>
+            <capsuleGeometry args={[0.08, 0.35, 8, 16]} />
+            <meshStandardMaterial color={suitColor} roughness={0.7} />
+          </mesh>
+          {/* Left Hand */}
+          <mesh position={[-0.62, -0.25, 0.12]}>
+            <sphereGeometry args={[0.07, 12, 12]} />
+            <meshStandardMaterial color={skinColor} roughness={0.8} />
+          </mesh>
+        </group>
+        
+        {/* Right Arm (holding clipboard) */}
+        <group ref={rightArmRef}>
+          <mesh position={[0.5, 0, 0.15]} rotation={[0.5, 0, -0.3]}>
+            <capsuleGeometry args={[0.08, 0.35, 8, 16]} />
+            <meshStandardMaterial color={suitColor} roughness={0.7} />
+          </mesh>
+          {/* Right Hand */}
+          <mesh position={[0.42, -0.22, 0.32]}>
+            <sphereGeometry args={[0.07, 12, 12]} />
+            <meshStandardMaterial color={skinColor} roughness={0.8} />
+          </mesh>
+        </group>
+        
+        {/* Clipboard */}
+        <group ref={clipboardRef} position={[0.35, -0.15, 0.35]} rotation={[0.6, -0.2, 0]}>
+          <mesh>
+            <boxGeometry args={[0.22, 0.28, 0.02]} />
+            <meshStandardMaterial color="#3e2723" roughness={0.9} />
+          </mesh>
+          {/* Paper */}
+          <mesh position={[0, 0, 0.015]}>
+            <boxGeometry args={[0.18, 0.24, 0.005]} />
+            <meshStandardMaterial color="#fafafa" roughness={0.95} />
+          </mesh>
+          {/* Pen in hand */}
+          <mesh position={[0.08, 0.05, 0.03]} rotation={[0, 0, 0.5]}>
+            <cylinderGeometry args={[0.008, 0.008, 0.12, 8]} />
+            <meshStandardMaterial color="#263238" metalness={0.5} roughness={0.3} />
+          </mesh>
+        </group>
+      </group>
+      
+      {/* === NECK === */}
+      <mesh position={[0, 0.6, 0]}>
+        <cylinderGeometry args={[0.1, 0.12, 0.2, 16]} />
+        <meshStandardMaterial color={skinColor} roughness={0.8} />
+      </mesh>
+      
+      {/* === HEAD === */}
+      <group ref={headRef} position={[0, 0.95, 0]}>
+        {/* Main head shape */}
+        <mesh>
+          <sphereGeometry args={[0.32, 32, 32]} />
+          <meshStandardMaterial color={skinColor} roughness={0.85} />
+        </mesh>
+        
+        {/* Face front (slightly flattened for more realistic shape) */}
+        <mesh position={[0, -0.02, 0.15]}>
+          <sphereGeometry args={[0.28, 32, 32]} />
+          <meshStandardMaterial color={skinColor} roughness={0.85} />
+        </mesh>
+        
+        {/* Hair - styled brown hair */}
+        <mesh position={[0, 0.15, -0.05]}>
+          <sphereGeometry args={[0.3, 16, 16, 0, Math.PI * 2, 0, Math.PI * 0.6]} />
+          <meshStandardMaterial color={hairColor} roughness={0.9} />
+        </mesh>
+        {/* Hair sides */}
+        <mesh position={[-0.25, 0.05, 0]}>
+          <boxGeometry args={[0.1, 0.2, 0.25]} />
+          <meshStandardMaterial color={hairColor} roughness={0.9} />
+        </mesh>
+        <mesh position={[0.25, 0.05, 0]}>
+          <boxGeometry args={[0.1, 0.2, 0.25]} />
+          <meshStandardMaterial color={hairColor} roughness={0.9} />
+        </mesh>
+        
+        {/* Eyebrows */}
+        <mesh position={[-0.1, 0.1, 0.28]} rotation={[0.2, 0, 0.1]}>
+          <boxGeometry args={[0.08, 0.015, 0.02]} />
+          <meshStandardMaterial color="#4e342e" roughness={0.9} />
+        </mesh>
+        <mesh position={[0.1, 0.1, 0.28]} rotation={[0.2, 0, -0.1]}>
+          <boxGeometry args={[0.08, 0.015, 0.02]} />
+          <meshStandardMaterial color="#4e342e" roughness={0.9} />
+        </mesh>
+        
+        {/* Eyes */}
+        <group position={[-0.1, 0.03, 0.28]}>
+          {/* Eye white */}
+          <mesh>
+            <sphereGeometry args={[0.04, 16, 16]} />
+            <meshStandardMaterial color="white" roughness={0.3} />
+          </mesh>
+          {/* Iris */}
+          <mesh position={[0, 0, 0.025]}>
+            <sphereGeometry args={[0.025, 16, 16]} />
+            <meshStandardMaterial color="#5d4037" roughness={0.4} />
+          </mesh>
+          {/* Pupil */}
+          <mesh position={[0, 0, 0.035]}>
+            <sphereGeometry args={[0.012, 12, 12]} />
+            <meshStandardMaterial color="#1a1a1a" roughness={0.2} />
+          </mesh>
+        </group>
+        <group position={[0.1, 0.03, 0.28]}>
+          {/* Eye white */}
+          <mesh>
+            <sphereGeometry args={[0.04, 16, 16]} />
+            <meshStandardMaterial color="white" roughness={0.3} />
+          </mesh>
+          {/* Iris */}
+          <mesh position={[0, 0, 0.025]}>
+            <sphereGeometry args={[0.025, 16, 16]} />
+            <meshStandardMaterial color="#5d4037" roughness={0.4} />
+          </mesh>
+          {/* Pupil */}
+          <mesh position={[0, 0, 0.035]}>
+            <sphereGeometry args={[0.012, 12, 12]} />
+            <meshStandardMaterial color="#1a1a1a" roughness={0.2} />
+          </mesh>
+        </group>
+        
+        {/* Nose */}
+        <mesh position={[0, -0.03, 0.32]}>
+          <coneGeometry args={[0.03, 0.08, 8]} />
+          <meshStandardMaterial color={skinColor} roughness={0.85} />
+        </mesh>
+        
+        {/* Ears */}
+        <mesh position={[-0.3, 0, 0]} rotation={[0, -0.3, 0]}>
+          <sphereGeometry args={[0.06, 12, 12]} />
+          <meshStandardMaterial color={skinColor} roughness={0.85} />
+        </mesh>
+        <mesh position={[0.3, 0, 0]} rotation={[0, 0.3, 0]}>
+          <sphereGeometry args={[0.06, 12, 12]} />
+          <meshStandardMaterial color={skinColor} roughness={0.85} />
+        </mesh>
+        
+        {/* Upper lip / mouth area */}
+        <mesh position={[0, -0.12, 0.28]}>
+          <boxGeometry args={[0.1, 0.02, 0.04]} />
+          <meshStandardMaterial color="#c9917a" roughness={0.7} />
+        </mesh>
+        
+        {/* Jaw (animated when speaking) */}
+        <group ref={jawRef} position={[0, -0.18, 0.1]}>
+          <mesh>
+            <sphereGeometry args={[0.18, 16, 16, 0, Math.PI * 2, Math.PI * 0.4, Math.PI * 0.6]} />
+            <meshStandardMaterial color={skinColor} roughness={0.85} />
+          </mesh>
+          {/* Lower lip */}
+          <mesh position={[0, 0.04, 0.15]}>
+            <boxGeometry args={[0.08, 0.02, 0.03]} />
+            <meshStandardMaterial color="#c9917a" roughness={0.7} />
+          </mesh>
+          {/* Teeth (visible when speaking) */}
+          {isSpeaking && (
+            <mesh position={[0, 0.07, 0.14]}>
+              <boxGeometry args={[0.07, 0.02, 0.02]} />
+              <meshStandardMaterial color="#fafafa" roughness={0.3} />
+            </mesh>
+          )}
+        </group>
+      </group>
+      
+      {/* Speaking indicator - subtle glow rings */}
+      {isSpeaking && (
+        <>
+          <mesh position={[0, 0.95, 0]} rotation={[0, 0, 0]}>
+            <ringGeometry args={[0.4, 0.42, 32]} />
+            <meshBasicMaterial color="#4fc3f7" transparent opacity={0.4} side={THREE.DoubleSide} />
+          </mesh>
+          <mesh position={[0, 0.95, 0]} rotation={[0, 0, 0]}>
+            <ringGeometry args={[0.48, 0.5, 32]} />
+            <meshBasicMaterial color="#29b6f6" transparent opacity={0.25} side={THREE.DoubleSide} />
+          </mesh>
+        </>
+      )}
+    </group>
+  );
+}
+
+// ============ 3D Animated Robot Avatar Component (fallback) ============
 function AnimatedAvatar({ isSpeaking }) {
   const headRef = useRef();
   const mouthRef = useRef();
@@ -164,12 +459,8 @@ const AIInterview = () => {
   const [showChat, setShowChat] = useState(false);
   const [confidenceSummary, setConfidenceSummary] = useState(null);
 
-  // Realistic Avatar state (FREE - client-side animation)
-  const [useRealisticAvatar, setUseRealisticAvatar] = useState(true); // Show realistic face by default
-  const [mouthOpenness, setMouthOpenness] = useState(0); // 0-1 for lip sync animation
-
-  // Professional interviewer image (free stock photo)
-  const INTERVIEWER_IMAGE = "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop&crop=face";
+  // Realistic 3D Avatar state (FREE - client-side 3D animation)
+  const [useRealisticAvatar, setUseRealisticAvatar] = useState(true); // Show realistic 3D professional by default
 
   // Setup form state
   const [setupName, setSetupName] = useState('');
@@ -251,13 +542,6 @@ const AIInterview = () => {
       if (!name && predRaw) { const d = JSON.parse(predRaw); name = d.name || ''; }
       if (name) setSetupName(name);
     } catch (e) { /* ignore */ }
-  }, []);
-
-  // Preload interviewer image for smooth display
-  useEffect(() => {
-    const img = new Image();
-    img.src = INTERVIEWER_IMAGE;
-    console.log('[Avatar] Preloading interviewer image');
   }, []);
 
   // Preload voices
@@ -434,40 +718,7 @@ const AIInterview = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // === Lip Sync Animation (FREE - runs in browser) ===
-  const animateMouth = useCallback((speaking) => {
-    if (!speaking) {
-      setMouthOpenness(0);
-      return;
-    }
-    
-    // Create realistic mouth movement pattern while speaking
-    let frameCount = 0;
-    const animate = () => {
-      if (!isAISpeakingRef.current) {
-        setMouthOpenness(0);
-        return;
-      }
-      
-      // Simulate natural speech patterns with varied openness
-      const time = frameCount * 0.15;
-      const primaryWave = Math.sin(time * 8) * 0.4; // Fast mouth movement
-      const secondaryWave = Math.sin(time * 3) * 0.2; // Slower variation
-      const randomness = Math.random() * 0.15; // Natural variation
-      const openness = Math.max(0, Math.min(1, 0.5 + primaryWave + secondaryWave + randomness));
-      
-      setMouthOpenness(openness);
-      frameCount++;
-      
-      if (isAISpeakingRef.current) {
-        requestAnimationFrame(animate);
-      }
-    };
-    
-    requestAnimationFrame(animate);
-  }, []);
-
-  // === TTS with Lip Sync Animation ===
+  // === TTS with Speaking State (3D model handles animations internally) ===
   const speakText = useCallback((text) => {
     if (!audioEnabled) return;
     if (!synthRef.current) return;
@@ -486,12 +737,10 @@ const AIInterview = () => {
     utterance.onstart = () => { 
       setIsAISpeaking(true); 
       isAISpeakingRef.current = true;
-      animateMouth(true); // Start lip sync
     };
     utterance.onend = () => {
       setIsAISpeaking(false); 
       isAISpeakingRef.current = false;
-      setMouthOpenness(0); // Reset mouth
       if (interviewStartedRef.current && !showTextInput) {
         setTimeout(() => { if (!isAISpeakingRef.current) startListening(); }, 200);
       }
@@ -499,14 +748,13 @@ const AIInterview = () => {
     utterance.onerror = () => {
       setIsAISpeaking(false); 
       isAISpeakingRef.current = false;
-      setMouthOpenness(0);
       if (interviewStartedRef.current && !showTextInput) {
         setTimeout(() => startListening(), 200);
       }
     };
     synthRef.current.speak(utterance);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [audioEnabled, showTextInput, animateMouth]);
+  }, [audioEnabled, showTextInput]);
 
   // === Start Listening ===
   const startListening = useCallback(() => {
@@ -782,7 +1030,7 @@ const AIInterview = () => {
                 <button onClick={() => setUseRealisticAvatar(!useRealisticAvatar)}
                   className={`flex items-center gap-2 px-4 py-2 rounded-xl border transition-all ${useRealisticAvatar ? 'bg-purple-500/20 border-purple-500/50 text-purple-400' : `${themeClasses.cardBackground} ${themeClasses.cardBorder} ${themeClasses.textSecondary}`}`}>
                   {useRealisticAvatar ? '👔' : '🤖'}
-                  <span className="text-sm font-medium">{useRealisticAvatar ? 'Realistic Face' : '3D Robot'}</span>
+                  <span className="text-sm font-medium">{useRealisticAvatar ? '3D Professional' : '3D Robot'}</span>
                 </button>
               </div>
 
@@ -790,13 +1038,13 @@ const AIInterview = () => {
               {useRealisticAvatar && (
                 <div className="bg-purple-500/10 border border-purple-500/30 rounded-xl p-4">
                   <div className="flex items-start gap-3">
-                    <div className="w-14 h-14 rounded-full overflow-hidden flex-shrink-0 border-2 border-purple-500/50">
-                      <img src={INTERVIEWER_IMAGE} alt="AI Interviewer Alex" className="w-full h-full object-cover" />
+                    <div className="w-14 h-14 rounded-xl overflow-hidden flex-shrink-0 border-2 border-purple-500/50 bg-gradient-to-br from-indigo-900 to-slate-800 flex items-center justify-center">
+                      <span className="text-3xl">👔</span>
                     </div>
                     <div>
-                      <p className="text-purple-400 font-medium text-sm">Meet Alex, your AI Interviewer</p>
+                      <p className="text-purple-400 font-medium text-sm">Meet Alex, your 3D AI Interviewer</p>
                       <p className={`text-xs ${themeClasses.textSecondary} mt-1`}>
-                        A professional interviewer with realistic lip-sync animation. 
+                        A professional 3D interviewer in navy suit with realistic animations. 
                         100% free - no limits!
                       </p>
                     </div>
@@ -1375,67 +1623,40 @@ const AIInterview = () => {
         
           {/* LEFT HALF - AI Interviewer */}
           <div className="w-1/2 relative bg-gradient-to-br from-indigo-950 to-slate-900 border-r-2 border-indigo-500/30">
-            {/* Realistic Avatar Mode - FREE with lip sync */}
-            {useRealisticAvatar ? (
-              <div className="w-full h-full relative">
-                {/* Interviewer Image - Full Half */}
-                <img 
-                  src={INTERVIEWER_IMAGE} 
-                  alt="AI Interviewer Alex" 
-                  className="w-full h-full object-cover"
-                />
-                
-                {/* Lip Sync Mouth Overlay - Animated when speaking */}
-                {isAISpeaking && (
-                  <div className="absolute inset-0 pointer-events-none">
-                    {/* Subtle mouth movement indicator overlay */}
-                    <div 
-                      className="absolute bottom-[38%] left-1/2 transform -translate-x-1/2"
-                      style={{
-                        width: `${16 + mouthOpenness * 12}px`,
-                        height: `${6 + mouthOpenness * 14}px`,
-                        backgroundColor: 'rgba(139, 69, 69, 0.3)',
-                        borderRadius: '50%',
-                        transition: 'all 0.05s ease-out',
-                        filter: 'blur(3px)',
-                      }}
-                    />
-                  </div>
-                )}
-                
-                {/* Speaking Audio Waves Indicator */}
-                {isAISpeaking && (
-                  <div className="absolute bottom-20 left-1/2 transform -translate-x-1/2 flex items-end gap-1.5">
-                    {[...Array(7)].map((_, i) => (
-                      <div
-                        key={i}
-                        className="w-1.5 bg-blue-400 rounded-full"
-                        style={{
-                          height: `${12 + Math.sin((Date.now() / 100) + i * 0.8) * 12 + mouthOpenness * 16}px`,
-                          opacity: 0.8,
-                          transition: 'height 0.1s ease-out',
-                        }}
-                      />
-                    ))}
-                  </div>
-                )}
+            {/* 3D Professional Interviewer Avatar */}
+            <Suspense fallback={
+              <div className="w-full h-full flex items-center justify-center">
+                <div className="text-6xl animate-pulse">👔</div>
+                <span className="text-white mt-4">Loading 3D Avatar...</span>
               </div>
-            ) : (
-              /* Default 3D Robot Avatar Mode */
-              <Suspense fallback={
-                <div className="w-full h-full flex items-center justify-center">
-                  <div className="text-6xl animate-pulse">🤖</div>
-                </div>
-              }>
-                <Canvas camera={{ position: [0, 0.5, 3.2], fov: 50 }} style={{ width: '100%', height: '100%' }}>
-                  <ambientLight intensity={0.6} />
-                  <directionalLight position={[2, 3, 2]} intensity={0.8} />
-                  <pointLight position={[-2, 2, 1]} intensity={0.4} color="#818cf8" />
+            }>
+              <Canvas 
+                camera={{ position: [0, 0.6, 2.8], fov: 45 }} 
+                style={{ width: '100%', height: '100%' }}
+                gl={{ antialias: true }}
+              >
+                <color attach="background" args={['#0f172a']} />
+                <fog attach="fog" args={['#0f172a', 3, 8]} />
+                <ambientLight intensity={0.5} />
+                <directionalLight position={[3, 4, 2]} intensity={1.0} castShadow />
+                <directionalLight position={[-2, 2, 1]} intensity={0.4} color="#818cf8" />
+                <pointLight position={[0, 2, 3]} intensity={0.3} color="#60a5fa" />
+                {/* Use Realistic 3D Professional Avatar by default, Robot as fallback */}
+                {useRealisticAvatar ? (
+                  <RealisticInterviewerAvatar isSpeaking={isAISpeaking} />
+                ) : (
                   <AnimatedAvatar isSpeaking={isAISpeaking} />
-                  <OrbitControls enableZoom={false} enablePan={false} minPolarAngle={Math.PI / 3} maxPolarAngle={Math.PI / 2} />
-                </Canvas>
-              </Suspense>
-            )}
+                )}
+                <OrbitControls 
+                  enableZoom={false} 
+                  enablePan={false} 
+                  minPolarAngle={Math.PI / 3} 
+                  maxPolarAngle={Math.PI / 2}
+                  minAzimuthAngle={-Math.PI / 6}
+                  maxAzimuthAngle={Math.PI / 6}
+                />
+              </Canvas>
+            </Suspense>
             {/* AI name label */}
             <div className="absolute bottom-4 left-4 flex items-center gap-2 z-10">
               <div className="flex items-center gap-2 bg-black/70 text-white px-4 py-2.5 rounded-xl backdrop-blur-sm">
