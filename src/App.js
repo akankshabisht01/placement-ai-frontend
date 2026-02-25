@@ -39,10 +39,6 @@ import PaymentSuccess from './pages/PaymentSuccess';
 import AnuvaadAI from './pages/AnuvaadAI';
 import AIInterview from './pages/AIInterview';
 
-// Example Components (for demo purposes)
-import ComponentShowcase from './components/examples/ComponentShowcase';
-import ModernPredictionFormExample from './components/examples/ModernPredictionFormExample';
-
 // Protected Route Component
 import ProtectedRoute from './components/ProtectedRoute';
 
@@ -105,10 +101,6 @@ const AppLayout = () => {
         <Route path="/payment-success" element={<PaymentSuccess />} />
         <Route path="/anuvaad-ai" element={<AnuvaadAI />} />
         <Route path="/interview" element={<ProtectedRoute><AIInterview /></ProtectedRoute>} />
-        
-        {/* Modern UI Examples - Remove these routes in production */}
-        <Route path="/component-showcase" element={<ComponentShowcase />} />
-        <Route path="/modern-form-example" element={<ModernPredictionFormExample />} />
         
         <Route path="*" element={<NotFound />} />
       </Routes>

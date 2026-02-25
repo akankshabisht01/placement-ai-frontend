@@ -12,7 +12,7 @@
   --aurora-glass: rgba(255, 255, 255, 0.07);
   --aurora-blur: blur(18px);
   --aurora-radius: 1.75rem;
-  --aurora-font: 'Montserrat', 'Inter', system-ui, sans-serif;
+  --aurora-font: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
 }
 
 /* Solaris Theme - Burnt-sunset dunes with retro warmth */
@@ -27,7 +27,7 @@
   --solaris-border: #ffb78a;
   --solaris-shadow: 0 24px 70px rgba(255, 115, 63, 0.22);
   --solaris-radius: 1rem;
-  --solaris-font: 'Fredoka One', 'Comic Sans MS', cursive, sans-serif;
+  --solaris-font: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
 }
 
 /* Aurora helpers - neon aurora ribbons, glassmorphism */
@@ -232,10 +232,7 @@
 .solaris-main {
   background: linear-gradient(180deg, rgba(255, 241, 218, 0.98) 0%, rgba(255, 210, 170, 0.92) 55%, rgba(255, 241, 218, 0.98) 100%);
 }
-/* Import extra fonts for themes */
-@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Fredoka+One&display=swap');
-/* Import Google Fonts */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+/* Using system fonts for better performance - removed Google Fonts imports */
 
 /* Tailwind CSS Base Styles */
 @tailwind base;
@@ -249,7 +246,7 @@
   }
   
   body {
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     color: #1f2937;

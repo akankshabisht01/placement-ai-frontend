@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Mic, MicOff, Volume2, VolumeX, Video, VideoOff, Send, StopCircle, Play, MessageCircle, AlertCircle, Loader2, Clock, ChevronRight, Award, Target, TrendingUp, BookOpen, Star, Users, Briefcase, Zap, ArrowLeft, Eye, Activity } from 'lucide-react';
+import { Mic, MicOff, Volume2, VolumeX, Video, VideoOff, Send, StopCircle, Play, MessageCircle, AlertCircle, Loader2, Clock, ChevronRight, Award, Target, TrendingUp, BookOpen, Star, Users, Briefcase, Zap, ArrowLeft, Eye, Activity, Radio } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { getThemeClasses } from '../utils/themeHelpers';
 import { useAuth } from '../contexts/AuthContext';
@@ -10,6 +10,7 @@ import { OrbitControls, useGLTF, useAnimations } from '@react-three/drei';
 import * as THREE from 'three';
 import useConfidenceAnalyzer from '../hooks/useConfidenceAnalyzer';
 import ConfidenceIndicator from '../components/interview/ConfidenceIndicator';
+import useAudioRecorder from '../hooks/useAudioRecorder';
 
 // ============ 3D GLB Model Interviewer Avatar ============
 function GLBInterviewerAvatar({ isSpeaking }) {
@@ -571,6 +572,7 @@ const AIInterview = () => {
   const interviewStartedRef = useRef(false);
   const webcamStreamRef = useRef(null);
   const lastSubmittedTextRef = useRef('');
+  const useWhisperModeRef = useRef(false); // Ref for Whisper mode check in callbacks
 
   // === Client-side Confidence Analysis (runs in browser, ZERO server impact) ===
   const {
@@ -580,6 +582,34 @@ const AIInterview = () => {
     getSessionSummary,
     resetAnalysis
   } = useConfidenceAnalyzer(videoRef, interviewStarted && cameraEnabled && webcamStream !== null);
+
+  // === Groq Whisper Audio Recording (production-ready speech-to-text) ===
+  const {
+    isRecording: isWhisperRecording,
+    isTranscribing,
+    startRecording: startWhisperRecording,
+    stopRecording: stopWhisperRecording,
+    cancelRecording: cancelWhisperRecording,
+    isSupported: isWhisperSupported
+  } = useAudioRecorder();
+
+  // State for Whisper mode - auto-enable if browser speech recognition is not supported
+  const [useWhisperMode, setUseWhisperMode] = useState(false);
+  
+  // Check browser speech recognition support on mount
+  useEffect(() => {
+    const hasBrowserSpeech = !!(window.SpeechRecognition || window.webkitSpeechRecognition);
+    if (!hasBrowserSpeech && isWhisperSupported()) {
+      console.log('🎤 Browser speech recognition not supported, using Groq Whisper');
+      setUseWhisperMode(true);
+    }
+  }, [isWhisperSupported]);
+
+  // Keep Whisper mode ref in sync with state
+  useEffect(() => { 
+    useWhisperModeRef.current = useWhisperMode; 
+    console.log('🎤 Whisper mode:', useWhisperMode ? 'ON (Groq API)' : 'OFF (Browser Speech)');
+  }, [useWhisperMode]);
 
   // === Clean transcript: remove consecutive duplicate words/phrases ===
   const cleanTranscript = useCallback((text) => {
@@ -834,14 +864,30 @@ const AIInterview = () => {
       setIsAISpeaking(false); 
       isAISpeakingRef.current = false;
       if (interviewStartedRef.current && !showTextInput) {
-        setTimeout(() => { if (!isAISpeakingRef.current) startListening(); }, 200);
+        // Use timeout to let state settle, then check which mode to use
+        setTimeout(() => { 
+          if (!isAISpeakingRef.current && interviewStartedRef.current) {
+            // Check Whisper mode ref at runtime
+            if (useWhisperModeRef.current) {
+              startWhisperRecording();
+            } else {
+              startListening();
+            }
+          }
+        }, 200);
       }
     };
     utterance.onerror = () => {
       setIsAISpeaking(false); 
       isAISpeakingRef.current = false;
       if (interviewStartedRef.current && !showTextInput) {
-        setTimeout(() => startListening(), 200);
+        setTimeout(() => {
+          if (useWhisperModeRef.current) {
+            startWhisperRecording();
+          } else {
+            startListening();
+          }
+        }, 200);
       }
     };
     synthRef.current.speak(utterance);
@@ -873,6 +919,72 @@ const AIInterview = () => {
     }
     setIsListening(false);
   };
+
+  // === Groq Whisper Recording Functions ===
+  const startWhisperListening = useCallback(async () => {
+    if (isWhisperRecording || isTranscribing || isProcessingRef.current) return;
+    
+    if (isAISpeakingRef.current) {
+      synthRef.current?.cancel();
+      setIsAISpeaking(false);
+      isAISpeakingRef.current = false;
+    }
+    
+    const started = await startWhisperRecording();
+    if (started) {
+      console.log('🎤 Groq Whisper recording started');
+    } else {
+      setError('Failed to start recording. Please check microphone permissions.');
+    }
+  }, [isWhisperRecording, isTranscribing, startWhisperRecording]);
+
+  const stopWhisperListening = useCallback(async () => {
+    if (!isWhisperRecording) return;
+    
+    console.log('🎤 Stopping Groq Whisper recording...');
+    const transcript = await stopWhisperRecording();
+    
+    if (transcript && transcript.trim().length > 2) {
+      console.log('🎤 Whisper transcribed:', transcript);
+      handleUserSpeech(transcript);
+    } else {
+      console.log('🎤 No transcript received');
+      // Restart recording after a short delay
+      if (interviewStartedRef.current && !isAISpeakingRef.current) {
+        setTimeout(() => startWhisperListening(), 500);
+      }
+    }
+  }, [isWhisperRecording, stopWhisperRecording]);
+
+  // Combined toggle function that works with both modes
+  const toggleMicrophone = useCallback(() => {
+    if (useWhisperMode) {
+      // Whisper mode
+      if (isWhisperRecording) {
+        stopWhisperListening();
+      } else {
+        startWhisperListening();
+      }
+    } else {
+      // Browser Speech Recognition mode
+      if (isListening) {
+        stopListening();
+      } else {
+        startListening();
+      }
+    }
+  }, [useWhisperMode, isWhisperRecording, isListening, startWhisperListening, stopWhisperListening, startListening]);
+
+  // Unified function to start listening after AI finishes speaking
+  const startAutoListening = useCallback(() => {
+    if (!interviewStartedRef.current || isAISpeakingRef.current) return;
+    
+    if (useWhisperModeRef.current) {
+      startWhisperListening();
+    } else {
+      startListening();
+    }
+  }, [startWhisperListening, startListening]);
 
   // === Handle user speech ===
   const handleUserSpeech = async (transcript) => {
@@ -1895,19 +2007,49 @@ const AIInterview = () => {
             </div>
             <div className="hidden sm:block">
               <p className={`text-sm ${themeClasses.textSecondary} truncate`}>
-                {isAISpeaking ? '🔊 Alex is speaking...' : isProcessing ? '🤔 Alex is thinking...' : isListening ? '👂 Listening...' : `Interview • ${setupPosition}`}
+                {isAISpeaking ? '🔊 Alex is speaking...' : 
+                 isProcessing ? '🤔 Alex is thinking...' : 
+                 isTranscribing ? '🎯 Transcribing with Whisper...' :
+                 isWhisperRecording ? '🎤 Recording (Whisper)...' :
+                 isListening ? '👂 Listening...' : 
+                 `Interview • ${setupPosition}`}
               </p>
             </div>
           </div>
 
           {/* Center: Main controls */}
           <div className="flex items-center gap-3">
-            {/* Mic */}
-            <button onClick={() => { if (isListening) stopListening(); else startListening(); }}
-              title={isListening ? 'Mute' : 'Unmute'}
-              className={`p-4 rounded-full transition-all ${isListening ? 'bg-gray-600/50 hover:bg-gray-600/70 text-white' : 'bg-red-500 hover:bg-red-600 text-white'}`}>
-              {isListening ? <Mic size={24} /> : <MicOff size={24} />}
+            {/* Mic - supports both Browser Speech API and Groq Whisper */}
+            <button onClick={toggleMicrophone}
+              disabled={isTranscribing}
+              title={isTranscribing ? 'Transcribing...' : (isListening || isWhisperRecording) ? 'Stop Recording' : 'Start Recording'}
+              className={`p-4 rounded-full transition-all ${
+                isTranscribing ? 'bg-yellow-500 hover:bg-yellow-600 text-white animate-pulse' :
+                (isListening || isWhisperRecording) ? 'bg-gray-600/50 hover:bg-gray-600/70 text-white' : 
+                'bg-red-500 hover:bg-red-600 text-white'
+              }`}>
+              {isTranscribing ? <Loader2 size={24} className="animate-spin" /> :
+               isWhisperRecording ? <Radio size={24} className="animate-pulse text-red-400" /> :
+               (isListening || isWhisperRecording) ? <Mic size={24} /> : <MicOff size={24} />}
             </button>
+            {/* Whisper Mode Toggle */}
+            {isWhisperSupported() && (
+              <button 
+                onClick={() => {
+                  // Stop current recording before switching
+                  if (isListening) stopListening();
+                  if (isWhisperRecording) cancelWhisperRecording();
+                  setUseWhisperMode(prev => !prev);
+                }}
+                title={useWhisperMode ? 'Using Groq Whisper (High Accuracy)' : 'Using Browser Speech (Faster)'}
+                className={`p-2 rounded-full transition-all text-xs ${
+                  useWhisperMode 
+                    ? 'bg-purple-500/30 text-purple-300 border border-purple-500/50' 
+                    : `${themeClasses.sectionBackground} ${themeClasses.textSecondary} border ${themeClasses.cardBorder}`
+                }`}>
+                {useWhisperMode ? '🎯' : '⚡'}
+              </button>
+            )}
             {/* Camera */}
             <button onClick={async () => {
               console.log('[Camera] Toggle clicked, current state:', { cameraEnabled, hasStream: !!webcamStream });

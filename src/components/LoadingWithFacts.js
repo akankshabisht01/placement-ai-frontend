@@ -262,21 +262,21 @@ const LoadingWithFacts = ({
               </div>
             ) : (
               /* Question Display */
-              <div className="bg-gradient-to-br from-slate-50 to-gray-50 dark:from-slate-900/20 dark:to-gray-900/20 rounded-2xl p-5 border-2 border-slate-200 dark:border-slate-700 shadow-lg">
-                <div className="flex items-center justify-center mb-4 bg-white dark:bg-[#1e1a2e] rounded-xl p-3 shadow-md border-2 border-dashed border-slate-300 dark:border-slate-600">
-                  <p className="text-gray-800 dark:text-gray-100 font-bold text-base">
+              <div className="bg-gradient-to-br from-slate-50 to-gray-50 dark:from-slate-900/20 dark:to-gray-900/20 rounded-2xl p-3 sm:p-5 border-2 border-slate-200 dark:border-slate-700 shadow-lg">
+                <div className="flex items-center justify-center mb-3 sm:mb-4 bg-white dark:bg-[#1e1a2e] rounded-xl p-2 sm:p-3 shadow-md border-2 border-dashed border-slate-300 dark:border-slate-600">
+                  <p className="text-gray-800 dark:text-gray-100 font-bold text-sm sm:text-base text-center break-words">
                     {content.text}
                   </p>
                 </div>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 gap-2 sm:gap-3">
                   {content.options?.map((option, idx) => (
                     <button
                       key={option.option_id || idx}
                       onClick={() => handleOptionSelect(option)}
                       disabled={!!selectedOption || isSubmitting}
                       className={`
-                        p-4 rounded-xl text-sm font-bold transition-all duration-300
-                        flex flex-col items-center gap-2 shadow-md
+                        p-2 sm:p-4 rounded-xl text-xs sm:text-sm font-bold transition-all duration-300
+                        flex flex-col items-center gap-1 sm:gap-2 shadow-md min-h-[80px] sm:min-h-[100px]
                         transform hover:scale-110 hover:-rotate-2
                         ${selectedOption?.option_id === option.option_id
                           ? 'bg-gradient-to-br from-green-500 to-emerald-600 text-white scale-110 shadow-2xl animate-pulse'
@@ -286,8 +286,8 @@ const LoadingWithFacts = ({
                         }
                       `}
                     >
-                      <span className="text-3xl">{option.icon}</span>
-                      <span className="text-center leading-tight">{option.text}</span>
+                      <span className="text-2xl sm:text-3xl flex-shrink-0">{option.icon}</span>
+                      <span className="text-center leading-tight break-words w-full px-1">{option.text}</span>
                     </button>
                   ))}
                 </div>
@@ -511,20 +511,20 @@ export const LoadingFactsInline = ({
           </div>
         ) : (
           <div>
-            <div className="flex items-center justify-center mb-3 bg-white/80 dark:bg-black/30 rounded-xl p-3 shadow-md border-2 border-dashed border-slate-300 dark:border-slate-600 backdrop-blur-sm">
-              <p className="text-gray-800 dark:text-gray-100 font-bold text-sm">
+            <div className="flex items-center justify-center mb-3 bg-white/80 dark:bg-black/30 rounded-xl p-2 sm:p-3 shadow-md border-2 border-dashed border-slate-300 dark:border-slate-600 backdrop-blur-sm">
+              <p className="text-gray-800 dark:text-gray-100 font-bold text-xs sm:text-sm text-center break-words">
                 {content.text}
               </p>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-2 sm:gap-3">
               {content.options?.map((option) => (
                 <button
                   key={option.option_id}
                   onClick={() => handleOptionSelect(option)}
                   disabled={isSubmitting || selectedOption}
                   className={`
-                    flex flex-col items-center gap-2 p-3 rounded-xl text-xs font-bold transition-all duration-300
-                    shadow-md transform hover:scale-110 hover:-rotate-2
+                    flex flex-col items-center gap-1 sm:gap-2 p-2 sm:p-3 rounded-xl text-[10px] sm:text-xs font-bold transition-all duration-300
+                    shadow-md transform hover:scale-110 hover:-rotate-2 min-h-[70px] sm:min-h-[80px]
                     ${selectedOption?.option_id === option.option_id
                       ? 'bg-gradient-to-br from-green-500 to-emerald-600 text-white scale-110 shadow-2xl animate-pulse'
                       : selectedOption
@@ -533,8 +533,8 @@ export const LoadingFactsInline = ({
                     }
                   `}
                 >
-                  <span className="text-2xl">{option.icon}</span>
-                  <span className="truncate text-center leading-tight">{option.text}</span>
+                  <span className="text-xl sm:text-2xl">{option.icon}</span>
+                  <span className="text-center leading-tight break-words w-full px-1">{option.text}</span>
                 </button>
               ))}
             </div>
