@@ -574,6 +574,7 @@ const AIInterview = () => {
   const webcamStreamRef = useRef(null);
   const lastSubmittedTextRef = useRef('');
   const useWhisperModeRef = useRef(false); // Ref for Whisper mode check in callbacks
+  const startListeningRef = useRef(null); // Ref to avoid circular dependency
 
   // === Client-side Confidence Analysis (runs in browser, ZERO server impact) ===
   const {
@@ -842,6 +843,27 @@ const AIInterview = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Browser speech synthesis fallback (defined before speakText to avoid circular dependency)
+  const speakWithBrowser = useCallback((text, onStart, onEnd) => {
+    if (!synthRef.current) { onEnd(); return; }
+    
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.rate = 1.0; utterance.pitch = 1.0; utterance.volume = 1.0;
+
+    const voices = synthRef.current.getVoices();
+    const preferred = ['Microsoft David', 'Google US English Male', 'Alex', 'Daniel', 'Microsoft Mark'];
+    let selectedVoice = null;
+    for (const n of preferred) { const v = voices.find(v => v.name.includes(n)); if (v) { selectedVoice = v; break; } }
+    if (!selectedVoice) selectedVoice = voices.find(v => v.lang.startsWith('en') && v.name.toLowerCase().includes('male')) || voices.find(v => v.lang.startsWith('en')) || voices[0];
+    if (selectedVoice) utterance.voice = selectedVoice;
+
+    utterance.onstart = onStart;
+    utterance.onend = onEnd;
+    utterance.onerror = onEnd;
+    synthRef.current.speak(utterance);
+    console.log('🔊 Using browser TTS (fallback)');
+  }, []);
+
   // === TTS with Edge TTS (natural voice) + browser fallback ===
   const speakText = useCallback(async (text) => {
     if (!audioEnabled) return;
@@ -866,8 +888,8 @@ const AIInterview = () => {
           if (!isAISpeakingRef.current && interviewStartedRef.current) {
             if (useWhisperModeRef.current) {
               startWhisperRecording();
-            } else {
-              startListening();
+            } else if (startListeningRef.current) {
+              startListeningRef.current();
             }
           }
         }, 200);
@@ -911,29 +933,7 @@ const AIInterview = () => {
     
     // Fallback to browser speechSynthesis
     speakWithBrowser(text, startSpeaking, endSpeaking);
-  }, [audioEnabled, showTextInput, startWhisperRecording, startListening]);
-  
-  // Browser speech synthesis fallback
-  const speakWithBrowser = useCallback((text, onStart, onEnd) => {
-    if (!synthRef.current) { onEnd(); return; }
-    
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.rate = 1.0; utterance.pitch = 1.0; utterance.volume = 1.0;
-
-    const voices = synthRef.current.getVoices();
-    const preferred = ['Microsoft David', 'Google US English Male', 'Alex', 'Daniel', 'Microsoft Mark'];
-    let selectedVoice = null;
-    for (const n of preferred) { const v = voices.find(v => v.name.includes(n)); if (v) { selectedVoice = v; break; } }
-    if (!selectedVoice) selectedVoice = voices.find(v => v.lang.startsWith('en') && v.name.toLowerCase().includes('male')) || voices.find(v => v.lang.startsWith('en')) || voices[0];
-    if (selectedVoice) utterance.voice = selectedVoice;
-
-    utterance.onstart = onStart;
-    utterance.onend = onEnd;
-    utterance.onerror = onEnd;
-    synthRef.current.speak(utterance);
-    console.log('🔊 Using browser TTS (fallback)');
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [audioEnabled, showTextInput, startWhisperRecording, speakWithBrowser]);
 
   // === Start Listening ===
   const startListening = useCallback(() => {
@@ -953,6 +953,9 @@ const AIInterview = () => {
       if (e.message?.includes('already started')) setIsListening(true);
     }
   }, [setupRecognition]);
+
+  // Keep startListening ref in sync for callbacks
+  useEffect(() => { startListeningRef.current = startListening; }, [startListening]);
 
   const stopListening = () => {
     if (recognitionRef.current && isListening) {
