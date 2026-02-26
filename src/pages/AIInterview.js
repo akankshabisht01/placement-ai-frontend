@@ -562,6 +562,7 @@ const AIInterview = () => {
   // Refs
   const recognitionRef = useRef(null);
   const synthRef = useRef(window.speechSynthesis);
+  const ttsAudioRef = useRef(null); // For Edge TTS audio playback
   const timerIntervalRef = useRef(null);
   const videoRef = useRef(null);
   const chatContainerRef = useRef(null);
@@ -715,6 +716,7 @@ const AIInterview = () => {
       if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
       if (recognitionRef.current) { try { recognitionRef.current.abort(); } catch (e) {} }
       if (synthRef.current) synthRef.current.cancel();
+      if (ttsAudioRef.current) { ttsAudioRef.current.pause(); ttsAudioRef.current = null; }
       // Use ref for reliable cleanup on unmount
       if (webcamStreamRef.current) {
         webcamStreamRef.current.getTracks().forEach(t => t.stop());
@@ -840,12 +842,81 @@ const AIInterview = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // === TTS with Speaking State (3D model handles animations internally) ===
-  const speakText = useCallback((text) => {
+  // === TTS with Edge TTS (natural voice) + browser fallback ===
+  const speakText = useCallback(async (text) => {
     if (!audioEnabled) return;
-    if (!synthRef.current) return;
     
-    synthRef.current.cancel();
+    // Stop any current playback
+    if (ttsAudioRef.current) {
+      ttsAudioRef.current.pause();
+      ttsAudioRef.current = null;
+    }
+    if (synthRef.current) synthRef.current.cancel();
+    
+    const startSpeaking = () => {
+      setIsAISpeaking(true);
+      isAISpeakingRef.current = true;
+    };
+    
+    const endSpeaking = () => {
+      setIsAISpeaking(false);
+      isAISpeakingRef.current = false;
+      if (interviewStartedRef.current && !showTextInput) {
+        setTimeout(() => {
+          if (!isAISpeakingRef.current && interviewStartedRef.current) {
+            if (useWhisperModeRef.current) {
+              startWhisperRecording();
+            } else {
+              startListening();
+            }
+          }
+        }, 200);
+      }
+    };
+    
+    // Try Edge TTS first (natural voice, better quality)
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/interview/tts`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text, voice: 'en-US-GuyNeural' })
+      });
+      
+      if (response.ok) {
+        const audioBlob = await response.blob();
+        const audioUrl = URL.createObjectURL(audioBlob);
+        const audio = new Audio(audioUrl);
+        ttsAudioRef.current = audio;
+        
+        audio.onplay = startSpeaking;
+        audio.onended = () => {
+          URL.revokeObjectURL(audioUrl);
+          ttsAudioRef.current = null;
+          endSpeaking();
+        };
+        audio.onerror = () => {
+          URL.revokeObjectURL(audioUrl);
+          ttsAudioRef.current = null;
+          console.warn('Edge TTS playback error, falling back to browser');
+          speakWithBrowser(text, startSpeaking, endSpeaking);
+        };
+        
+        await audio.play();
+        console.log('🔊 Using Edge TTS (natural voice)');
+        return;
+      }
+    } catch (e) {
+      console.warn('Edge TTS unavailable, using browser TTS:', e.message);
+    }
+    
+    // Fallback to browser speechSynthesis
+    speakWithBrowser(text, startSpeaking, endSpeaking);
+  }, [audioEnabled, showTextInput, startWhisperRecording, startListening]);
+  
+  // Browser speech synthesis fallback
+  const speakWithBrowser = useCallback((text, onStart, onEnd) => {
+    if (!synthRef.current) { onEnd(); return; }
+    
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.rate = 1.0; utterance.pitch = 1.0; utterance.volume = 1.0;
 
@@ -856,43 +927,13 @@ const AIInterview = () => {
     if (!selectedVoice) selectedVoice = voices.find(v => v.lang.startsWith('en') && v.name.toLowerCase().includes('male')) || voices.find(v => v.lang.startsWith('en')) || voices[0];
     if (selectedVoice) utterance.voice = selectedVoice;
 
-    utterance.onstart = () => { 
-      setIsAISpeaking(true); 
-      isAISpeakingRef.current = true;
-    };
-    utterance.onend = () => {
-      setIsAISpeaking(false); 
-      isAISpeakingRef.current = false;
-      if (interviewStartedRef.current && !showTextInput) {
-        // Use timeout to let state settle, then check which mode to use
-        setTimeout(() => { 
-          if (!isAISpeakingRef.current && interviewStartedRef.current) {
-            // Check Whisper mode ref at runtime
-            if (useWhisperModeRef.current) {
-              startWhisperRecording();
-            } else {
-              startListening();
-            }
-          }
-        }, 200);
-      }
-    };
-    utterance.onerror = () => {
-      setIsAISpeaking(false); 
-      isAISpeakingRef.current = false;
-      if (interviewStartedRef.current && !showTextInput) {
-        setTimeout(() => {
-          if (useWhisperModeRef.current) {
-            startWhisperRecording();
-          } else {
-            startListening();
-          }
-        }, 200);
-      }
-    };
+    utterance.onstart = onStart;
+    utterance.onend = onEnd;
+    utterance.onerror = onEnd;
     synthRef.current.speak(utterance);
+    console.log('🔊 Using browser TTS (fallback)');
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [audioEnabled, showTextInput]);
+  }, []);
 
   // === Start Listening ===
   const startListening = useCallback(() => {
