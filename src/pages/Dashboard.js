@@ -7737,8 +7737,10 @@ const Dashboard = () => {
                               const previousEntry = index > 0 ? uniqueHistory[index - 1] : null;
                               const previousScore = previousEntry ? previousEntry.score : (historyEntry.originalScore || historyEntry.previousScore);
                               const previousSkillScore = previousEntry ? previousEntry.skillScore : (historyEntry.originalSkillScore || historyEntry.previousSkillScore);
+                              const previousProjectScore = previousEntry ? (previousEntry.projectScore || previousEntry.componentScores?.projectScore) : (historyEntry.originalProjectScore || historyEntry.previousProjectScore || historyEntry.componentScores?.projectScore);
                               const scoreChange = Math.round((historyEntry.score || 0) - (previousScore || 0));
                               const skillChange = Math.round((historyEntry.skillScore || 0) - (previousSkillScore || 0));
+                              const projectChange = Math.round((historyEntry.projectScore || historyEntry.componentScores?.projectScore || 0) - (previousProjectScore || 0));
                               
                               // Different color schemes for each month
                               const colorSchemes = [
@@ -7786,8 +7788,8 @@ const Dashboard = () => {
                                   </div>
 
                                   {/* Score Comparison Grid */}
-                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    {/* Skill Score - Main Improvement */}
+                                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    {/* Skill Score - Improvement */}
                                     <div className="bg-white/70 dark:bg-gray-800/50 rounded-lg p-4 border border-white/50 dark:border-gray-600">
                                       <div className="flex items-center justify-between mb-3">
                                         <div className="flex items-center gap-2">
@@ -7813,6 +7815,40 @@ const Dashboard = () => {
                                         <div 
                                           className={`bg-gradient-to-r ${colors.accent} h-3 rounded-full transition-all duration-500`}
                                           style={{ width: `${Math.min(historyEntry.skillScore || 0, 100)}%` }}
+                                        ></div>
+                                      </div>
+                                    </div>
+
+                                    {/* Project Score - Improvement */}
+                                    <div className="bg-white/70 dark:bg-gray-800/50 rounded-lg p-4 border border-white/50 dark:border-gray-600">
+                                      <div className="flex items-center justify-between mb-3">
+                                        <div className="flex items-center gap-2">
+                                          <span className="text-lg">🚀</span>
+                                          <span className="font-semibold text-gray-800 dark:text-gray-200">Project Score</span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                          {projectChange > 0 && (
+                                            <>
+                                              <span className="text-sm text-gray-500 dark:text-gray-400 line-through">
+                                                {Math.round(previousProjectScore || 0)}
+                                              </span>
+                                              <span className="text-pink-600 dark:text-pink-400">→</span>
+                                            </>
+                                          )}
+                                          <span className={`text-lg font-bold ${projectChange > 0 ? 'text-pink-600 dark:text-pink-400' : 'text-gray-700 dark:text-gray-300'}`}>
+                                            {Math.round(historyEntry.projectScore || historyEntry.componentScores?.projectScore || 0)}
+                                          </span>
+                                          {projectChange > 0 && (
+                                            <span className="text-xs px-2 py-0.5 rounded-full font-medium text-pink-600 dark:text-pink-400 bg-pink-50 dark:bg-pink-900/30">
+                                              +{projectChange}
+                                            </span>
+                                          )}
+                                        </div>
+                                      </div>
+                                      <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-3">
+                                        <div 
+                                          className="bg-gradient-to-r from-pink-400 to-rose-500 h-3 rounded-full transition-all duration-500"
+                                          style={{ width: `${Math.min(historyEntry.projectScore || historyEntry.componentScores?.projectScore || 0, 100)}%` }}
                                         ></div>
                                       </div>
                                     </div>
@@ -7867,12 +7903,13 @@ const Dashboard = () => {
                                             {skillChange > 0 && <span className={`text-xs ${colors.text} font-bold`}>↑ +{skillChange}</span>}
                                           </div>
                                         </div>
-                                        {/* Projects */}
-                                        <div className="bg-gradient-to-br from-pink-50 to-pink-100 dark:from-pink-900/30 dark:to-pink-800/30 rounded-lg p-3 border border-pink-200 dark:border-pink-700">
+                                        {/* Projects - Highlighted if boosted */}
+                                        <div className={`bg-gradient-to-br ${projectChange > 0 ? 'from-pink-100 to-rose-200 dark:from-pink-900/40 dark:to-rose-800/40 border-2 border-pink-300 dark:border-pink-600' : 'from-pink-50 to-pink-100 dark:from-pink-900/30 dark:to-pink-800/30 border border-pink-200 dark:border-pink-700'} rounded-lg p-3`}>
                                           <div className="flex flex-col items-center text-center">
                                             <span className="text-lg mb-1">🚀</span>
                                             <span className="text-xs font-medium text-pink-600 dark:text-pink-400">Projects</span>
                                             <span className="text-xl font-bold text-pink-700 dark:text-pink-300">{Math.round(historyEntry.componentScores.projectScore || 0)}<span className="text-xs text-pink-500">/100</span></span>
+                                            {projectChange > 0 && <span className="text-xs text-pink-600 dark:text-pink-400 font-bold">↑ +{projectChange}</span>}
                                           </div>
                                         </div>
                                         {/* DSA */}
