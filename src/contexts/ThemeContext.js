@@ -24,7 +24,7 @@ export const ThemeProvider = ({ children }) => {
     const root = document.documentElement;
     
     // Remove all theme classes first
-    root.classList.remove('dark', 'midnight', 'aloof', 'aurora', 'solaris');
+    root.classList.remove('dark', 'midnight', 'aloof');
 
     let resolvedTheme = theme;
 
@@ -34,10 +34,6 @@ export const ThemeProvider = ({ children }) => {
       root.classList.add('dark', 'midnight');
     } else if (theme === 'aloof') {
       root.classList.add('aloof');
-    } else if (theme === 'aurora') {
-      root.classList.add('aurora');
-    } else if (theme === 'solaris') {
-      root.classList.add('solaris');
     } else if (theme === 'system') {
       // Check system preference and apply daylight or midnight theme
       const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -84,14 +80,12 @@ export const ThemeProvider = ({ children }) => {
       if (prevTheme === 'light') return 'dark';
       if (prevTheme === 'dark') return 'midnight';
       if (prevTheme === 'midnight') return 'aloof';
-      if (prevTheme === 'aloof') return 'aurora';
-      if (prevTheme === 'aurora') return 'solaris';
-      return 'light'; // solaris -> light
+      return 'light'; // aloof -> light
     });
   };
 
   const setThemeMode = (mode) => {
-    if (['light', 'dark', 'midnight', 'aloof', 'aurora', 'solaris'].includes(mode)) {
+    if (['light', 'dark', 'midnight', 'aloof'].includes(mode)) {
       setTheme(mode);
     }
   };

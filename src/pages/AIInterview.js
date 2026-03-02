@@ -1,498 +1,256 @@
 import React, { useState, useEffect, useRef, useCallback, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Mic, MicOff, Volume2, VolumeX, Video, VideoOff, Send, StopCircle, Play, MessageCircle, AlertCircle, Loader2, Clock, ChevronRight, Award, Target, TrendingUp, BookOpen, Star, Users, Briefcase, Zap, ArrowLeft, Eye, Activity, Radio } from 'lucide-react';
+import { Mic, MicOff, Volume2, VolumeX, Video, VideoOff, Send, StopCircle, Play, MessageCircle, AlertCircle, Loader2, Clock, ChevronRight, Award, Target, TrendingUp, BookOpen, Star, Users, Briefcase, Zap } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { getThemeClasses } from '../utils/themeHelpers';
 import { useAuth } from '../contexts/AuthContext';
 import { API_BASE_URL } from '../config/api';
-import { Canvas, useFrame } from '@react-three/fiber';
-import { OrbitControls, useGLTF, useAnimations } from '@react-three/drei';
 import * as THREE from 'three';
-import useConfidenceAnalyzer from '../hooks/useConfidenceAnalyzer';
-import ConfidenceIndicator from '../components/interview/ConfidenceIndicator';
-import useAudioRecorder from '../hooks/useAudioRecorder';
+import { Canvas, useFrame } from '@react-three/fiber';
+import { OrbitControls, useGLTF } from '@react-three/drei';
+import interviewAnalyzer from '../utils/interviewAnalyzer';
 
-// ============ 3D GLB Model Interviewer Avatar ============
-function GLBInterviewerAvatar({ isSpeaking }) {
+// ============ 3D Animated Avatar Component (GLB Model) ============
+function AnimatedAvatar({ isSpeaking }) {
   const groupRef = useRef();
-  const morphTargetsRef = useRef([]);
-  const { scene, animations } = useGLTF('/models/interviewer-compressed.glb');
-  const { actions, mixer } = useAnimations(animations, groupRef);
-  
-  // Find morph targets for lip sync
-  useEffect(() => {
-    const targets = [];
-    scene.traverse((child) => {
-      if (child.isMesh && child.morphTargetInfluences && child.morphTargetDictionary) {
-        targets.push({
-          mesh: child,
-          dictionary: child.morphTargetDictionary,
-          influences: child.morphTargetInfluences
-        });
-        console.log('[LipSync] Found morph targets:', Object.keys(child.morphTargetDictionary));
+  const lipRef = useRef(null);
+  const { scene } = useGLTF('/models/arnaud_from_mapado.glb');
+
+  // Clone scene with DEEP geometry clone so we own the vertex buffers
+  const clonedScene = React.useMemo(() => {
+    const cloned = scene.clone(true);
+    cloned.traverse((child) => {
+      if (child.isMesh) {
+        child.castShadow = true;
+        child.receiveShadow = true;
+        // MUST clone geometry to get our own position buffer
+        child.geometry = child.geometry.clone();
+        if (child.material) {
+          child.material = child.material.clone();
+        }
       }
     });
-    morphTargetsRef.current = targets;
+    return cloned;
   }, [scene]);
-  
-  useEffect(() => {
-    // Play idle animation if available
-    const idleAction = actions['Idle'] || actions['idle'] || Object.values(actions)[0];
-    if (idleAction) {
-      idleAction.reset().fadeIn(0.5).play();
-    }
-    return () => {
-      Object.values(actions).forEach(action => action?.stop());
-    };
-  }, [actions]);
-  
-  // Subtle breathing and lip sync animation
-  useFrame((state) => {
-    const time = state.clock.getElapsedTime();
-    if (groupRef.current) {
-      // Subtle breathing
-      groupRef.current.position.y = Math.sin(time * 1.2) * 0.01 - 0.5;
-      // Subtle sway
-      groupRef.current.rotation.y = Math.sin(time * 0.3) * 0.05;
-    }
-    
-    // Lip sync animation when speaking
-    morphTargetsRef.current.forEach(({ mesh, dictionary }) => {
-      // Common mouth morph target names
-      const mouthTargets = [
-        'mouthOpen', 'jawOpen', 'viseme_aa', 'viseme_O', 'viseme_E',
-        'A', 'O', 'E', 'mouth_open', 'Jaw_Open', 'MouthOpen',
-        'viseme_PP', 'viseme_FF', 'viseme_TH', 'viseme_DD'
-      ];
-      
-      mouthTargets.forEach(targetName => {
-        if (dictionary[targetName] !== undefined) {
-          const idx = dictionary[targetName];
-          if (isSpeaking) {
-            // Subtle speech movement - gentle mouth opening
-            const variation = Math.abs(Math.sin(time * 6)) * 0.15 + 
-                            Math.abs(Math.sin(time * 4)) * 0.1;
-            mesh.morphTargetInfluences[idx] = variation;
-          } else {
-            // Smoothly close mouth
-            mesh.morphTargetInfluences[idx] *= 0.85;
+
+  // Compute bounding box to auto-center & scale
+  const { scale: modelScale, offset } = React.useMemo(() => {
+    const box = new THREE.Box3().setFromObject(clonedScene);
+    const size = new THREE.Vector3();
+    const center = new THREE.Vector3();
+    box.getSize(size);
+    box.getCenter(center);
+    const maxDim = Math.max(size.x, size.y, size.z);
+    const s = 2.4 / maxDim;
+    return { scale: s, offset: new THREE.Vector3(-center.x * s, -center.y * s - 0.3, -center.z * s) };
+  }, [clonedScene]);
+
+  // Setup lip sync vertex data
+  React.useEffect(() => {
+    clonedScene.traverse((child) => {
+      if (child.isMesh && child.geometry) {
+        const pos = child.geometry.attributes.position;
+        if (!pos || lipRef.current) return;
+
+        // Convert all vertices to world space to detect mouth region accurately
+        // Apply parent transforms to get world positions
+        child.updateWorldMatrix(true, false);
+        const worldMatrix = child.matrixWorld;
+
+        const worldPositions = [];
+        const tempVec = new THREE.Vector3();
+        for (let i = 0; i < pos.count; i++) {
+          tempVec.set(pos.getX(i), pos.getY(i), pos.getZ(i));
+          tempVec.applyMatrix4(worldMatrix);
+          worldPositions.push({ x: tempVec.x, y: tempVec.y, z: tempVec.z });
+        }
+
+        // Find world-space bounding box
+        let wMinY = Infinity, wMaxY = -Infinity, wMinZ = Infinity, wMaxZ = -Infinity;
+        let wMinX = Infinity, wMaxX = -Infinity;
+        worldPositions.forEach(p => {
+          if (p.x < wMinX) wMinX = p.x;
+          if (p.x > wMaxX) wMaxX = p.x;
+          if (p.y < wMinY) wMinY = p.y;
+          if (p.y > wMaxY) wMaxY = p.y;
+          if (p.z < wMinZ) wMinZ = p.z;
+          if (p.z > wMaxZ) wMaxZ = p.z;
+        });
+
+        const height = wMaxY - wMinY;
+        const width = wMaxX - wMinX;
+        const depth = wMaxZ - wMinZ;
+        const centerX = (wMinX + wMaxX) / 2;
+
+        console.log('[LipSync] World bounds - X:', wMinX.toFixed(3), wMaxX.toFixed(3),
+          'Y:', wMinY.toFixed(3), wMaxY.toFixed(3), 'Z:', wMinZ.toFixed(3), wMaxZ.toFixed(3));
+        console.log('[LipSync] Height:', height.toFixed(3), 'Width:', width.toFixed(3));
+
+        // In THREE.js world: Y=up, Z=towards camera (front)
+        // Mouth is at: lower 30-40% of height, front-most Z, center X
+        const mouthYCenter = wMinY + height * 0.37; // mouth height
+        const mouthYMin = wMinY + height * 0.28;
+        const mouthYMax = wMinY + height * 0.46;
+        const frontThreshold = wMaxZ - depth * 0.35; // front-facing vertices
+        const lipXRange = width * 0.12;
+
+        // Store originals (LOCAL space, which is what we modify)
+        const origX = new Float32Array(pos.count);
+        const origY = new Float32Array(pos.count);
+        const origZ = new Float32Array(pos.count);
+        for (let i = 0; i < pos.count; i++) {
+          origX[i] = pos.getX(i);
+          origY[i] = pos.getY(i);
+          origZ[i] = pos.getZ(i);
+        }
+
+        // We also need the inverse world matrix to convert
+        // world-space displacement directions back to local space
+        const invMatrix = worldMatrix.clone().invert();
+        const worldDown = new THREE.Vector3(0, -1, 0).transformDirection(invMatrix).normalize();
+        const worldUp = new THREE.Vector3(0, 1, 0).transformDirection(invMatrix).normalize();
+        const worldForward = new THREE.Vector3(0, 0, 1).transformDirection(invMatrix).normalize();
+
+        console.log('[LipSync] Local direction for world-DOWN:', worldDown.x.toFixed(3), worldDown.y.toFixed(3), worldDown.z.toFixed(3));
+        console.log('[LipSync] Local direction for world-UP:', worldUp.x.toFixed(3), worldUp.y.toFixed(3), worldUp.z.toFixed(3));
+
+        // Classify vertices by world-space position
+        const lowerLip = [], upperLip = [], chin = [], jawArea = [];
+
+        for (let i = 0; i < pos.count; i++) {
+          const wp = worldPositions[i];
+          const xDist = Math.abs(wp.x - centerX);
+
+          // Must be front-facing
+          if (wp.z < frontThreshold) continue;
+
+          // Lower lip: below mouth center, above chin
+          if (wp.y >= mouthYMin && wp.y < mouthYCenter && xDist < lipXRange) {
+            lowerLip.push(i);
+          }
+          // Upper lip: above mouth center
+          else if (wp.y >= mouthYCenter && wp.y < mouthYMax && xDist < lipXRange) {
+            upperLip.push(i);
+          }
+          // Chin area: below mouth
+          else if (wp.y >= wMinY + height * 0.10 && wp.y < mouthYMin && xDist < lipXRange * 1.5) {
+            chin.push(i);
+          }
+          // Jaw area: wider chin
+          if (wp.y >= wMinY + height * 0.15 && wp.y < mouthYCenter && xDist >= lipXRange && xDist < lipXRange * 2.5 && wp.z >= frontThreshold) {
+            jawArea.push(i);
           }
         }
-      });
+
+        console.log('[LipSync] Upper lip:', upperLip.length, 'Lower lip:', lowerLip.length,
+          'Chin:', chin.length, 'Jaw:', jawArea.length);
+
+        lipRef.current = {
+          pos,
+          origX, origY, origZ,
+          lowerLip, upperLip, chin, jawArea,
+          // Pre-calculated local-space displacement vectors
+          downVec: worldDown,
+          upVec: worldUp,
+          fwdVec: worldForward,
+          mouthYCenter
+        };
+      }
     });
-    
-    // Update animation mixer
-    if (mixer) {
-      mixer.update(0.016);
-    }
-  });
-  
-  return (
-    <group ref={groupRef} position={[0, -0.5, 0]} scale={[5, 5, 5]}>
-      <primitive object={scene} />
-      {/* Speaking indicator */}
-      {isSpeaking && (
-        <mesh position={[0, 0.5, 0]}>
-          <ringGeometry args={[0.15, 0.17, 32]} />
-          <meshBasicMaterial color="#4fc3f7" transparent opacity={0.5} side={THREE.DoubleSide} />
-        </mesh>
-      )}
-    </group>
-  );
-}
+  }, [clonedScene]);
 
-// Preload the GLB model
-useGLTF.preload('/models/interviewer-compressed.glb');
-
-// ============ 3D Realistic Interviewer Avatar (Fallback with primitives) ============
-function RealisticInterviewerAvatar({ isSpeaking, faceImageUrl }) {
-  const groupRef = useRef();
-  const headRef = useRef();
-  const mouthRef = useRef();
-  const bodyRef = useRef();
-  const leftArmRef = useRef();
-  const rightArmRef = useRef();
-  const clipboardRef = useRef();
-  const jawRef = useRef();
-  
-  // Subtle breathing and idle animation
   useFrame((state) => {
+    if (!groupRef.current) return;
     const time = state.clock.getElapsedTime();
-    
-    // Subtle body breathing
-    if (groupRef.current) {
-      groupRef.current.position.y = Math.sin(time * 1.2) * 0.015;
+
+    // Subtle idle breathing / sway
+    groupRef.current.position.y = offset.y + Math.sin(time * 0.8) * 0.012;
+    groupRef.current.rotation.y = Math.sin(time * 0.4) * 0.04;
+
+    // Speaking: gentle scale pulse
+    if (isSpeaking) {
+      const pulse = 1 + Math.sin(time * 5) * 0.005;
+      groupRef.current.scale.setScalar(modelScale * pulse);
+    } else {
+      groupRef.current.scale.setScalar(modelScale);
     }
-    
-    // Natural head movement - looking around subtly
-    if (headRef.current) {
-      headRef.current.rotation.y = Math.sin(time * 0.4) * 0.08;
-      headRef.current.rotation.x = Math.sin(time * 0.3) * 0.03;
-      headRef.current.rotation.z = Math.sin(time * 0.25) * 0.02;
-    }
-    
-    // Jaw/mouth animation when speaking
-    if (jawRef.current) {
+
+    // Lip sync
+    if (lipRef.current) {
+      const { pos, origX, origY, origZ, lowerLip, upperLip, chin, jawArea, downVec, upVec, fwdVec } = lipRef.current;
+
       if (isSpeaking) {
-        const mouthOpen = Math.abs(Math.sin(time * 12)) * 0.08 + Math.abs(Math.sin(time * 8)) * 0.04;
-        jawRef.current.position.y = -0.32 - mouthOpen;
-        jawRef.current.rotation.x = mouthOpen * 0.5;
+        // Natural speech: multiple overlapping frequencies
+        const jawOpen = Math.max(0, (Math.sin(time * 7) * 0.5 + 0.5) * (Math.sin(time * 11) * 0.3 + 0.7));
+        const lipRound = Math.max(0, Math.sin(time * 15) * 0.5 + 0.5);
+        const flutter = Math.sin(time * 19) * 0.15 + 0.85;
+        const openAmt = jawOpen * flutter;
+
+        // Displacement magnitude (aggressive so it's clearly visible)
+        const D = 0.018;
+
+        // LOWER LIP — move down in world space
+        for (const idx of lowerLip) {
+          pos.setX(idx, origX[idx] + downVec.x * D * openAmt);
+          pos.setY(idx, origY[idx] + downVec.y * D * openAmt);
+          pos.setZ(idx, origZ[idx] + downVec.z * D * openAmt);
+        }
+
+        // UPPER LIP — move up slightly in world space
+        for (const idx of upperLip) {
+          pos.setX(idx, origX[idx] + upVec.x * D * openAmt * 0.3);
+          pos.setY(idx, origY[idx] + upVec.y * D * openAmt * 0.3);
+          pos.setZ(idx, origZ[idx] + upVec.z * D * openAmt * 0.3);
+        }
+
+        // CHIN — follows lower lip with reduced motion
+        for (const idx of chin) {
+          pos.setX(idx, origX[idx] + downVec.x * D * openAmt * 0.5);
+          pos.setY(idx, origY[idx] + downVec.y * D * openAmt * 0.5);
+          pos.setZ(idx, origZ[idx] + downVec.z * D * openAmt * 0.5);
+        }
+
+        // JAW AREA — subtle follow
+        for (const idx of jawArea) {
+          pos.setX(idx, origX[idx] + downVec.x * D * openAmt * 0.15);
+          pos.setY(idx, origY[idx] + downVec.y * D * openAmt * 0.15);
+          pos.setZ(idx, origZ[idx] + downVec.z * D * openAmt * 0.15);
+        }
       } else {
-        jawRef.current.position.y = -0.32;
-        jawRef.current.rotation.x = 0;
+        // Reset everything to original
+        for (const idx of lowerLip) {
+          pos.setX(idx, origX[idx]);
+          pos.setY(idx, origY[idx]);
+          pos.setZ(idx, origZ[idx]);
+        }
+        for (const idx of upperLip) {
+          pos.setX(idx, origX[idx]);
+          pos.setY(idx, origY[idx]);
+          pos.setZ(idx, origZ[idx]);
+        }
+        for (const idx of chin) {
+          pos.setX(idx, origX[idx]);
+          pos.setY(idx, origY[idx]);
+          pos.setZ(idx, origZ[idx]);
+        }
+        for (const idx of jawArea) {
+          pos.setX(idx, origX[idx]);
+          pos.setY(idx, origY[idx]);
+          pos.setZ(idx, origZ[idx]);
+        }
       }
-    }
-    
-    // Clipboard/writing hand subtle movement
-    if (clipboardRef.current) {
-      clipboardRef.current.rotation.z = Math.sin(time * 2) * 0.03;
-      if (isSpeaking) {
-        clipboardRef.current.rotation.x = Math.sin(time * 1.5) * 0.02;
-      }
-    }
-    
-    // Body subtle sway
-    if (bodyRef.current) {
-      bodyRef.current.rotation.y = Math.sin(time * 0.2) * 0.02;
-    }
-  });
-
-  // Navy suit color
-  const suitColor = '#1a237e';
-  const suitDarkColor = '#0d1b4a';
-  const shirtColor = '#e3f2fd';
-  const tieColor = '#1565c0';
-  const skinColor = '#e8beac';
-  const hairColor = '#5d4037';
-
-  return (
-    <group ref={groupRef} position={[0, -0.3, 0]}>
-      {/* === BODY - Professional Suit === */}
-      <group ref={bodyRef}>
-        {/* Torso - Navy Suit Jacket */}
-        <mesh position={[0, 0, 0]}>
-          <boxGeometry args={[0.85, 1.0, 0.45]} />
-          <meshStandardMaterial color={suitColor} roughness={0.7} />
-        </mesh>
-        
-        {/* Suit Lapels */}
-        <mesh position={[-0.22, 0.25, 0.23]} rotation={[0, 0, 0.3]}>
-          <boxGeometry args={[0.15, 0.45, 0.05]} />
-          <meshStandardMaterial color={suitDarkColor} roughness={0.6} />
-        </mesh>
-        <mesh position={[0.22, 0.25, 0.23]} rotation={[0, 0, -0.3]}>
-          <boxGeometry args={[0.15, 0.45, 0.05]} />
-          <meshStandardMaterial color={suitDarkColor} roughness={0.6} />
-        </mesh>
-        
-        {/* Shirt (visible between lapels) */}
-        <mesh position={[0, 0.2, 0.22]}>
-          <boxGeometry args={[0.25, 0.5, 0.06]} />
-          <meshStandardMaterial color={shirtColor} roughness={0.5} />
-        </mesh>
-        
-        {/* Tie */}
-        <mesh position={[0, 0.15, 0.26]}>
-          <boxGeometry args={[0.08, 0.55, 0.03]} />
-          <meshStandardMaterial color={tieColor} roughness={0.6} />
-        </mesh>
-        {/* Tie knot */}
-        <mesh position={[0, 0.43, 0.27]}>
-          <boxGeometry args={[0.1, 0.06, 0.04]} />
-          <meshStandardMaterial color={tieColor} roughness={0.6} />
-        </mesh>
-        
-        {/* Shoulders */}
-        <mesh position={[-0.5, 0.35, 0]}>
-          <sphereGeometry args={[0.18, 16, 16]} />
-          <meshStandardMaterial color={suitColor} roughness={0.7} />
-        </mesh>
-        <mesh position={[0.5, 0.35, 0]}>
-          <sphereGeometry args={[0.18, 16, 16]} />
-          <meshStandardMaterial color={suitColor} roughness={0.7} />
-        </mesh>
-        
-        {/* Left Arm (resting) */}
-        <group ref={leftArmRef}>
-          <mesh position={[-0.58, 0.05, 0.05]} rotation={[0.1, 0, 0.15]}>
-            <capsuleGeometry args={[0.08, 0.35, 8, 16]} />
-            <meshStandardMaterial color={suitColor} roughness={0.7} />
-          </mesh>
-          {/* Left Hand */}
-          <mesh position={[-0.62, -0.25, 0.12]}>
-            <sphereGeometry args={[0.07, 12, 12]} />
-            <meshStandardMaterial color={skinColor} roughness={0.8} />
-          </mesh>
-        </group>
-        
-        {/* Right Arm (holding clipboard) */}
-        <group ref={rightArmRef}>
-          <mesh position={[0.5, 0, 0.15]} rotation={[0.5, 0, -0.3]}>
-            <capsuleGeometry args={[0.08, 0.35, 8, 16]} />
-            <meshStandardMaterial color={suitColor} roughness={0.7} />
-          </mesh>
-          {/* Right Hand */}
-          <mesh position={[0.42, -0.22, 0.32]}>
-            <sphereGeometry args={[0.07, 12, 12]} />
-            <meshStandardMaterial color={skinColor} roughness={0.8} />
-          </mesh>
-        </group>
-        
-        {/* Clipboard */}
-        <group ref={clipboardRef} position={[0.35, -0.15, 0.35]} rotation={[0.6, -0.2, 0]}>
-          <mesh>
-            <boxGeometry args={[0.22, 0.28, 0.02]} />
-            <meshStandardMaterial color="#3e2723" roughness={0.9} />
-          </mesh>
-          {/* Paper */}
-          <mesh position={[0, 0, 0.015]}>
-            <boxGeometry args={[0.18, 0.24, 0.005]} />
-            <meshStandardMaterial color="#fafafa" roughness={0.95} />
-          </mesh>
-          {/* Pen in hand */}
-          <mesh position={[0.08, 0.05, 0.03]} rotation={[0, 0, 0.5]}>
-            <cylinderGeometry args={[0.008, 0.008, 0.12, 8]} />
-            <meshStandardMaterial color="#263238" metalness={0.5} roughness={0.3} />
-          </mesh>
-        </group>
-      </group>
-      
-      {/* === NECK === */}
-      <mesh position={[0, 0.6, 0]}>
-        <cylinderGeometry args={[0.1, 0.12, 0.2, 16]} />
-        <meshStandardMaterial color={skinColor} roughness={0.8} />
-      </mesh>
-      
-      {/* === HEAD === */}
-      <group ref={headRef} position={[0, 0.95, 0]}>
-        {/* Main head shape */}
-        <mesh>
-          <sphereGeometry args={[0.32, 32, 32]} />
-          <meshStandardMaterial color={skinColor} roughness={0.85} />
-        </mesh>
-        
-        {/* Face front (slightly flattened for more realistic shape) */}
-        <mesh position={[0, -0.02, 0.15]}>
-          <sphereGeometry args={[0.28, 32, 32]} />
-          <meshStandardMaterial color={skinColor} roughness={0.85} />
-        </mesh>
-        
-        {/* Hair - styled brown hair */}
-        <mesh position={[0, 0.15, -0.05]}>
-          <sphereGeometry args={[0.3, 16, 16, 0, Math.PI * 2, 0, Math.PI * 0.6]} />
-          <meshStandardMaterial color={hairColor} roughness={0.9} />
-        </mesh>
-        {/* Hair sides */}
-        <mesh position={[-0.25, 0.05, 0]}>
-          <boxGeometry args={[0.1, 0.2, 0.25]} />
-          <meshStandardMaterial color={hairColor} roughness={0.9} />
-        </mesh>
-        <mesh position={[0.25, 0.05, 0]}>
-          <boxGeometry args={[0.1, 0.2, 0.25]} />
-          <meshStandardMaterial color={hairColor} roughness={0.9} />
-        </mesh>
-        
-        {/* Eyebrows */}
-        <mesh position={[-0.1, 0.1, 0.28]} rotation={[0.2, 0, 0.1]}>
-          <boxGeometry args={[0.08, 0.015, 0.02]} />
-          <meshStandardMaterial color="#4e342e" roughness={0.9} />
-        </mesh>
-        <mesh position={[0.1, 0.1, 0.28]} rotation={[0.2, 0, -0.1]}>
-          <boxGeometry args={[0.08, 0.015, 0.02]} />
-          <meshStandardMaterial color="#4e342e" roughness={0.9} />
-        </mesh>
-        
-        {/* Eyes */}
-        <group position={[-0.1, 0.03, 0.28]}>
-          {/* Eye white */}
-          <mesh>
-            <sphereGeometry args={[0.04, 16, 16]} />
-            <meshStandardMaterial color="white" roughness={0.3} />
-          </mesh>
-          {/* Iris */}
-          <mesh position={[0, 0, 0.025]}>
-            <sphereGeometry args={[0.025, 16, 16]} />
-            <meshStandardMaterial color="#5d4037" roughness={0.4} />
-          </mesh>
-          {/* Pupil */}
-          <mesh position={[0, 0, 0.035]}>
-            <sphereGeometry args={[0.012, 12, 12]} />
-            <meshStandardMaterial color="#1a1a1a" roughness={0.2} />
-          </mesh>
-        </group>
-        <group position={[0.1, 0.03, 0.28]}>
-          {/* Eye white */}
-          <mesh>
-            <sphereGeometry args={[0.04, 16, 16]} />
-            <meshStandardMaterial color="white" roughness={0.3} />
-          </mesh>
-          {/* Iris */}
-          <mesh position={[0, 0, 0.025]}>
-            <sphereGeometry args={[0.025, 16, 16]} />
-            <meshStandardMaterial color="#5d4037" roughness={0.4} />
-          </mesh>
-          {/* Pupil */}
-          <mesh position={[0, 0, 0.035]}>
-            <sphereGeometry args={[0.012, 12, 12]} />
-            <meshStandardMaterial color="#1a1a1a" roughness={0.2} />
-          </mesh>
-        </group>
-        
-        {/* Nose */}
-        <mesh position={[0, -0.03, 0.32]}>
-          <coneGeometry args={[0.03, 0.08, 8]} />
-          <meshStandardMaterial color={skinColor} roughness={0.85} />
-        </mesh>
-        
-        {/* Ears */}
-        <mesh position={[-0.3, 0, 0]} rotation={[0, -0.3, 0]}>
-          <sphereGeometry args={[0.06, 12, 12]} />
-          <meshStandardMaterial color={skinColor} roughness={0.85} />
-        </mesh>
-        <mesh position={[0.3, 0, 0]} rotation={[0, 0.3, 0]}>
-          <sphereGeometry args={[0.06, 12, 12]} />
-          <meshStandardMaterial color={skinColor} roughness={0.85} />
-        </mesh>
-        
-        {/* Upper lip / mouth area */}
-        <mesh position={[0, -0.12, 0.28]}>
-          <boxGeometry args={[0.1, 0.02, 0.04]} />
-          <meshStandardMaterial color="#c9917a" roughness={0.7} />
-        </mesh>
-        
-        {/* Jaw (animated when speaking) */}
-        <group ref={jawRef} position={[0, -0.18, 0.1]}>
-          <mesh>
-            <sphereGeometry args={[0.18, 16, 16, 0, Math.PI * 2, Math.PI * 0.4, Math.PI * 0.6]} />
-            <meshStandardMaterial color={skinColor} roughness={0.85} />
-          </mesh>
-          {/* Lower lip */}
-          <mesh position={[0, 0.04, 0.15]}>
-            <boxGeometry args={[0.08, 0.02, 0.03]} />
-            <meshStandardMaterial color="#c9917a" roughness={0.7} />
-          </mesh>
-          {/* Teeth (visible when speaking) */}
-          {isSpeaking && (
-            <mesh position={[0, 0.07, 0.14]}>
-              <boxGeometry args={[0.07, 0.02, 0.02]} />
-              <meshStandardMaterial color="#fafafa" roughness={0.3} />
-            </mesh>
-          )}
-        </group>
-      </group>
-      
-      {/* Speaking indicator - subtle glow rings */}
-      {isSpeaking && (
-        <>
-          <mesh position={[0, 0.95, 0]} rotation={[0, 0, 0]}>
-            <ringGeometry args={[0.4, 0.42, 32]} />
-            <meshBasicMaterial color="#4fc3f7" transparent opacity={0.4} side={THREE.DoubleSide} />
-          </mesh>
-          <mesh position={[0, 0.95, 0]} rotation={[0, 0, 0]}>
-            <ringGeometry args={[0.48, 0.5, 32]} />
-            <meshBasicMaterial color="#29b6f6" transparent opacity={0.25} side={THREE.DoubleSide} />
-          </mesh>
-        </>
-      )}
-    </group>
-  );
-}
-
-// ============ 3D Animated Robot Avatar Component (fallback) ============
-function AnimatedAvatar({ isSpeaking }) {
-  const headRef = useRef();
-  const mouthRef = useRef();
-  const leftEyeRef = useRef();
-  const rightEyeRef = useRef();
-  const bodyRef = useRef();
-
-  useFrame((state) => {
-    const time = state.clock.getElapsedTime();
-    if (headRef.current) {
-      headRef.current.rotation.y = Math.sin(time * 0.5) * 0.1;
-      headRef.current.position.y = 1.0 + Math.sin(time * 0.8) * 0.02;
-    }
-    if (mouthRef.current) {
-      const mouthScale = isSpeaking ? 1 + Math.sin(time * 8) * 0.4 + Math.sin(time * 12) * 0.2 : 1;
-      mouthRef.current.scale.y = Math.max(0.3, mouthScale);
-      mouthRef.current.scale.x = isSpeaking ? 1 + Math.sin(time * 6) * 0.15 : 1;
-    }
-    if (bodyRef.current) {
-      bodyRef.current.rotation.y = Math.sin(time * 0.3) * 0.05;
+      pos.needsUpdate = true;
     }
   });
 
   return (
-    <group>
-      {/* Body - torso */}
-      <mesh ref={bodyRef} position={[0, -0.3, 0]}>
-        <boxGeometry args={[1.0, 1.2, 0.5]} />
-        <meshStandardMaterial color="#6366f1" />
-      </mesh>
-      {/* Shoulders */}
-      <mesh position={[-0.65, 0.15, 0]}>
-        <sphereGeometry args={[0.2, 16, 16]} />
-        <meshStandardMaterial color="#6366f1" />
-      </mesh>
-      <mesh position={[0.65, 0.15, 0]}>
-        <sphereGeometry args={[0.2, 16, 16]} />
-        <meshStandardMaterial color="#6366f1" />
-      </mesh>
-      {/* Neck */}
-      <mesh position={[0, 0.5, 0]}>
-        <cylinderGeometry args={[0.12, 0.15, 0.25, 16]} />
-        <meshStandardMaterial color="#a78bfa" />
-      </mesh>
-      {/* Head */}
-      <group ref={headRef} position={[0, 1.0, 0]}>
-        <mesh>
-          <sphereGeometry args={[0.42, 32, 32]} />
-          <meshStandardMaterial color="#818cf8" />
-        </mesh>
-        {/* Left Eye */}
-        <group position={[-0.14, 0.06, 0.36]}>
-          <mesh>
-            <sphereGeometry args={[0.08, 16, 16]} />
-            <meshStandardMaterial color="white" />
-          </mesh>
-          <mesh ref={leftEyeRef} position={[0, 0, 0.04]}>
-            <sphereGeometry args={[0.04, 16, 16]} />
-            <meshStandardMaterial color="#1e1b4b" />
-          </mesh>
-        </group>
-        {/* Right Eye */}
-        <group position={[0.14, 0.06, 0.36]}>
-          <mesh>
-            <sphereGeometry args={[0.08, 16, 16]} />
-            <meshStandardMaterial color="white" />
-          </mesh>
-          <mesh ref={rightEyeRef} position={[0, 0, 0.04]}>
-            <sphereGeometry args={[0.04, 16, 16]} />
-            <meshStandardMaterial color="#1e1b4b" />
-          </mesh>
-        </group>
-        {/* Mouth */}
-        <mesh ref={mouthRef} position={[0, -0.13, 0.38]}>
-          <boxGeometry args={[0.16, 0.05, 0.04]} />
-          <meshStandardMaterial color="#ec4899" />
-        </mesh>
-      </group>
-      {/* Speaking indicator rings */}
-      {isSpeaking && (
-        <>
-          <mesh position={[0, 1.0, 0]} rotation={[0, 0, 0]}>
-            <ringGeometry args={[0.52, 0.55, 32]} />
-            <meshBasicMaterial color="#60a5fa" transparent opacity={0.4} />
-          </mesh>
-          <mesh position={[0, 1.0, 0]} rotation={[0, 0, 0]}>
-            <ringGeometry args={[0.62, 0.64, 32]} />
-            <meshBasicMaterial color="#818cf8" transparent opacity={0.25} />
-          </mesh>
-        </>
-      )}
+    <group ref={groupRef} position={[offset.x, offset.y, offset.z]} scale={[modelScale, modelScale, modelScale]}>
+      <primitive object={clonedScene} />
     </group>
   );
 }
+
+useGLTF.preload('/models/arnaud_from_mapado.glb');
 
 // ============ Score Helper Functions ============
 const getScoreColor = (score) => {
@@ -547,13 +305,15 @@ const AIInterview = () => {
   const [timeRemaining, setTimeRemaining] = useState(600); // 10 min
   const [feedback, setFeedback] = useState(null);
   const [webcamStream, setWebcamStream] = useState(null);
-  const [cameraEnabled, setCameraEnabled] = useState(true);
+  const [cameraEnabled, setCameraEnabled] = useState(false);
   const [feedbackTab, setFeedbackTab] = useState('overview');
   const [showChat, setShowChat] = useState(false);
-  const [confidenceSummary, setConfidenceSummary] = useState(null);
-
-  // Realistic 3D Avatar state (FREE - client-side 3D animation)
-  const [useRealisticAvatar, setUseRealisticAvatar] = useState(true); // Show realistic 3D professional by default
+  const [warningInfo, setWarningInfo] = useState(null); // { type, count, max }
+  const [eyeContactScore, setEyeContactScore] = useState(null); // latest score 0-100
+  const [difficultyLevel, setDifficultyLevel] = useState('easy'); // easy/medium/hard
+  const [analyzerReady, setAnalyzerReady] = useState(false);
+  const [liveMetrics, setLiveMetrics] = useState({ eyeContact: null, confidence: null, expression: null });
+  const [cheatingWarning, setCheatingWarning] = useState(null);
 
   // Setup form state
   const [setupName, setSetupName] = useState('');
@@ -562,7 +322,6 @@ const AIInterview = () => {
   // Refs
   const recognitionRef = useRef(null);
   const synthRef = useRef(window.speechSynthesis);
-  const ttsAudioRef = useRef(null); // For Edge TTS audio playback
   const timerIntervalRef = useRef(null);
   const videoRef = useRef(null);
   const chatContainerRef = useRef(null);
@@ -571,79 +330,7 @@ const AIInterview = () => {
   const isAISpeakingRef = useRef(false);
   const isListeningRef = useRef(false);
   const interviewStartedRef = useRef(false);
-  const webcamStreamRef = useRef(null);
-  const lastSubmittedTextRef = useRef('');
-  const useWhisperModeRef = useRef(false); // Ref for Whisper mode check in callbacks
-  const startListeningRef = useRef(null); // Ref to avoid circular dependency
-
-  // === Client-side Confidence Analysis (runs in browser, ZERO server impact) ===
-  const {
-    confidenceData,
-    isReady: isConfidenceReady,
-    error: confidenceError,
-    getSessionSummary,
-    resetAnalysis
-  } = useConfidenceAnalyzer(videoRef, interviewStarted && cameraEnabled && webcamStream !== null);
-
-  // === Groq Whisper Audio Recording (production-ready speech-to-text) ===
-  const {
-    isRecording: isWhisperRecording,
-    isTranscribing,
-    startRecording: startWhisperRecording,
-    stopRecording: stopWhisperRecording,
-    cancelRecording: cancelWhisperRecording,
-    isSupported: isWhisperSupported
-  } = useAudioRecorder();
-
-  // State for Whisper mode - auto-enable if browser speech recognition is not supported
-  const [useWhisperMode, setUseWhisperMode] = useState(false);
-  
-  // Check browser speech recognition support on mount
-  useEffect(() => {
-    const hasBrowserSpeech = !!(window.SpeechRecognition || window.webkitSpeechRecognition);
-    if (!hasBrowserSpeech && isWhisperSupported()) {
-      console.log('🎤 Browser speech recognition not supported, using Groq Whisper');
-      setUseWhisperMode(true);
-    }
-  }, [isWhisperSupported]);
-
-  // Keep Whisper mode ref in sync with state
-  useEffect(() => { 
-    useWhisperModeRef.current = useWhisperMode; 
-    console.log('🎤 Whisper mode:', useWhisperMode ? 'ON (Groq API)' : 'OFF (Browser Speech)');
-  }, [useWhisperMode]);
-
-  // === Clean transcript: remove consecutive duplicate words/phrases ===
-  const cleanTranscript = useCallback((text) => {
-    if (!text) return '';
-    
-    let result = text.trim();
-    
-    // First pass: Remove repeated phrases (4, 3, 2 words) - do multiple times
-    for (let pass = 0; pass < 3; pass++) {
-      // Remove repeated 4-word phrases like "I have experience in I have experience in"
-      result = result.replace(/(\b\w+\s+\w+\s+\w+\s+\w+\b)\s+\1/gi, '$1');
-      // Remove repeated 3-word phrases like "I have experience I have experience"
-      result = result.replace(/(\b\w+\s+\w+\s+\w+\b)\s+\1/gi, '$1');
-      // Remove repeated 2-word phrases like "I have I have"
-      result = result.replace(/(\b\w+\s+\w+\b)\s+\1/gi, '$1');
-      // Remove single repeated words like "the the" or "I I"
-      result = result.replace(/\b(\w+)\s+\1\b/gi, '$1');
-    }
-    
-    // Second pass: Remove consecutive duplicate words
-    const words = result.split(/\s+/);
-    if (words.length === 0) return '';
-    
-    const cleaned = [words[0]];
-    for (let i = 1; i < words.length; i++) {
-      if (words[i].toLowerCase() !== words[i - 1].toLowerCase()) {
-        cleaned.push(words[i]);
-      }
-    }
-    
-    return cleaned.join(' ').trim();
-  }, []);
+  const liveMetricsIntervalRef = useRef(null);
 
   const useBrowserRecognition = !!(window.SpeechRecognition || window.webkitSpeechRecognition);
 
@@ -700,29 +387,86 @@ const AIInterview = () => {
     }
   }, [conversationHistory, currentMessage, interimTranscript]);
 
-  // Webcam - attach stream to video element when available
+  // Webcam
   useEffect(() => {
-    if (webcamStream && videoRef.current && cameraEnabled) {
-      console.log('[Camera] Setting video srcObject, interviewStarted:', interviewStarted);
+    if (webcamStream && videoRef.current) {
       videoRef.current.srcObject = webcamStream;
-      videoRef.current.play()
-        .then(() => console.log('[Camera] Video playing'))
-        .catch((e) => console.warn('[Camera] Video play error:', e));
+      videoRef.current.play().catch(() => {});
     }
-  }, [webcamStream, cameraEnabled, interviewStarted]); // Added interviewStarted to trigger when interview screen renders
+  }, [webcamStream]);
+
+  // ===== Initialize face-api.js analyzer on mount =====
+  useEffect(() => {
+    interviewAnalyzer.initialize().then(ready => {
+      setAnalyzerReady(ready);
+      if (ready) console.log('[AI Interview] Face analyzer ready');
+    });
+  }, []);
+
+  // ===== Start/stop face-api.js analysis with camera =====
+  useEffect(() => {
+    if (!interviewStarted || interviewEnded || !cameraEnabled || !webcamStream || !analyzerReady) {
+      if (interviewAnalyzer.running) interviewAnalyzer.stopAnalysis();
+      if (liveMetricsIntervalRef.current) {
+        clearInterval(liveMetricsIntervalRef.current);
+        liveMetricsIntervalRef.current = null;
+      }
+      return;
+    }
+
+    // Wait for video element to be ready
+    const startWhenReady = () => {
+      if (videoRef.current && videoRef.current.readyState >= 2) {
+        interviewAnalyzer.startAnalysis(videoRef.current);
+        // Poll live metrics every 1 second for UI
+        liveMetricsIntervalRef.current = setInterval(() => {
+          const snap = interviewAnalyzer.getLiveSnapshot();
+          setEyeContactScore(snap.eye_contact);
+          setLiveMetrics({
+            eyeContact: snap.eye_contact,
+            confidence: snap.facial_confidence,
+            expression: snap.expression
+          });
+          // Cheating warnings
+          if (snap.cheating_flag) {
+            setCheatingWarning(snap.cheating_flag === 'looking_away' ? 'Please look at the camera' :
+              snap.cheating_flag === 'head_turned' ? 'Please face the camera' : null);
+            setTimeout(() => setCheatingWarning(null), 3000);
+          }
+          if (snap.multiple_faces_detected >= 3) {
+            setCheatingWarning('Multiple faces detected');
+            setTimeout(() => setCheatingWarning(null), 3000);
+          }
+          if (snap.tab_switches > 0 && snap.tab_switches !== window._lastTabWarned) {
+            window._lastTabWarned = snap.tab_switches;
+            setCheatingWarning('Tab switch detected');
+            setTimeout(() => setCheatingWarning(null), 3000);
+          }
+        }, 1000);
+      } else {
+        setTimeout(startWhenReady, 500);
+      }
+    };
+    startWhenReady();
+
+    return () => {
+      interviewAnalyzer.stopAnalysis();
+      if (liveMetricsIntervalRef.current) {
+        clearInterval(liveMetricsIntervalRef.current);
+        liveMetricsIntervalRef.current = null;
+      }
+    };
+  }, [interviewStarted, interviewEnded, cameraEnabled, webcamStream, analyzerReady]);
 
   // Cleanup on unmount
   useEffect(() => {
     return () => {
       if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
+      if (liveMetricsIntervalRef.current) clearInterval(liveMetricsIntervalRef.current);
+      interviewAnalyzer.stopAnalysis();
       if (recognitionRef.current) { try { recognitionRef.current.abort(); } catch (e) {} }
       if (synthRef.current) synthRef.current.cancel();
-      if (ttsAudioRef.current) { ttsAudioRef.current.pause(); ttsAudioRef.current = null; }
-      // Use ref for reliable cleanup on unmount
-      if (webcamStreamRef.current) {
-        webcamStreamRef.current.getTracks().forEach(t => t.stop());
-        webcamStreamRef.current = null;
-      }
+      if (webcamStream) webcamStream.getTracks().forEach(t => t.stop());
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -757,7 +501,7 @@ const AIInterview = () => {
 
     let silenceTimer = null;
     let accumulatedTranscript = '';
-    const SILENCE_THRESHOLD = 2500; // Increased from 1500ms to give users more time to finish speaking
+    const SILENCE_THRESHOLD = 1500;
 
     recognition.onstart = () => { setIsListening(true); setError(null); accumulatedTranscript = ''; };
 
@@ -768,28 +512,16 @@ const AIInterview = () => {
         const t = event.results[i][0].transcript;
         if (event.results[i].isFinal) final += t; else interim += t;
       }
-      if (final) { 
-        accumulatedTranscript += ' ' + final; 
-        accumulatedTranscript = cleanTranscript(accumulatedTranscript); // Clean immediately to remove duplicates
-      }
-      const displayText = cleanTranscript((accumulatedTranscript + ' ' + interim).trim());
+      if (final) { accumulatedTranscript += ' ' + final; accumulatedTranscript = accumulatedTranscript.trim(); }
+      const displayText = (accumulatedTranscript + ' ' + interim).trim();
       setInterimTranscript(displayText || interim || '');
 
       if (final && accumulatedTranscript.trim().length > 2) {
         silenceTimer = setTimeout(() => {
-          let text = accumulatedTranscript.trim();
-          // Clean duplicate words/phrases
-          text = cleanTranscript(text);
+          const text = accumulatedTranscript.trim();
           const words = text.split(/\s+/).length;
-          // Skip if identical to last submitted text (prevents resubmission)
-          if (text.toLowerCase() === lastSubmittedTextRef.current.toLowerCase()) {
-            console.log('[Speech] Skipping duplicate submission:', text);
-            accumulatedTranscript = '';
-            return;
-          }
           if (text.length > 5 && words >= 2 && !isProcessingRef.current) {
             setIsProcessing(true); isProcessingRef.current = true;
-            lastSubmittedTextRef.current = text;
             accumulatedTranscript = '';
             setInterimTranscript('');
             try { recognition.stop(); } catch (e) {}
@@ -817,16 +549,8 @@ const AIInterview = () => {
       setIsListening(false); setInterimTranscript('');
       if (isProcessingRef.current) { accumulatedTranscript = ''; return; }
       if (accumulatedTranscript.trim().length > 5) {
-        let text = accumulatedTranscript.trim();
-        text = cleanTranscript(text);
-        // Skip if identical to last submitted
-        if (text.toLowerCase() === lastSubmittedTextRef.current.toLowerCase()) {
-          console.log('[Speech] Skipping duplicate on end:', text);
-          accumulatedTranscript = '';
-          return;
-        }
+        const text = accumulatedTranscript.trim();
         setIsProcessing(true); isProcessingRef.current = true;
-        lastSubmittedTextRef.current = text;
         accumulatedTranscript = '';
         handleUserSpeech(text);
       } else {
@@ -843,97 +567,40 @@ const AIInterview = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Browser speech synthesis fallback (defined before speakText to avoid circular dependency)
-  const speakWithBrowser = useCallback((text, onStart, onEnd) => {
-    if (!synthRef.current) { onEnd(); return; }
-    
+  // === TTS ===
+  const speakText = useCallback((text) => {
+    if (!audioEnabled || !synthRef.current) return;
+    synthRef.current.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
-    utterance.rate = 1.0; utterance.pitch = 1.0; utterance.volume = 1.0;
+    utterance.rate = 1.0; utterance.pitch = 0.9; utterance.volume = 1.0;
 
     const voices = synthRef.current.getVoices();
-    const preferred = ['Microsoft David', 'Google US English Male', 'Alex', 'Daniel', 'Microsoft Mark'];
+    // Prefer deep male voices for the AI interviewer
+    const preferred = ['Microsoft David', 'Google UK English Male', 'Daniel', 'Alex', 'Microsoft Mark', 'Microsoft Guy Online', 'Google US English'];
     let selectedVoice = null;
     for (const n of preferred) { const v = voices.find(v => v.name.includes(n)); if (v) { selectedVoice = v; break; } }
-    if (!selectedVoice) selectedVoice = voices.find(v => v.lang.startsWith('en') && v.name.toLowerCase().includes('male')) || voices.find(v => v.lang.startsWith('en')) || voices[0];
+    // Fallback: try to find any male English voice
+    if (!selectedVoice) selectedVoice = voices.find(v => v.lang.startsWith('en') && (/male|david|mark|guy|daniel|james|john/i).test(v.name));
+    if (!selectedVoice) selectedVoice = voices.find(v => v.lang.startsWith('en')) || voices[0];
     if (selectedVoice) utterance.voice = selectedVoice;
+    utterance.pitch = 0.9; // slightly deeper
 
-    utterance.onstart = onStart;
-    utterance.onend = onEnd;
-    utterance.onerror = onEnd;
-    synthRef.current.speak(utterance);
-    console.log('🔊 Using browser TTS (fallback)');
-  }, []);
-
-  // === TTS with Edge TTS (natural voice) + browser fallback ===
-  const speakText = useCallback(async (text) => {
-    if (!audioEnabled) return;
-    
-    // Stop any current playback
-    if (ttsAudioRef.current) {
-      ttsAudioRef.current.pause();
-      ttsAudioRef.current = null;
-    }
-    if (synthRef.current) synthRef.current.cancel();
-    
-    const startSpeaking = () => {
-      setIsAISpeaking(true);
-      isAISpeakingRef.current = true;
-    };
-    
-    const endSpeaking = () => {
-      setIsAISpeaking(false);
-      isAISpeakingRef.current = false;
+    utterance.onstart = () => { setIsAISpeaking(true); };
+    utterance.onend = () => {
+      setIsAISpeaking(false); isAISpeakingRef.current = false;
       if (interviewStartedRef.current && !showTextInput) {
-        setTimeout(() => {
-          if (!isAISpeakingRef.current && interviewStartedRef.current) {
-            if (useWhisperModeRef.current) {
-              startWhisperRecording();
-            } else if (startListeningRef.current) {
-              startListeningRef.current();
-            }
-          }
-        }, 200);
+        setTimeout(() => { if (!isAISpeakingRef.current) startListening(); }, 200);
       }
     };
-    
-    // Try Edge TTS first (natural voice, better quality)
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/interview/tts`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text, voice: 'en-US-GuyNeural' })
-      });
-      
-      if (response.ok) {
-        const audioBlob = await response.blob();
-        const audioUrl = URL.createObjectURL(audioBlob);
-        const audio = new Audio(audioUrl);
-        ttsAudioRef.current = audio;
-        
-        audio.onplay = startSpeaking;
-        audio.onended = () => {
-          URL.revokeObjectURL(audioUrl);
-          ttsAudioRef.current = null;
-          endSpeaking();
-        };
-        audio.onerror = () => {
-          URL.revokeObjectURL(audioUrl);
-          ttsAudioRef.current = null;
-          console.warn('Edge TTS playback error, falling back to browser');
-          speakWithBrowser(text, startSpeaking, endSpeaking);
-        };
-        
-        await audio.play();
-        console.log('🔊 Using Edge TTS (natural voice)');
-        return;
+    utterance.onerror = () => {
+      setIsAISpeaking(false); isAISpeakingRef.current = false;
+      if (interviewStartedRef.current && !showTextInput) {
+        setTimeout(() => startListening(), 200);
       }
-    } catch (e) {
-      console.warn('Edge TTS unavailable, using browser TTS:', e.message);
-    }
-    
-    // Fallback to browser speechSynthesis
-    speakWithBrowser(text, startSpeaking, endSpeaking);
-  }, [audioEnabled, showTextInput, startWhisperRecording, speakWithBrowser]);
+    };
+    synthRef.current.speak(utterance);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [audioEnabled, showTextInput]);
 
   // === Start Listening ===
   const startListening = useCallback(() => {
@@ -954,81 +621,12 @@ const AIInterview = () => {
     }
   }, [setupRecognition]);
 
-  // Keep startListening ref in sync for callbacks
-  useEffect(() => { startListeningRef.current = startListening; }, [startListening]);
-
   const stopListening = () => {
     if (recognitionRef.current && isListening) {
       try { recognitionRef.current.stop(); } catch (e) {}
     }
     setIsListening(false);
   };
-
-  // === Groq Whisper Recording Functions ===
-  const startWhisperListening = useCallback(async () => {
-    if (isWhisperRecording || isTranscribing || isProcessingRef.current) return;
-    
-    if (isAISpeakingRef.current) {
-      synthRef.current?.cancel();
-      setIsAISpeaking(false);
-      isAISpeakingRef.current = false;
-    }
-    
-    const started = await startWhisperRecording();
-    if (started) {
-      console.log('🎤 Groq Whisper recording started');
-    } else {
-      setError('Failed to start recording. Please check microphone permissions.');
-    }
-  }, [isWhisperRecording, isTranscribing, startWhisperRecording]);
-
-  const stopWhisperListening = useCallback(async () => {
-    if (!isWhisperRecording) return;
-    
-    console.log('🎤 Stopping Groq Whisper recording...');
-    const transcript = await stopWhisperRecording();
-    
-    if (transcript && transcript.trim().length > 2) {
-      console.log('🎤 Whisper transcribed:', transcript);
-      handleUserSpeech(transcript);
-    } else {
-      console.log('🎤 No transcript received');
-      // Restart recording after a short delay
-      if (interviewStartedRef.current && !isAISpeakingRef.current) {
-        setTimeout(() => startWhisperListening(), 500);
-      }
-    }
-  }, [isWhisperRecording, stopWhisperRecording]);
-
-  // Combined toggle function that works with both modes
-  const toggleMicrophone = useCallback(() => {
-    if (useWhisperMode) {
-      // Whisper mode
-      if (isWhisperRecording) {
-        stopWhisperListening();
-      } else {
-        startWhisperListening();
-      }
-    } else {
-      // Browser Speech Recognition mode
-      if (isListening) {
-        stopListening();
-      } else {
-        startListening();
-      }
-    }
-  }, [useWhisperMode, isWhisperRecording, isListening, startWhisperListening, stopWhisperListening, startListening]);
-
-  // Unified function to start listening after AI finishes speaking
-  const startAutoListening = useCallback(() => {
-    if (!interviewStartedRef.current || isAISpeakingRef.current) return;
-    
-    if (useWhisperModeRef.current) {
-      startWhisperListening();
-    } else {
-      startListening();
-    }
-  }, [startWhisperListening, startListening]);
 
   // === Handle user speech ===
   const handleUserSpeech = async (transcript) => {
@@ -1048,10 +646,53 @@ const AIInterview = () => {
 
     try {
       setError(null);
+      // Get live snapshot from face-api.js analyzer
+      const analyzerSnap = interviewAnalyzer.running ? interviewAnalyzer.getLiveSnapshot() : null;
+      const avgEyeContact = analyzerSnap?.eye_contact ?? null;
+
+      // Analyze confidence from speech patterns
+      const words = transcript.trim().split(/\s+/);
+      const wordCount = words.length;
+      const fillers = (transcript.match(/\b(um|uh|like|you know|basically|i guess|i think|maybe|sort of|kind of|i mean|actually|honestly|well)\b/gi) || []).length;
+      const fillerRatio = wordCount > 0 ? fillers / wordCount : 0;
+      const hasHedging = /\b(i'm not sure|i don't know|i can't remember|probably|perhaps)\b/i.test(transcript);
+      const hasStrongStart = /^(I |Yes|Sure|Absolutely|Definitely|In my experience|When I)/i.test(transcript.trim());
+      let speechConfidence = 70;
+      if (wordCount < 5) speechConfidence -= 30;
+      else if (wordCount < 10) speechConfidence -= 15;
+      else if (wordCount > 30) speechConfidence += 10;
+      speechConfidence -= Math.round(fillerRatio * 80);
+      if (hasHedging) speechConfidence -= 15;
+      if (hasStrongStart) speechConfidence += 10;
+      speechConfidence = Math.max(5, Math.min(100, speechConfidence));
+
+      // Blend speech + facial confidence (60% facial, 40% speech when available)
+      const facialConf = analyzerSnap?.facial_confidence;
+      const blendedConfidence = facialConf != null
+        ? Math.round(facialConf * 0.6 + speechConfidence * 0.4)
+        : speechConfidence;
+
+      const confidenceSnapshot = {
+        word_count: wordCount,
+        filler_count: fillers,
+        filler_ratio: Math.round(fillerRatio * 100) / 100,
+        has_hedging: hasHedging,
+        has_strong_start: hasStrongStart,
+        score: blendedConfidence,
+        speech_score: speechConfidence,
+        facial_score: facialConf,
+        expression: analyzerSnap?.expression || null
+      };
+
       const response = await fetch(`${API_BASE_URL}/api/interview/respond`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ session_id: currentSessionId, message: transcript })
+        body: JSON.stringify({
+          session_id: currentSessionId,
+          message: transcript,
+          eye_contact_score: avgEyeContact,
+          confidence_snapshot: confidenceSnapshot
+        })
       });
       const data = await response.json();
 
@@ -1060,27 +701,38 @@ const AIInterview = () => {
       if (data.success) {
         setConversationHistory(prev => [...prev, { role: 'assistant', content: data.message }]);
         setCurrentMessage(data.message);
+
+        // Handle warning from backend
+        if (data.warning) {
+          setWarningInfo(data.warning);
+          // Auto-clear warning display after 5 seconds
+          setTimeout(() => setWarningInfo(null), 5000);
+        }
+
+        // Handle difficulty level update
+        if (data.difficulty) {
+          setDifficultyLevel(data.difficulty);
+        }
+
+        // Handle auto-end (3 warnings reached)
+        if (data.auto_end) {
+          if (audioEnabled) speakText(data.message);
+          setTimeout(() => endInterview(), 4000);
+          return;
+        }
+
         if (data.state === 'closing') {
           setTimeout(() => endInterview(), 3000);
         }
         if (audioEnabled) speakText(data.message);
         else setTimeout(() => { if (interviewStartedRef.current) startListening(); }, 500);
       } else {
-        // Check if session expired
-        if (data.session_expired) {
-          setError('Session expired. Please restart the interview.');
-          // Remove the user message we optimistically added
-          setConversationHistory(prev => prev.slice(0, -1));
-        } else {
-          setError(data.error || 'Failed to get response');
-          setTimeout(() => { if (interviewStartedRef.current) startListening(); }, 2000);
-        }
+        setError(data.error || 'Failed to get response');
+        setTimeout(() => { if (interviewStartedRef.current) startListening(); }, 2000);
       }
     } catch (err) {
       setIsProcessing(false); isProcessingRef.current = false;
       setError('Connection error. Retrying...');
-      // Remove the user message we optimistically added
-      setConversationHistory(prev => prev.slice(0, -1));
       setTimeout(() => { setError(null); if (interviewStartedRef.current) startListening(); }, 2000);
     }
   };
@@ -1090,13 +742,11 @@ const AIInterview = () => {
     if (!setupName.trim()) { setError('Please enter your name'); return; }
     setIsProcessing(true); setError(null);
 
-    // Setup camera - store stream locally and in ref for reliable cleanup
-    let cameraStream = null;
+    // Setup camera
     if (cameraEnabled) {
       try {
-        cameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false });
-        webcamStreamRef.current = cameraStream;
-        setWebcamStream(cameraStream);
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false });
+        setWebcamStream(stream);
       } catch (e) { console.warn('Camera not available:', e); setCameraEnabled(false); }
     }
 
@@ -1114,30 +764,10 @@ const AIInterview = () => {
 
       if (data.success) {
         setSessionId(data.session_id); sessionIdRef.current = data.session_id;
-        lastSubmittedTextRef.current = ''; // Reset for new session
         setInterviewStarted(true);
-        interviewStartedRef.current = true;
         setConversationHistory([{ role: 'assistant', content: data.message }]);
         setCurrentMessage(data.message);
         setIsProcessing(false);
-        
-        // Request fullscreen for immersive interview experience
-        try {
-          if (document.documentElement.requestFullscreen) {
-            document.documentElement.requestFullscreen();
-          } else if (document.documentElement.webkitRequestFullscreen) {
-            document.documentElement.webkitRequestFullscreen();
-          }
-        } catch (e) { console.warn('[Fullscreen] Could not enter fullscreen:', e); }
-        
-        // Ensure video stream is attached after interview screen renders
-        setTimeout(() => {
-          if (videoRef.current && cameraStream) {
-            console.log('[Camera] Attaching stream after interview start');
-            videoRef.current.srcObject = cameraStream;
-            videoRef.current.play().catch(e => console.warn('[Camera] Play error:', e));
-          }
-        }, 100);
         if (audioEnabled) speakText(data.message);
         else setTimeout(() => startListening(), 1000);
       } else {
@@ -1152,39 +782,17 @@ const AIInterview = () => {
 
   // === End Interview ===
   const endInterview = async () => {
-    // Get confidence summary BEFORE stopping camera (while analysis is still valid)
-    const confSummary = getSessionSummary();
-    setConfidenceSummary(confSummary);
-    console.log('[ConfidenceAnalyzer] Session summary:', confSummary);
-    
+    // Collect analyzer results before stopping
+    const analyzerResults = interviewAnalyzer.running ? interviewAnalyzer.getResults() : null;
+    interviewAnalyzer.stopAnalysis();
+
     setInterviewEnded(true); setInterviewStarted(false);
-    interviewStartedRef.current = false;
     if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
     if (recognitionRef.current) { try { recognitionRef.current.abort(); } catch (e) {} }
     if (synthRef.current) synthRef.current.cancel();
     setIsAISpeaking(false); setIsListening(false);
 
-    // Exit fullscreen when interview ends
-    try {
-      if (document.fullscreenElement) {
-        document.exitFullscreen();
-      } else if (document.webkitFullscreenElement) {
-        document.webkitExitFullscreen();
-      }
-    } catch (e) { console.warn('[Fullscreen] Could not exit fullscreen:', e); }
-
-    // Stop camera and clear video element - use ref for reliable cleanup
-    const streamToStop = webcamStreamRef.current || webcamStream;
-    if (streamToStop) { 
-      console.log('[Camera] Stopping camera tracks');
-      streamToStop.getTracks().forEach(t => t.stop()); 
-      webcamStreamRef.current = null;
-      setWebcamStream(null); 
-    }
-    if (videoRef.current) {
-      videoRef.current.srcObject = null;
-    }
-    setCameraEnabled(false);
+    if (webcamStream) { webcamStream.getTracks().forEach(t => t.stop()); setWebcamStream(null); }
 
     const currentSessionId = sessionIdRef.current || sessionId;
     if (currentSessionId) {
@@ -1192,9 +800,9 @@ const AIInterview = () => {
         const response = await fetch(`${API_BASE_URL}/api/interview/end`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
+          body: JSON.stringify({
             session_id: currentSessionId,
-            confidence_analysis: confSummary.framesAnalyzed > 0 ? confSummary : null
+            analyzer_results: analyzerResults
           })
         });
         const data = await response.json();
@@ -1216,8 +824,6 @@ const AIInterview = () => {
     setConversationHistory([]); setCurrentMessage(''); setFeedback(null);
     setTimeRemaining(600); setError(null); setIsProcessing(false);
     setIsListening(false); setIsAISpeaking(false); setInterimTranscript('');
-    setConfidenceSummary(null);
-    resetAnalysis(); // Reset confidence analyzer
   };
 
   // ====== RENDER ======
@@ -1266,39 +872,19 @@ const AIInterview = () => {
                 </select>
               </div>
 
-              {/* Audio & Avatar Options */}
+              {/* Options */}
               <div className="flex flex-wrap gap-4">
                 <button onClick={() => setAudioEnabled(!audioEnabled)}
                   className={`flex items-center gap-2 px-4 py-2 rounded-xl border transition-all ${audioEnabled ? 'bg-green-500/20 border-green-500/50 text-green-400' : `${themeClasses.cardBackground} ${themeClasses.cardBorder} ${themeClasses.textSecondary}`}`}>
                   {audioEnabled ? <Volume2 size={18} /> : <VolumeX size={18} />}
                   <span className="text-sm font-medium">{audioEnabled ? 'Audio On' : 'Audio Off'}</span>
                 </button>
-
-                {/* Avatar Style Toggle - FREE for all users */}
-                <button onClick={() => setUseRealisticAvatar(!useRealisticAvatar)}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-xl border transition-all ${useRealisticAvatar ? 'bg-purple-500/20 border-purple-500/50 text-purple-400' : `${themeClasses.cardBackground} ${themeClasses.cardBorder} ${themeClasses.textSecondary}`}`}>
-                  {useRealisticAvatar ? '👔' : '🤖'}
-                  <span className="text-sm font-medium">{useRealisticAvatar ? '3D Professional' : '3D Robot'}</span>
+                <button onClick={() => setCameraEnabled(!cameraEnabled)}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-xl border transition-all ${cameraEnabled ? 'bg-blue-500/20 border-blue-500/50 text-blue-400' : `${themeClasses.cardBackground} ${themeClasses.cardBorder} ${themeClasses.textSecondary}`}`}>
+                  {cameraEnabled ? <Video size={18} /> : <VideoOff size={18} />}
+                  <span className="text-sm font-medium">{cameraEnabled ? 'Camera On' : 'Camera Off'}</span>
                 </button>
               </div>
-
-              {/* Avatar Preview */}
-              {useRealisticAvatar && (
-                <div className="bg-purple-500/10 border border-purple-500/30 rounded-xl p-4">
-                  <div className="flex items-start gap-3">
-                    <div className="w-14 h-14 rounded-xl overflow-hidden flex-shrink-0 border-2 border-purple-500/50 bg-gradient-to-br from-indigo-900 to-slate-800 flex items-center justify-center">
-                      <span className="text-3xl">👔</span>
-                    </div>
-                    <div>
-                      <p className="text-purple-400 font-medium text-sm">Meet Alex, your 3D AI Interviewer</p>
-                      <p className={`text-xs ${themeClasses.textSecondary} mt-1`}>
-                        A professional 3D interviewer in navy suit with realistic animations. 
-                        100% free - no limits!
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
 
               {/* Browser support check */}
               {!useBrowserRecognition && (
@@ -1319,7 +905,6 @@ const AIInterview = () => {
                 </div>
               )}
 
-
               <button onClick={startInterview} disabled={isProcessing}
                 className={`w-full ${themeClasses.buttonPrimary} font-bold py-4 px-6 rounded-xl transition-all duration-200 flex items-center justify-center gap-3 text-lg shadow-lg hover:shadow-xl disabled:opacity-50`}>
                 {isProcessing ? (
@@ -1327,15 +912,6 @@ const AIInterview = () => {
                 ) : (
                   <><Play className="w-6 h-6" /> Start Interview</>
                 )}
-              </button>
-
-              {/* Back Button */}
-              <button
-                onClick={() => navigate(-1)}
-                className={`w-full py-3 px-6 rounded-xl border ${themeClasses.cardBorder} ${themeClasses.textSecondary} hover:${themeClasses.textPrimary} transition-all duration-200 flex items-center justify-center gap-2`}
-              >
-                <ArrowLeft size={18} />
-                <span>Back</span>
               </button>
             </div>
 
@@ -1432,14 +1008,49 @@ const AIInterview = () => {
                     <div className={`text-xs ${themeClasses.textSecondary}`}>Duration</div>
                   </div>
                   <div className={`p-4 rounded-xl ${themeClasses.sectionBackground} border ${themeClasses.cardBorder} text-center`}>
-                    <div className={`text-2xl font-bold ${getScoreColor(scores.technical_knowledge || 0)}`}>{scores.technical_knowledge || '-'}</div>
-                    <div className={`text-xs ${themeClasses.textSecondary}`}>Technical</div>
+                    {analysis.eye_contact?.camera_used ? (
+                      <>
+                        <div className={`text-2xl font-bold ${getScoreColor(scores.eye_contact || 0)}`}>{scores.eye_contact ?? '-'}</div>
+                        <div className={`text-xs ${themeClasses.textSecondary}`}>👁️ Eye Contact</div>
+                      </>
+                    ) : (
+                      <>
+                        <div className={`text-2xl font-bold ${themeClasses.textSecondary}`}>N/A</div>
+                        <div className={`text-xs ${themeClasses.textSecondary}`}>👁️ Camera Off</div>
+                      </>
+                    )}
                   </div>
                   <div className={`p-4 rounded-xl ${themeClasses.sectionBackground} border ${themeClasses.cardBorder} text-center`}>
-                    <div className={`text-2xl font-bold ${getScoreColor(scores.communication || 0)}`}>{scores.communication || '-'}</div>
-                    <div className={`text-xs ${themeClasses.textSecondary}`}>Communication</div>
+                    <div className={`text-2xl font-bold ${getScoreColor(scores.confidence || 0)}`}>{scores.confidence || '-'}</div>
+                    <div className={`text-xs ${themeClasses.textSecondary}`}>
+                      💪 Confidence{!analysis.confidence?.camera_used ? ' (Speech)' : ''}
+                    </div>
                   </div>
                 </div>
+
+                {/* Warning Summary (if any warnings were issued) */}
+                {analysis.warnings && analysis.warnings.total > 0 && (
+                  <div className={`mb-6 p-4 rounded-xl border ${analysis.warnings.total >= 3 ? 'bg-red-500/10 border-red-500/30' : 'bg-yellow-500/10 border-yellow-500/30'}`}>
+                    <div className="flex items-center gap-2 mb-2">
+                      <AlertCircle size={18} className={analysis.warnings.total >= 3 ? 'text-red-400' : 'text-yellow-400'} />
+                      <span className={`text-sm font-semibold ${analysis.warnings.total >= 3 ? 'text-red-400' : 'text-yellow-400'}`}>
+                        {analysis.warnings.total} Warning{analysis.warnings.total > 1 ? 's' : ''} Issued
+                        {analysis.warnings.auto_ended && ' — Interview Auto-Ended'}
+                      </span>
+                    </div>
+                    <div className={`text-xs ${themeClasses.textSecondary} space-y-1`}>
+                      {analysis.warnings.non_english_count > 0 && (
+                        <p>• {analysis.warnings.non_english_count} non-English response{analysis.warnings.non_english_count > 1 ? 's' : ''}</p>
+                      )}
+                      {analysis.warnings.irrelevant_count > 0 && (
+                        <p>• {analysis.warnings.irrelevant_count} irrelevant/off-topic response{analysis.warnings.irrelevant_count > 1 ? 's' : ''}</p>
+                      )}
+                      {analysis.difficulty_reached && (
+                        <p>• Difficulty reached: <span className="font-semibold capitalize">{analysis.difficulty_reached}</span></p>
+                      )}
+                    </div>
+                  </div>
+                )}
 
                 {/* Tabs */}
                 <div className={`flex gap-1 p-1 rounded-xl ${themeClasses.sectionBackground} border ${themeClasses.cardBorder} mb-6`}>
@@ -1460,69 +1071,6 @@ const AIInterview = () => {
                   {/* ===== OVERVIEW TAB ===== */}
                   {activeTab === 'overview' && (
                     <>
-                      {/* Confidence Analysis (Client-Side MediaPipe Results) */}
-                      {confidenceSummary && confidenceSummary.framesAnalyzed > 0 && (
-                        <div className={`p-6 rounded-xl ${themeClasses.sectionBackground} border ${themeClasses.cardBorder}`}>
-                          <h3 className={`text-lg font-semibold ${themeClasses.textPrimary} mb-4 flex items-center gap-2`}>
-                            <Eye size={18} className="text-purple-400" /> Body Language Analysis
-                          </h3>
-                          <p className={`text-xs ${themeClasses.textSecondary} mb-4`}>
-                            Analyzed {confidenceSummary.framesAnalyzed} frames during your {confidenceSummary.duration}s interview
-                          </p>
-                          <div className="grid grid-cols-3 gap-4">
-                            <div className="text-center">
-                              <div className={`text-3xl font-bold ${
-                                confidenceSummary.avgEyeContact >= 70 ? 'text-green-400' : 
-                                confidenceSummary.avgEyeContact >= 50 ? 'text-yellow-400' : 'text-red-400'
-                              }`}>
-                                {confidenceSummary.avgEyeContact}%
-                              </div>
-                              <div className={`text-xs ${themeClasses.textSecondary} mt-1 flex items-center justify-center gap-1`}>
-                                <Eye size={12} /> Eye Contact
-                              </div>
-                            </div>
-                            <div className="text-center">
-                              <div className={`text-3xl font-bold ${
-                                confidenceSummary.avgHeadStability >= 70 ? 'text-green-400' : 
-                                confidenceSummary.avgHeadStability >= 50 ? 'text-yellow-400' : 'text-red-400'
-                              }`}>
-                                {confidenceSummary.avgHeadStability}%
-                              </div>
-                              <div className={`text-xs ${themeClasses.textSecondary} mt-1 flex items-center justify-center gap-1`}>
-                                <Activity size={12} /> Head Stability
-                              </div>
-                            </div>
-                            <div className="text-center">
-                              <div className={`text-3xl font-bold ${
-                                confidenceSummary.avgOverall >= 70 ? 'text-green-400' : 
-                                confidenceSummary.avgOverall >= 50 ? 'text-yellow-400' : 'text-red-400'
-                              }`}>
-                                {confidenceSummary.avgOverall}%
-                              </div>
-                              <div className={`text-xs ${themeClasses.textSecondary} mt-1`}>
-                                Overall Confidence
-                              </div>
-                            </div>
-                          </div>
-                          <div className={`mt-4 p-3 rounded-lg ${
-                            confidenceSummary.avgOverall >= 70 ? 'bg-green-500/10 border border-green-500/20' :
-                            confidenceSummary.avgOverall >= 50 ? 'bg-yellow-500/10 border border-yellow-500/20' :
-                            'bg-red-500/10 border border-red-500/20'
-                          }`}>
-                            <p className={`text-sm ${
-                              confidenceSummary.avgOverall >= 70 ? 'text-green-400' :
-                              confidenceSummary.avgOverall >= 50 ? 'text-yellow-400' : 'text-red-400'
-                            }`}>
-                              {confidenceSummary.avgOverall >= 70 
-                                ? '✨ Excellent body language! You maintained great eye contact and appeared confident throughout.'
-                                : confidenceSummary.avgOverall >= 50
-                                ? '👍 Good body language overall. Try to maintain more consistent eye contact with the camera.'
-                                : '💡 Tip: Practice looking directly at the camera and minimizing head movements for a more confident appearance.'}
-                            </p>
-                          </div>
-                        </div>
-                      )}
-
                       {/* Strengths */}
                       {(analysis.strengths || feedback.strengths || []).length > 0 && (
                         <div className={`p-6 rounded-xl ${themeClasses.sectionBackground} border ${themeClasses.cardBorder}`}>
@@ -1557,13 +1105,81 @@ const AIInterview = () => {
                         </div>
                       )}
 
+                      {/* Head Stability */}
+                      {analysis.head_stability != null && (
+                        <div className={`p-5 rounded-xl ${themeClasses.sectionBackground} border ${themeClasses.cardBorder}`}>
+                          <h3 className={`text-lg font-semibold ${themeClasses.textPrimary} mb-3 flex items-center gap-2`}>
+                            🧠 Head Stability
+                          </h3>
+                          <div className="flex items-center gap-4">
+                            <div className="flex-1">
+                              <div className="flex items-center justify-between mb-2">
+                                <span className={`text-sm ${themeClasses.textSecondary}`}>Stability Score</span>
+                                <span className={`text-3xl font-bold ${
+                                  analysis.head_stability >= 75 ? 'text-green-400' :
+                                  analysis.head_stability >= 50 ? 'text-yellow-400' :
+                                  'text-red-400'
+                                }`}>{analysis.head_stability}%</span>
+                              </div>
+                              <div className="w-full bg-gray-700/30 rounded-full h-3">
+                                <div className="h-3 rounded-full transition-all duration-700"
+                                  style={{
+                                    width: `${analysis.head_stability}%`,
+                                    backgroundColor: analysis.head_stability >= 75 ? '#4ade80' :
+                                      analysis.head_stability >= 50 ? '#facc15' : '#f87171'
+                                  }} />
+                              </div>
+                              <p className={`text-sm ${themeClasses.textSecondary} mt-2`}>
+                                {analysis.head_stability >= 75
+                                  ? 'Excellent — you maintained a steady, professional head position throughout the interview.'
+                                  : analysis.head_stability >= 50
+                                  ? 'Moderate — some head movement was detected. Try to keep your head more still to appear composed and focused.'
+                                  : 'Needs improvement — excessive head movement was detected. Practice maintaining a steady posture during video interviews.'}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
                       {/* Detailed Feedback */}
-                      {(analysis.detailed_feedback || feedback.detailed_analysis) && (
+                      {(analysis.detailed_feedback || feedback.detailed_analysis) ? (
                         <div className={`p-6 rounded-xl bg-blue-500/10 border border-blue-500/20`}>
                           <h3 className={`text-lg font-semibold ${themeClasses.textPrimary} mb-2`}>📝 Overall Assessment</h3>
                           <p className={`text-sm ${themeClasses.textSecondary} leading-relaxed`}>
                             {analysis.detailed_feedback || feedback.detailed_analysis}
                           </p>
+                        </div>
+                      ) : (
+                        <div className={`p-6 rounded-xl bg-blue-500/10 border border-blue-500/20`}>
+                          <h3 className={`text-lg font-semibold ${themeClasses.textPrimary} mb-2`}>📝 Overall Assessment</h3>
+                          <p className={`text-sm ${themeClasses.textSecondary} leading-relaxed`}>
+                            Interview completed. Your overall score is {overallScore}/100.
+                            {analysis.response_quality ? ` You answered with an average of ${analysis.response_quality.avg_length} words per response and used ${analysis.response_quality.technical_keywords} technical keywords.` : ''}
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Communication Analysis (on Overview for visibility) */}
+                      {analysis.communication_feedback && (
+                        <div className={`p-6 rounded-xl ${themeClasses.sectionBackground} border ${themeClasses.cardBorder}`}>
+                          <h3 className={`text-lg font-semibold ${themeClasses.textPrimary} mb-4 flex items-center gap-2`}>
+                            💬 Communication Analysis
+                          </h3>
+                          <div className="space-y-3">
+                            {Object.entries(analysis.communication_feedback).map(([key, value]) => (
+                              <div key={key} className={`flex items-start gap-3 p-3 rounded-lg ${themeClasses.cardBackground} border ${themeClasses.cardBorder}`}>
+                                <span className="text-purple-400 text-sm mt-0.5">
+                                  {key === 'clarity' ? '🎯' : key === 'structure' ? '🏗️' : '📚'}
+                                </span>
+                                <div>
+                                  <span className={`text-sm font-medium ${themeClasses.textPrimary}`}>
+                                    {key.charAt(0).toUpperCase() + key.slice(1)}
+                                  </span>
+                                  <p className={`text-xs ${themeClasses.textSecondary} mt-0.5 leading-relaxed`}>{value}</p>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
                         </div>
                       )}
 
@@ -1669,12 +1285,92 @@ const AIInterview = () => {
                           </div>
                         </div>
                       )}
+
+                      {/* Head Stability */}
+                      {analysis.head_stability !== null && analysis.head_stability !== undefined && (
+                        <div className={`p-5 rounded-xl ${themeClasses.sectionBackground} border ${themeClasses.cardBorder}`}>
+                          <h3 className={`text-sm font-semibold ${themeClasses.textPrimary} mb-3`}>🧠 Head Stability</h3>
+                          <div className="flex items-center gap-4">
+                            <div className="flex-1">
+                              <div className="flex items-center justify-between mb-2">
+                                <span className={`text-xs ${themeClasses.textSecondary}`}>Stability Score</span>
+                                <span className={`text-2xl font-bold ${
+                                  analysis.head_stability >= 75 ? 'text-green-400' :
+                                  analysis.head_stability >= 50 ? 'text-yellow-400' :
+                                  'text-red-400'
+                                }`}>{analysis.head_stability}%</span>
+                              </div>
+                              <div className="w-full bg-gray-700/30 rounded-full h-2.5">
+                                <div className="h-2.5 rounded-full transition-all duration-700"
+                                  style={{
+                                    width: `${analysis.head_stability}%`,
+                                    backgroundColor: analysis.head_stability >= 75 ? '#4ade80' :
+                                      analysis.head_stability >= 50 ? '#facc15' : '#f87171'
+                                  }} />
+                              </div>
+                              <p className={`text-xs ${themeClasses.textSecondary} mt-2`}>
+                                {analysis.head_stability >= 75
+                                  ? 'Excellent — you maintained a steady head position throughout the interview.'
+                                  : analysis.head_stability >= 50
+                                  ? 'Moderate — some head movement detected. Try to keep your head more still during interviews.'
+                                  : 'Needs work — excessive head movement was detected. Practice maintaining a steady posture.'}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </>
                   )}
 
                   {/* ===== FEEDBACK TAB ===== */}
                   {activeTab === 'feedback' && (
                     <>
+                      {/* Per-Question Analysis */}
+                      {analysis.question_analysis && analysis.question_analysis.length > 0 && (
+                        <div className={`p-6 rounded-xl ${themeClasses.sectionBackground} border ${themeClasses.cardBorder}`}>
+                          <h3 className={`text-lg font-semibold ${themeClasses.textPrimary} mb-4 flex items-center gap-2`}>
+                            <Target size={18} className="text-cyan-400" /> Question-by-Question Analysis
+                          </h3>
+                          <div className="space-y-4">
+                            {analysis.question_analysis.map((qa, i) => (
+                              <div key={i} className={`p-4 rounded-xl ${themeClasses.cardBackground} border ${themeClasses.cardBorder}`}>
+                                <div className="flex items-start gap-3 mb-3">
+                                  <span className={`flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${
+                                    qa.answer_quality === 'excellent' ? 'bg-green-500/20 text-green-400' :
+                                    qa.answer_quality === 'good' ? 'bg-blue-500/20 text-blue-400' :
+                                    qa.answer_quality === 'acceptable' ? 'bg-yellow-500/20 text-yellow-400' :
+                                    'bg-red-500/20 text-red-400'
+                                  }`}>Q{i + 1}</span>
+                                  <div className="flex-1">
+                                    <p className={`text-sm font-medium ${themeClasses.textPrimary} mb-1`}>{qa.question}</p>
+                                    <span className={`inline-block text-[10px] px-2 py-0.5 rounded-full font-semibold uppercase tracking-wide ${
+                                      qa.answer_quality === 'excellent' ? 'bg-green-500/20 text-green-400' :
+                                      qa.answer_quality === 'good' ? 'bg-blue-500/20 text-blue-400' :
+                                      qa.answer_quality === 'acceptable' ? 'bg-yellow-500/20 text-yellow-400' :
+                                      'bg-red-500/20 text-red-400'
+                                    }`}>{qa.answer_quality}</span>
+                                  </div>
+                                </div>
+                                {qa.what_was_missing && (
+                                  <div className="ml-10 mb-2">
+                                    <p className={`text-xs ${themeClasses.textSecondary}`}>
+                                      <span className="text-red-400 font-medium">What was missing: </span>{qa.what_was_missing}
+                                    </p>
+                                  </div>
+                                )}
+                                {qa.ideal_answer_should_include && (
+                                  <div className="ml-10">
+                                    <p className={`text-xs ${themeClasses.textSecondary}`}>
+                                      <span className="text-green-400 font-medium">Ideal answer should include: </span>{qa.ideal_answer_should_include}
+                                    </p>
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
                       {/* Knowledge Assessment */}
                       {analysis.knowledge_assessment && (
                         <div className={`p-6 rounded-xl ${themeClasses.sectionBackground} border ${themeClasses.cardBorder}`}>
@@ -1697,7 +1393,7 @@ const AIInterview = () => {
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             {/* Demonstrated Skills */}
                             <div className="p-4 rounded-lg bg-green-500/5 border border-green-500/10">
-                              <h4 className={`text-sm font-medium text-green-400 mb-2`}>✅ Demonstrated Skills</h4>
+                              <h4 className={`text-sm font-medium text-green-400 mb-2`}>Demonstrated Skills</h4>
                               <div className="flex flex-wrap gap-2">
                                 {(analysis.knowledge_assessment.demonstrated_skills || []).map((skill, i) => (
                                   <span key={i} className="text-xs px-2 py-1 rounded-full bg-green-500/10 border border-green-500/20 text-green-400">
@@ -1712,7 +1408,7 @@ const AIInterview = () => {
 
                             {/* Skill Gaps */}
                             <div className="p-4 rounded-lg bg-red-500/5 border border-red-500/10">
-                              <h4 className={`text-sm font-medium text-red-400 mb-2`}>⚠️ Skill Gaps</h4>
+                              <h4 className={`text-sm font-medium text-red-400 mb-2`}>Skill Gaps</h4>
                               <div className="flex flex-wrap gap-2">
                                 {(analysis.knowledge_assessment.skill_gaps || []).map((gap, i) => (
                                   <span key={i} className="text-xs px-2 py-1 rounded-full bg-red-500/10 border border-red-500/20 text-red-400">
@@ -1725,6 +1421,20 @@ const AIInterview = () => {
                               </div>
                             </div>
                           </div>
+
+                          {/* Topics to Study */}
+                          {analysis.topics_to_study && analysis.topics_to_study.length > 0 && (
+                            <div className="mt-4 p-4 rounded-lg bg-indigo-500/5 border border-indigo-500/10">
+                              <h4 className={`text-sm font-medium text-indigo-400 mb-2`}>📖 Topics to Study</h4>
+                              <div className="flex flex-wrap gap-2">
+                                {analysis.topics_to_study.map((topic, i) => (
+                                  <span key={i} className="text-xs px-3 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 font-medium">
+                                    {topic}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
                         </div>
                       )}
 
@@ -1859,303 +1569,274 @@ const AIInterview = () => {
     );
   }
 
-  // === Active Interview Screen (Picture-in-Picture layout) ===
+  // === Active Interview Screen (Zoom-like layout) ===
   return (
     <div className={`h-screen ${themeClasses.pageBackground} transition-colors duration-300 flex flex-col overflow-hidden`}>
 
-      {/* ===== MAIN CONTENT AREA (Split Screen - Interviewer | User) ===== */}
-      <div className="flex-1 flex overflow-hidden">
-        
-        {/* ===== SPLIT VIDEO AREA - 50/50 Layout ===== */}
-        <div className="flex-1 flex relative overflow-hidden">
-        
-          {/* LEFT HALF - AI Interviewer */}
-          <div className="w-1/2 relative bg-gradient-to-br from-indigo-950 to-slate-900 border-r-2 border-indigo-500/30">
-            {/* 3D Professional Interviewer Avatar */}
-            <Suspense fallback={
-              <div className="w-full h-full flex items-center justify-center">
-                <div className="text-6xl animate-pulse">👔</div>
-                <span className="text-white mt-4">Loading 3D Avatar...</span>
-              </div>
-            }>
-              <Canvas 
-                camera={{ position: [0, 0.6, 2.8], fov: 45 }} 
-                style={{ width: '100%', height: '100%' }}
-                gl={{ antialias: true }}
-              >
-                <color attach="background" args={['#0f172a']} />
-                <fog attach="fog" args={['#0f172a', 3, 8]} />
-                <ambientLight intensity={0.5} />
-                <directionalLight position={[3, 4, 2]} intensity={1.0} castShadow />
-                <directionalLight position={[-2, 2, 1]} intensity={0.4} color="#818cf8" />
-                <pointLight position={[0, 2, 3]} intensity={0.3} color="#60a5fa" />
-                {/* Use GLB 3D Model Avatar for realistic look */}
-                <GLBInterviewerAvatar isSpeaking={isAISpeaking} />
-                <OrbitControls 
-                  enableZoom={false} 
-                  enablePan={false} 
-                  minPolarAngle={Math.PI / 3} 
-                  maxPolarAngle={Math.PI / 2}
-                  minAzimuthAngle={-Math.PI / 6}
-                  maxAzimuthAngle={Math.PI / 6}
-                />
-              </Canvas>
-            </Suspense>
-            {/* AI name label */}
-            <div className="absolute bottom-4 left-4 flex items-center gap-2 z-10">
-              <div className="flex items-center gap-2 bg-black/70 text-white px-4 py-2.5 rounded-xl backdrop-blur-sm">
-                <span className="font-medium text-base">{useRealisticAvatar ? '👔' : '🤖'} Alex</span>
-                {isAISpeaking && <Volume2 size={18} className="text-blue-400 animate-pulse" />}
+      {/* ===== VIDEO AREA (main focus) ===== */}
+      <div className="flex-1 flex overflow-hidden relative">
+        {/* Video Grid - 2 equal tiles */}
+        <div className={`flex-1 grid grid-cols-1 md:grid-cols-2 gap-2 p-3 ${showChat ? 'md:mr-0' : ''}`}>
+          
+          {/* AI Interviewer Tile */}
+          <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-indigo-950 to-slate-900 border border-indigo-500/20 shadow-xl flex flex-col">
+            <div className="flex-1 min-h-0">
+              <Suspense fallback={
+                <div className="w-full h-full flex items-center justify-center">
+                  <div className="text-6xl animate-pulse">🤖</div>
+                </div>
+              }>
+                <Canvas camera={{ position: [0, 0.2, 2.5], fov: 40 }} style={{ width: '100%', height: '100%' }}>
+                  <ambientLight intensity={0.7} />
+                  <directionalLight position={[2, 4, 3]} intensity={1.0} castShadow />
+                  <pointLight position={[-2, 2, 1]} intensity={0.5} color="#818cf8" />
+                  <pointLight position={[0, 0, 3]} intensity={0.3} color="#ffffff" />
+                  <AnimatedAvatar isSpeaking={isAISpeaking} />
+                  <OrbitControls enableZoom={false} enablePan={false} minPolarAngle={Math.PI / 3} maxPolarAngle={Math.PI / 1.8} />
+                </Canvas>
+              </Suspense>
+            </div>
+            {/* Name label - bottom left like Zoom */}
+            <div className="absolute bottom-3 left-3 flex items-center gap-2">
+              <div className="flex items-center gap-1.5 bg-black/60 text-white text-sm px-3 py-1.5 rounded-lg backdrop-blur-sm">
+                <span className="font-medium">🤖 Alex</span>
+                {isAISpeaking && <Volume2 size={14} className="text-blue-400 animate-pulse" />}
               </div>
             </div>
-            {/* Speaking glow border */}
+            {/* Speaking indicator - subtle glow border */}
             {isAISpeaking && (
-              <div className="absolute inset-0 border-4 border-blue-400/50 pointer-events-none animate-pulse" />
+              <div className="absolute inset-0 rounded-2xl border-2 border-blue-500/50 pointer-events-none animate-pulse" />
             )}
           </div>
 
-          {/* RIGHT HALF - User's Camera */}
-          <div className="w-1/2 relative bg-gradient-to-br from-gray-900 to-gray-950">
-            {/* Always render video element */}
-            <video 
-              ref={videoRef} 
-              autoPlay 
-              muted 
-              playsInline 
-              className={`w-full h-full object-cover transition-opacity duration-200 -scale-x-100 ${cameraEnabled && webcamStream ? 'opacity-100' : 'opacity-0'}`} 
-            />
-            {/* Show placeholder when camera is off */}
-            <div className={`absolute inset-0 flex flex-col items-center justify-center text-gray-500 transition-opacity duration-200 ${cameraEnabled && webcamStream ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
-              <div className="w-32 h-32 rounded-full bg-gray-800 flex items-center justify-center mb-4">
-                <span className="text-6xl">👤</span>
+          {/* User Webcam Tile */}
+          <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-gray-900 to-gray-950 border border-gray-700/30 shadow-xl">
+            {cameraEnabled && webcamStream ? (
+              <video ref={videoRef} autoPlay muted playsInline className="w-full h-full object-cover" />
+            ) : (
+              <div className="w-full h-full flex flex-col items-center justify-center text-gray-500">
+                <div className="w-24 h-24 rounded-full bg-gray-800 flex items-center justify-center mb-4">
+                  <span className="text-4xl">👤</span>
+                </div>
+                <span className={`text-sm ${themeClasses.textSecondary}`}>{setupName || 'You'}</span>
+                <span className="text-xs text-gray-600 mt-1">Camera is off</span>
               </div>
-              <span className={`text-lg ${themeClasses.textSecondary}`}>{setupName || 'You'}</span>
-              <span className="text-sm text-gray-600 mt-1">Camera is off</span>
-            </div>
-            {/* User name label - bottom left */}
-            <div className="absolute bottom-4 left-4 flex items-center gap-2 z-10">
-              <div className="flex items-center gap-2 bg-black/60 text-white px-4 py-2.5 rounded-xl backdrop-blur-sm">
-                <span className="font-medium text-base">👤 {setupName || 'You'}</span>
-                {isListening && <Mic size={18} className="text-green-400 animate-pulse" />}
+            )}
+            {/* Name label - bottom left like Zoom */}
+            <div className="absolute bottom-3 left-3 flex items-center gap-2">
+              <div className="flex items-center gap-1.5 bg-black/60 text-white text-sm px-3 py-1.5 rounded-lg backdrop-blur-sm">
+                <span className="font-medium">👤 {setupName || 'You'}</span>
+                {isListening && <Mic size={14} className="text-green-400 animate-pulse" />}
               </div>
             </div>
-            {/* Listening indicator border */}
+            {/* Speaking/Listening indicator */}
             {isListening && (
-              <div className="absolute inset-0 border-4 border-green-500/40 pointer-events-none" />
-            )}
-            
-            {/* Confidence Indicator - Top Right (only when camera is on) */}
-            {cameraEnabled && webcamStream && (
-              <div className="absolute top-4 right-4 z-30">
-                <ConfidenceIndicator 
-                  confidenceData={confidenceData}
-                  isReady={isConfidenceReady}
-                  error={confidenceError}
-                  compact={true}
-                />
-              </div>
+              <div className="absolute inset-0 rounded-2xl border-2 border-green-500/50 pointer-events-none" />
             )}
           </div>
-
-          {/* === SUBTITLE / CAPTION BAR (centered at bottom, spanning both halves) === */}
-          {(currentMessage || (isListening && interimTranscript)) && (
-            <div className="absolute bottom-0 left-0 right-0 z-20 pointer-events-none">
-              <div className="max-w-3xl mx-auto px-4 pb-3 space-y-2">
-                {/* AI message subtitle */}
-                {currentMessage && (
-                  <div className="flex items-start gap-2 bg-black/70 backdrop-blur-md text-white px-4 py-2.5 rounded-xl shadow-lg">
-                    <span className="text-blue-400 font-semibold text-sm flex-shrink-0">{useRealisticAvatar ? '👔' : '🤖'} Alex:</span>
-                    <p className="text-sm leading-relaxed">{currentMessage.slice(0, 300)}{currentMessage.length > 300 ? '...' : ''}</p>
-                  </div>
-                )}
-                {/* User speech subtitle */}
-                {isListening && interimTranscript && (
-                  <div className="flex items-start gap-2 bg-black/60 backdrop-blur-md text-white px-4 py-2.5 rounded-xl shadow-lg">
-                    <div className="flex items-center gap-1.5 flex-shrink-0">
-                      <div className="w-2 h-2 bg-red-400 rounded-full animate-pulse" />
-                      <span className="text-green-400 font-semibold text-sm">You:</span>
-                    </div>
-                    <p className="text-sm leading-relaxed italic">{interimTranscript}</p>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
         </div>
-        {/* END SPLIT VIDEO AREA */}
 
-      </div>
+        {/* === SUBTITLE / CAPTION BAR (between video and controls) === */}
+        {(currentMessage || (isListening && interimTranscript)) && (
+          <div className="absolute bottom-0 left-0 right-0 z-20 pointer-events-none">
+            <div className="max-w-3xl mx-auto px-4 pb-3 space-y-2">
+              {/* AI message subtitle */}
+              {currentMessage && (
+                <div className="flex items-start gap-2 bg-black/70 backdrop-blur-md text-white px-4 py-2.5 rounded-xl shadow-lg">
+                  <span className="text-blue-400 font-semibold text-sm flex-shrink-0">🤖 Alex:</span>
+                  <p className="text-sm leading-relaxed">{currentMessage.slice(0, 300)}{currentMessage.length > 300 ? '...' : ''}</p>
+                </div>
+              )}
+              {/* User speech subtitle */}
+              {isListening && interimTranscript && (
+                <div className="flex items-start gap-2 bg-black/60 backdrop-blur-md text-white px-4 py-2.5 rounded-xl shadow-lg">
+                  <div className="flex items-center gap-1.5 flex-shrink-0">
+                    <div className="w-2 h-2 bg-red-400 rounded-full animate-pulse" />
+                    <span className="text-green-400 font-semibold text-sm">You:</span>
+                  </div>
+                  <p className="text-sm leading-relaxed italic">{interimTranscript}</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
-      {/* Chat Sidebar - FIXED to RIGHT SIDE of screen */}
-      {showChat && (
-        <div className={`fixed right-0 top-0 bottom-[88px] w-80 ${themeClasses.cardBackground} border-l ${themeClasses.cardBorder} flex flex-col z-50 shadow-2xl`}>
-          {/* Chat header */}
-          <div className={`px-4 py-3 border-b ${themeClasses.cardBorder} flex items-center justify-between`}>
-            <span className={`text-sm font-semibold ${themeClasses.textPrimary}`}>Chat</span>
-            <button onClick={() => setShowChat(false)} className={`p-1 rounded-lg ${themeClasses.hover} ${themeClasses.textSecondary}`}>
-              ✕
-            </button>
-          </div>
-          {/* Messages - scrollable */}
-          <div ref={chatContainerRef} className="flex-1 overflow-y-auto p-3 space-y-3">
-            {conversationHistory.map((msg, i) => (
-              <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                <div className={`max-w-[85%] rounded-2xl px-3 py-2 ${
-                  msg.role === 'user'
-                    ? `${themeClasses.gradient} ${themeClasses.textPrimary} shadow`
-                    : `${themeClasses.sectionBackground} ${themeClasses.textPrimary} border ${themeClasses.cardBorder}`
-                }`}>
-                  <div className="flex items-center gap-1.5 mb-0.5">
-                    <span className="text-[10px] font-semibold opacity-60">{msg.role === 'user' ? setupName : '🤖 Alex'}</span>
-                  </div>
-                  <p className="text-xs leading-relaxed whitespace-pre-wrap">{msg.content}</p>
-                </div>
-              </div>
-            ))}
-            {isProcessing && (
-              <div className="flex justify-start">
-                <div className={`${themeClasses.sectionBackground} border ${themeClasses.cardBorder} rounded-2xl px-3 py-2`}>
-                  <div className="flex items-center gap-2">
-                    <Loader2 className={`w-3 h-3 animate-spin ${themeClasses.textSecondary}`} />
-                    <span className={`text-xs ${themeClasses.textSecondary}`}>Thinking...</span>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-          {/* Text input inside chat */}
-          <div className={`p-2 border-t ${themeClasses.cardBorder}`}>
-            <div className="flex gap-2">
-              <input type="text" value={textInput} onChange={(e) => setTextInput(e.target.value)}
-                onKeyDown={(e) => { if (e.key === 'Enter') handleTextSubmit(); }}
-                placeholder="Type a message..."
-                className={`flex-1 px-3 py-2 rounded-lg border ${themeClasses.cardBorder} ${themeClasses.cardBackground} ${themeClasses.textPrimary} focus:outline-none focus:ring-1 focus:ring-blue-500 text-xs`}
-                disabled={isProcessing} />
-              <button onClick={handleTextSubmit} disabled={isProcessing || !textInput.trim()}
-                className={`${themeClasses.buttonPrimary} p-2 rounded-lg disabled:opacity-50`}>
-                <Send size={14} />
+        {/* Chat Sidebar (toggleable, like Zoom's chat panel) */}
+        {showChat && (
+          <div className={`w-full md:w-96 ${themeClasses.cardBackground} border-l ${themeClasses.cardBorder} flex flex-col absolute md:relative inset-0 md:inset-auto z-10`}>
+            {/* Chat header */}
+            <div className={`px-4 py-3 border-b ${themeClasses.cardBorder} flex items-center justify-between`}>
+              <span className={`text-sm font-semibold ${themeClasses.textPrimary}`}>Chat</span>
+              <button onClick={() => setShowChat(false)} className={`p-1 rounded-lg ${themeClasses.hover} ${themeClasses.textSecondary}`}>
+                ✕
               </button>
             </div>
+            {/* Messages */}
+            <div ref={chatContainerRef} className="flex-1 overflow-y-auto p-3 space-y-3">
+              {conversationHistory.map((msg, i) => (
+                <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                  <div className={`max-w-[85%] rounded-2xl px-3 py-2 ${
+                    msg.role === 'user'
+                      ? `${themeClasses.gradient} ${themeClasses.textPrimary} shadow`
+                      : `${themeClasses.sectionBackground} ${themeClasses.textPrimary} border ${themeClasses.cardBorder}`
+                  }`}>
+                    <div className="flex items-center gap-1.5 mb-0.5">
+                      <span className="text-[10px] font-semibold opacity-60">{msg.role === 'user' ? setupName : '🤖 Alex'}</span>
+                    </div>
+                    <p className="text-xs leading-relaxed whitespace-pre-wrap">{msg.content}</p>
+                  </div>
+                </div>
+              ))}
+              {isProcessing && (
+                <div className="flex justify-start">
+                  <div className={`${themeClasses.sectionBackground} border ${themeClasses.cardBorder} rounded-2xl px-3 py-2`}>
+                    <div className="flex items-center gap-2">
+                      <Loader2 className={`w-3 h-3 animate-spin ${themeClasses.textSecondary}`} />
+                      <span className={`text-xs ${themeClasses.textSecondary}`}>Thinking...</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+            {/* Text input inside chat */}
+            <div className={`p-2 border-t ${themeClasses.cardBorder}`}>
+              <div className="flex gap-2">
+                <input type="text" value={textInput} onChange={(e) => setTextInput(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') handleTextSubmit(); }}
+                  placeholder="Type a message..."
+                  className={`flex-1 px-3 py-2 rounded-lg border ${themeClasses.cardBorder} ${themeClasses.cardBackground} ${themeClasses.textPrimary} focus:outline-none focus:ring-1 focus:ring-blue-500 text-xs`}
+                  disabled={isProcessing} />
+                <button onClick={handleTextSubmit} disabled={isProcessing || !textInput.trim()}
+                  className={`${themeClasses.buttonPrimary} p-2 rounded-lg disabled:opacity-50`}>
+                  <Send size={14} />
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* ===== SUBTLE NOTICE (when backend detects an issue) ===== */}
+      {warningInfo && (
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50">
+          <div className={`px-4 py-2 rounded-lg shadow-lg flex items-center gap-2 ${
+            warningInfo.count >= 3 ? 'bg-red-500/80' : 'bg-slate-700/90'
+          } text-white backdrop-blur-sm text-sm`}>
+            {warningInfo.type === 'non_english' && 'Please respond in English'}
+            {warningInfo.type === 'too_short' && 'Try to elaborate more'}
+            {warningInfo.type === 'off_topic' && 'Stay on topic'}
+            {warningInfo.type === 'gibberish' && 'Speak clearly'}
           </div>
         </div>
       )}
 
-      {/* ===== BOTTOM CONTROL BAR (Enhanced Zoom-style) ===== */}
-      <div className={`${themeClasses.cardBackground} border-t ${themeClasses.cardBorder} px-6 py-5`}>
-        <div className="flex items-center justify-between max-w-5xl mx-auto">
-          {/* Left: Meeting info */}
-          <div className="flex items-center gap-4 min-w-0">
-            <div className={`flex items-center gap-2 px-4 py-2.5 rounded-xl ${timeRemaining <= 60 ? 'bg-red-500/20 text-red-400' : `${themeClasses.sectionBackground} ${themeClasses.textSecondary}`} font-mono text-base font-bold`}>
-              <Clock size={18} />
+      {/* ===== CHEATING WARNING (face-api.js detection) ===== */}
+      {cheatingWarning && (
+        <div className="absolute top-14 left-1/2 -translate-x-1/2 z-50">
+          <div className="px-4 py-2 rounded-lg shadow-lg bg-amber-500/80 text-white backdrop-blur-sm text-sm flex items-center gap-2">
+            ⚠️ {cheatingWarning}
+          </div>
+        </div>
+      )}
+
+      {/* ===== BOTTOM CONTROL BAR (Zoom-style) ===== */}
+      <div className={`${themeClasses.cardBackground} border-t ${themeClasses.cardBorder} px-4 py-3`}>
+        <div className="flex items-center justify-between max-w-4xl mx-auto">
+          {/* Left: Meeting info + difficulty + eye contact */}
+          <div className="flex items-center gap-2 min-w-0">
+            <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg ${timeRemaining <= 60 ? 'bg-red-500/20 text-red-400' : `${themeClasses.sectionBackground} ${themeClasses.textSecondary}`} font-mono text-sm font-bold`}>
+              <Clock size={14} />
               {formatTime(timeRemaining)}
             </div>
-            <div className="hidden sm:block">
-              <p className={`text-sm ${themeClasses.textSecondary} truncate`}>
-                {isAISpeaking ? '🔊 Alex is speaking...' : 
-                 isProcessing ? '🤔 Alex is thinking...' : 
-                 isTranscribing ? '🎯 Transcribing with Whisper...' :
-                 isWhisperRecording ? '🎤 Recording (Whisper)...' :
-                 isListening ? '👂 Listening...' : 
-                 `Interview • ${setupPosition}`}
+            {/* Difficulty badge */}
+            <div className={`hidden sm:flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wide ${
+              difficultyLevel === 'easy' ? 'bg-green-500/20 text-green-400' :
+              difficultyLevel === 'medium' ? 'bg-yellow-500/20 text-yellow-400' :
+              'bg-red-500/20 text-red-400'
+            }`}>
+              {difficultyLevel === 'easy' ? '🟢' : difficultyLevel === 'medium' ? '🟡' : '🔴'} {difficultyLevel}
+            </div>
+            {/* Eye contact indicator */}
+            {cameraEnabled && eyeContactScore !== null && (
+              <div className={`hidden sm:flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-semibold ${
+                eyeContactScore >= 70 ? 'bg-green-500/15 text-green-400' :
+                eyeContactScore >= 40 ? 'bg-yellow-500/15 text-yellow-400' :
+                'bg-red-500/15 text-red-400'
+              }`}>
+                👁️ {eyeContactScore >= 70 ? 'Good' : eyeContactScore >= 40 ? 'Fair' : 'Low'}
+              </div>
+            )}
+            {/* Confidence indicator (from face-api.js) */}
+            {cameraEnabled && liveMetrics.confidence !== null && (
+              <div className={`hidden sm:flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-semibold ${
+                liveMetrics.confidence >= 65 ? 'bg-blue-500/15 text-blue-400' :
+                liveMetrics.confidence >= 40 ? 'bg-yellow-500/15 text-yellow-400' :
+                'bg-orange-500/15 text-orange-400'
+              }`}>
+                {liveMetrics.confidence >= 65 ? '😊' : liveMetrics.confidence >= 40 ? '😐' : '😟'} {liveMetrics.confidence}%
+              </div>
+            )}
+            <div className="hidden md:block">
+              <p className={`text-xs ${themeClasses.textSecondary} truncate`}>
+                {isAISpeaking ? '🔊 Alex is speaking...' : isProcessing ? '🤔 Alex is thinking...' : isListening ? '👂 Listening...' : `Interview • ${setupPosition}`}
               </p>
             </div>
           </div>
 
           {/* Center: Main controls */}
-          <div className="flex items-center gap-3">
-            {/* Mic - supports both Browser Speech API and Groq Whisper */}
-            <button onClick={toggleMicrophone}
-              disabled={isTranscribing}
-              title={isTranscribing ? 'Transcribing...' : (isListening || isWhisperRecording) ? 'Stop Recording' : 'Start Recording'}
-              className={`p-4 rounded-full transition-all ${
-                isTranscribing ? 'bg-yellow-500 hover:bg-yellow-600 text-white animate-pulse' :
-                (isListening || isWhisperRecording) ? 'bg-gray-600/50 hover:bg-gray-600/70 text-white' : 
-                'bg-red-500 hover:bg-red-600 text-white'
-              }`}>
-              {isTranscribing ? <Loader2 size={24} className="animate-spin" /> :
-               isWhisperRecording ? <Radio size={24} className="animate-pulse text-red-400" /> :
-               (isListening || isWhisperRecording) ? <Mic size={24} /> : <MicOff size={24} />}
+          <div className="flex items-center gap-2">
+            {/* Mic */}
+            <button onClick={() => { if (isListening) stopListening(); else startListening(); }}
+              title={isListening ? 'Mute' : 'Unmute'}
+              className={`p-3 rounded-full transition-all ${isListening ? 'bg-gray-600/50 hover:bg-gray-600/70 text-white' : 'bg-red-500 hover:bg-red-600 text-white'}`}>
+              {isListening ? <Mic size={20} /> : <MicOff size={20} />}
             </button>
-            {/* Whisper Mode Toggle */}
-            {isWhisperSupported() && (
-              <button 
-                onClick={() => {
-                  // Stop current recording before switching
-                  if (isListening) stopListening();
-                  if (isWhisperRecording) cancelWhisperRecording();
-                  setUseWhisperMode(prev => !prev);
-                }}
-                title={useWhisperMode ? 'Using Groq Whisper (High Accuracy)' : 'Using Browser Speech (Faster)'}
-                className={`p-2 rounded-full transition-all text-xs ${
-                  useWhisperMode 
-                    ? 'bg-purple-500/30 text-purple-300 border border-purple-500/50' 
-                    : `${themeClasses.sectionBackground} ${themeClasses.textSecondary} border ${themeClasses.cardBorder}`
-                }`}>
-                {useWhisperMode ? '🎯' : '⚡'}
-              </button>
-            )}
             {/* Camera */}
             <button onClick={async () => {
-              console.log('[Camera] Toggle clicked, current state:', { cameraEnabled, hasStream: !!webcamStream });
-              const streamToStop = webcamStreamRef.current || webcamStream;
-              if (cameraEnabled && streamToStop) {
-                console.log('[Camera] Stopping camera...');
-                streamToStop.getTracks().forEach(t => t.stop());
-                webcamStreamRef.current = null;
+              if (cameraEnabled && webcamStream) {
+                webcamStream.getTracks().forEach(t => t.stop());
                 setWebcamStream(null);
                 setCameraEnabled(false);
-                if (videoRef.current) videoRef.current.srcObject = null;
               } else {
                 try {
-                  console.log('[Camera] Requesting camera access...');
-                  const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } }, audio: false });
-                  console.log('[Camera] Got stream:', stream.id);
-                  webcamStreamRef.current = stream;
+                  const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false });
                   setWebcamStream(stream);
                   setCameraEnabled(true);
-                  // Also directly set to video element in case effect doesn't fire immediately
-                  if (videoRef.current) {
-                    videoRef.current.srcObject = stream;
-                    videoRef.current.play().catch(e => console.warn('[Camera] Immediate play error:', e));
-                  }
-                } catch (e) { 
-                  console.error('[Camera] Error getting camera:', e);
-                  setError('Camera access denied or unavailable. Please check your browser permissions.');
-                }
+                } catch (e) { console.warn('Camera error:', e); }
               }
             }}
               title={cameraEnabled ? 'Stop Video' : 'Start Video'}
-              className={`p-4 rounded-full transition-all ${cameraEnabled ? 'bg-gray-600/50 hover:bg-gray-600/70 text-white' : 'bg-red-500 hover:bg-red-600 text-white'}`}>
-              {cameraEnabled ? <Video size={24} /> : <VideoOff size={24} />}
+              className={`p-3 rounded-full transition-all ${cameraEnabled ? 'bg-gray-600/50 hover:bg-gray-600/70 text-white' : 'bg-red-500 hover:bg-red-600 text-white'}`}>
+              {cameraEnabled ? <Video size={20} /> : <VideoOff size={20} />}
             </button>
             {/* Audio/Speaker */}
             <button onClick={() => { setAudioEnabled(!audioEnabled); if (audioEnabled) { synthRef.current?.cancel(); setIsAISpeaking(false); } }}
               title={audioEnabled ? 'Mute Speaker' : 'Unmute Speaker'}
-              className={`p-4 rounded-full transition-all ${audioEnabled ? 'bg-gray-600/50 hover:bg-gray-600/70 text-white' : 'bg-red-500 hover:bg-red-600 text-white'}`}>
-              {audioEnabled ? <Volume2 size={24} /> : <VolumeX size={24} />}
+              className={`p-3 rounded-full transition-all ${audioEnabled ? 'bg-gray-600/50 hover:bg-gray-600/70 text-white' : 'bg-red-500 hover:bg-red-600 text-white'}`}>
+              {audioEnabled ? <Volume2 size={20} /> : <VolumeX size={20} />}
             </button>
             {/* Chat toggle */}
             <button onClick={() => setShowChat(!showChat)}
               title="Chat"
-              className={`p-4 rounded-full transition-all relative ${showChat ? 'bg-blue-500/30 text-blue-400' : 'bg-gray-600/50 hover:bg-gray-600/70 text-white'}`}>
-              <MessageCircle size={24} />
+              className={`p-3 rounded-full transition-all relative ${showChat ? 'bg-blue-500/30 text-blue-400' : 'bg-gray-600/50 hover:bg-gray-600/70 text-white'}`}>
+              <MessageCircle size={20} />
               {conversationHistory.length > 0 && !showChat && (
-                <div className="absolute -top-1 -right-1 w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
-                  <span className="text-[10px] text-white font-bold">{conversationHistory.length}</span>
+                <div className="absolute -top-1 -right-1 w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
+                  <span className="text-[9px] text-white font-bold">{conversationHistory.length}</span>
                 </div>
               )}
             </button>
             {/* End call */}
             <button onClick={endInterview}
               title="End Interview"
-              className="p-4 px-8 bg-red-500 hover:bg-red-600 text-white rounded-full font-semibold text-base flex items-center gap-2 transition-colors ml-3 shadow-lg">
-              <StopCircle size={22} /> End
+              className="p-3 px-6 bg-red-500 hover:bg-red-600 text-white rounded-full font-medium text-sm flex items-center gap-1.5 transition-colors ml-2">
+              <StopCircle size={18} /> End
             </button>
           </div>
 
           {/* Right: Response count */}
           <div className="flex items-center gap-2">
-            <span className={`text-sm ${themeClasses.textSecondary} hidden sm:block`}>
+            <span className={`text-xs ${themeClasses.textSecondary} hidden sm:block`}>
               {conversationHistory.filter(m => m.role === 'user').length} responses
             </span>
           </div>

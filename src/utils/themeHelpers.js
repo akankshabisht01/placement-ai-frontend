@@ -33,62 +33,6 @@ export const getThemeClasses = (theme) => {
   };
 
   switch (theme) {
-    case 'aurora':
-      return {
-        pageBackground: 'bg-[#0b1326]',
-        cardBackground: 'bg-[rgba(18,30,58,0.85)] backdrop-blur-md',
-        cardBorder: 'border-[rgba(61,213,255,0.35)]',
-        cardHover: 'hover:border-[rgba(124,248,228,0.5)] hover:shadow-[0_24px_70px_rgba(61,213,255,0.25)]',
-        textPrimary: 'text-[#e8f4ff]',
-        textSecondary: 'text-[#a5b9d7]',
-        textAccent: 'text-[#7cf8e4]',
-        buttonPrimary: 'bg-gradient-to-r from-[#7cf8e4] via-[#3dd5ff] to-[#9e7bff] text-[#051226] border border-[rgba(158,123,255,0.5)] shadow-[0_12px_38px_rgba(61,213,255,0.25)]',
-        buttonSecondary: 'bg-[rgba(255,255,255,0.06)] border-[1.5px] border-[rgba(124,248,228,0.6)] text-[#7cf8e4]',
-        buttonHover: 'hover:shadow-[0_16px_48px_rgba(61,213,255,0.35)]',
-        inputBackground: 'bg-[rgba(18,30,58,0.6)]',
-        inputBorder: 'border-[rgba(61,213,255,0.3)]',
-        inputFocus: 'focus:border-[rgba(124,248,228,0.6)] focus:ring-2 focus:ring-[rgba(158,123,255,0.3)]',
-        inputText: 'text-[#e8f4ff] placeholder-[#a5b9d7]',
-        badgeBackground: 'bg-[rgba(124,248,228,0.15)] border border-[rgba(124,248,228,0.3)]',
-        badgeText: 'text-[#7cf8e4]',
-        gradientText: 'bg-gradient-to-r from-[#3dd5ff] to-[#9e7bff] bg-clip-text text-transparent',
-        sectionBackground: 'bg-gradient-to-br from-[rgba(18,30,58,0.9)] via-[rgba(28,47,82,0.8)] to-[rgba(61,213,255,0.08)]',
-        sectionAlt: 'bg-[rgba(11,19,38,0.95)]',
-        // Aliases
-        accent: 'text-[#7cf8e4]',
-        gradient: 'bg-gradient-to-r from-[#3dd5ff] to-[#9e7bff]',
-        border: 'border-[rgba(61,213,255,0.35)]',
-        hover: 'hover:border-[rgba(124,248,228,0.5)]',
-      };
-
-    case 'solaris':
-      return {
-        pageBackground: 'bg-[#ffe1c4]',
-        cardBackground: 'bg-[rgba(255,241,218,0.95)]',
-        cardBorder: 'border-[rgba(255,127,63,0.55)] border-[2.5px]',
-        cardHover: 'hover:border-[rgba(255,127,63,0.75)] hover:shadow-[0_24px_70px_rgba(255,115,63,0.28)]',
-        textPrimary: 'text-[#1a0800]',
-        textSecondary: 'text-[#5c2208]',
-        textAccent: 'text-[#d64518]',
-        buttonPrimary: 'bg-gradient-to-r from-[#ff7b3f] via-[#ffd166] to-[#ff4f5a] text-[#1a0800] border-2 border-[rgba(255,95,109,0.55)] shadow-[0_12px_34px_rgba(255,133,63,0.28)]',
-        buttonSecondary: 'bg-[rgba(255,247,234,0.85)] border-2 border-dashed border-[rgba(255,154,60,0.8)] text-[#1a0800]',
-        buttonHover: 'hover:shadow-[0_16px_42px_rgba(255,133,63,0.35)]',
-        inputBackground: 'bg-[rgba(255,247,234,0.9)]',
-        inputBorder: 'border-[rgba(255,127,63,0.4)] border-2',
-        inputFocus: 'focus:border-[rgba(255,127,63,0.7)] focus:ring-2 focus:ring-[rgba(255,209,102,0.3)]',
-        inputText: 'text-[#1a0800] placeholder-[#5c2208]',
-        badgeBackground: 'bg-[rgba(255,209,102,0.25)] border-2 border-[rgba(255,127,63,0.4)]',
-        badgeText: 'text-[#d64518]',
-        gradientText: 'bg-gradient-to-r from-[#d64518] to-[#ff4f5a] bg-clip-text text-transparent',
-        sectionBackground: 'bg-gradient-to-br from-[rgba(255,241,218,0.97)] via-[rgba(255,207,160,0.9)] to-[rgba(255,127,63,0.14)]',
-        sectionAlt: 'bg-[rgba(255,225,196,0.95)]',
-        // Aliases
-        accent: 'text-[#d64518]',
-        gradient: 'bg-gradient-to-r from-[#ff7b3f] via-[#ffd166] to-[#ff4f5a]',
-        border: 'border-[rgba(255,127,63,0.55)]',
-        hover: 'hover:border-[rgba(255,127,63,0.75)]',
-      };
-
     case 'aloof':
       return {
         pageBackground: 'bg-[#f7f9fb]',

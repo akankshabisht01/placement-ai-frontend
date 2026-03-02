@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, GraduationCap, Calendar, Award, CheckCircle2, AlertCircle, Camera, Edit2, Save, X } from 'lucide-react';
+import { User, GraduationCap, Calendar, Award, CheckCircle2, AlertCircle, Camera, Edit2, Save, X, Sparkles } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { getThemeClasses } from '../utils/themeHelpers';
 
@@ -15,6 +15,7 @@ const Profile = () => {
   const [saveMessage, setSaveMessage] = useState('');
   const [editCount, setEditCount] = useState(0);
   const [editsRemaining, setEditsRemaining] = useState(3);
+  const [collegeAutoFilled, setCollegeAutoFilled] = useState(false);
   
   // Current editing data
   const [profileData, setProfileData] = useState({
@@ -112,6 +113,11 @@ const Profile = () => {
           setEditsRemaining(data.editsRemaining !== undefined ? data.editsRemaining : 3);
           
           // Auto-enable edit mode if profile is auto-filled or incomplete
+          // Track if collegeName was just filled from resume
+          if (data.resumeFilledCollege || data.autoFilled) {
+            setCollegeAutoFilled(true);
+          }
+
           if (data.autoFilled) {
             setIsEditing(true);
           } else {
@@ -119,6 +125,29 @@ const Profile = () => {
             const hasMinimalData = data.profile.fullName && data.profile.phoneNumber && data.profile.degree;
             if (!hasMinimalData) {
               setIsEditing(true);
+            }
+          }
+
+          // Fallback: fill collegeName from linkedResumeData in localStorage if still empty
+          if (!data.profile.collegeName) {
+            const linkedResumeData = localStorage.getItem('linkedResumeData');
+            if (linkedResumeData) {
+              try {
+                const resumeObj = JSON.parse(linkedResumeData);
+                const collegeFromResume =
+                  resumeObj.bachelorUniversity ||
+                  resumeObj.university ||
+                  resumeObj.college ||
+                  '';
+                if (collegeFromResume) {
+                  setProfileData(prev => ({ ...prev, collegeName: collegeFromResume }));
+                  setSavedProfileData(prev => ({ ...prev, collegeName: collegeFromResume }));
+                  setCollegeAutoFilled(true);
+                  console.log('✨ collegeName autofilled from linkedResumeData:', collegeFromResume);
+                }
+              } catch (e) {
+                // ignore parse errors
+              }
             }
           }
         } else {
@@ -146,6 +175,19 @@ const Profile = () => {
             hasBacklogs: false,
             backlogCount: 0
           };
+          // Fallback: fill collegeName from linkedResumeData in localStorage
+          const _lsData1 = localStorage.getItem('linkedResumeData');
+          if (_lsData1) {
+            try {
+              const _r1 = JSON.parse(_lsData1);
+              const _c1 = _r1.bachelorUniversity || _r1.university || _r1.college || '';
+              if (_c1) {
+                newProfile.collegeName = _c1;
+                setCollegeAutoFilled(true);
+                console.log('\u2728 collegeName autofilled (new profile) from linkedResumeData:', _c1);
+              }
+            } catch (_e) {}
+          }
           setProfileData(newProfile);
           setSavedProfileData(newProfile); // Also set as saved data
           setIsEditing(true); // Auto-enable edit mode for new profiles
@@ -175,6 +217,19 @@ const Profile = () => {
           hasBacklogs: false,
           backlogCount: 0
         };
+        // Fallback: fill collegeName from linkedResumeData in localStorage
+        const _lsData2 = localStorage.getItem('linkedResumeData');
+        if (_lsData2) {
+          try {
+            const _r2 = JSON.parse(_lsData2);
+            const _c2 = _r2.bachelorUniversity || _r2.university || _r2.college || '';
+            if (_c2) {
+              newProfile.collegeName = _c2;
+              setCollegeAutoFilled(true);
+              console.log('\u2728 collegeName autofilled (error fallback) from linkedResumeData:', _c2);
+            }
+          } catch (_e) {}
+        }
         setProfileData(newProfile);
         setIsEditing(true);
       }
@@ -206,6 +261,19 @@ const Profile = () => {
           hasBacklogs: false,
           backlogCount: 0
         };
+        // Fallback: fill collegeName from linkedResumeData in localStorage
+        const _lsData3 = localStorage.getItem('linkedResumeData');
+        if (_lsData3) {
+          try {
+            const _r3 = JSON.parse(_lsData3);
+            const _c3 = _r3.bachelorUniversity || _r3.university || _r3.college || '';
+            if (_c3) {
+              newProfile.collegeName = _c3;
+              setCollegeAutoFilled(true);
+              console.log('\u2728 collegeName autofilled (catch fallback) from linkedResumeData:', _c3);
+            }
+          } catch (_e) {}
+        }
         setProfileData(newProfile);
         setIsEditing(true);
       }
@@ -829,19 +897,46 @@ const Profile = () => {
                 {/* College Name */}
                 <div className="md:col-span-2">
                   <label className={`block text-sm font-semibold ${themeClasses.textSecondary} mb-2`}>
-                    College Name <span className="text-red-500">*</span>
+                    College / University <span className="text-red-500">*</span>
+                    {collegeAutoFilled && (
+                      <span className="ml-2 inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300">
+                        <Sparkles className="w-3 h-3" />
+                        Autofilled from resume
+                      </span>
+                    )}
                   </label>
                   {isEditing ? (
-                    <input
-                      type="text"
-                      name="collegeName"
-                      value={profileData.collegeName}
-                      onChange={handleInputChange}
-                      className={`w-full px-4 py-2.5 border ${themeClasses.inputBorder} rounded-lg ${themeClasses.inputFocus} ${themeClasses.inputBackground} ${themeClasses.inputText}`}
-                      placeholder="Enter your college name"
-                    />
+                    <>
+                      <input
+                        type="text"
+                        name="collegeName"
+                        value={profileData.collegeName}
+                        onChange={(e) => {
+                          handleInputChange(e);
+                          if (e.target.value !== profileData.collegeName) setCollegeAutoFilled(false);
+                        }}
+                        className={`w-full px-4 py-2.5 border ${
+                          collegeAutoFilled
+                            ? 'border-purple-400 dark:border-purple-500'
+                            : themeClasses.inputBorder
+                        } rounded-lg ${themeClasses.inputFocus} ${themeClasses.inputBackground} ${themeClasses.inputText}`}
+                        placeholder="Enter your college / university name"
+                      />
+                      {collegeAutoFilled && (
+                        <p className="mt-1 text-xs text-purple-600 dark:text-purple-400">
+                          This was pre-filled from your uploaded resume. You can edit it if needed.
+                        </p>
+                      )}
+                    </>
                   ) : (
-                    <p className={`${themeClasses.textPrimary} py-2.5`}>{profileData.collegeName || '-'}</p>
+                    <div className="flex items-center gap-2">
+                      <p className={`${themeClasses.textPrimary} py-2.5`}>{profileData.collegeName || '-'}</p>
+                      {collegeAutoFilled && profileData.collegeName && (
+                        <span className="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400">
+                          <Sparkles className="w-3 h-3" /> from resume
+                        </span>
+                      )}
+                    </div>
                   )}
                 </div>
 

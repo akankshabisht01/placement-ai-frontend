@@ -212,12 +212,27 @@ const PredictionForm = () => {
   const navigate = useNavigate();
   const allSkills = getAllSkills();
   
-  // If a completed prediction exists, redirect user back to the result page
+  // If a completed prediction exists, redirect user back to the result page.
+  // Also handles bfcache restores (browser back/forward cache) via the 'pageshow'
+  // event so the redirect fires even when React's useEffect is skipped.
   useEffect(() => {
-    const savedResult = localStorage.getItem('predictionApiResult');
-    if (savedResult && savedResult !== 'null') {
-      navigate('/result', { replace: true });
-    }
+    const checkAndRedirect = () => {
+      const savedResult = localStorage.getItem('predictionApiResult');
+      if (savedResult && savedResult !== 'null') {
+        navigate('/result', { replace: true });
+      }
+    };
+
+    checkAndRedirect();
+
+    const handlePageShow = (event) => {
+      if (event.persisted) {
+        checkAndRedirect();
+      }
+    };
+
+    window.addEventListener('pageshow', handlePageShow);
+    return () => window.removeEventListener('pageshow', handlePageShow);
   }, [navigate]);
   
   // Find selected domain if domainId is provided

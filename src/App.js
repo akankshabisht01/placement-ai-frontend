@@ -49,8 +49,6 @@ const AppLayout = () => {
 
   const shellClass = () => {
     if (theme === 'aloof') return 'page-shell aloof-root aloof-shell';
-    if (theme === 'aurora') return 'page-shell aurora-shell';
-    if (theme === 'solaris') return 'page-shell solaris-shell';
     if (theme === 'midnight') return 'page-shell midnight-shell';
     if (theme === 'dark') return 'page-shell dark-shell';
     return 'page-shell light-shell';
@@ -58,8 +56,6 @@ const AppLayout = () => {
 
   const mainClass = () => {
     if (theme === 'aloof') return 'page-main aloof-main';
-    if (theme === 'aurora') return 'page-main aurora-main';
-    if (theme === 'solaris') return 'page-main solaris-main';
     if (theme === 'midnight') return 'page-main midnight-main';
     if (theme === 'dark') return 'page-main dark-main';
     return 'page-main light-main';

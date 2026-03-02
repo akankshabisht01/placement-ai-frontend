@@ -484,7 +484,6 @@ const PredictionResult = () => {
           <div className="space-y-3">
             <Link 
               to="/predict" 
-              onClick={clearStoredPrediction}
               className="block w-full bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
             >
               Take Placement Prediction Test
