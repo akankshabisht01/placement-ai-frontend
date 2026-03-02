@@ -58,7 +58,7 @@ const CircularProgress = ({ percentage, size = 120, strokeWidth = 8, label, colo
 };
 
 // Modern Score Card Component
-const ScoreCard = ({ title, score, maxScore, description, icon, color = 'blue', showMeter = true }) => {
+const ScoreCard = ({ title, score, maxScore, description, icon, color = 'blue', showMeter = true, coverage = null, coverageOnly = false }) => {
   const percentage = maxScore > 0 ? (score / maxScore) * 100 : 0;
 
   const colorMap = {
@@ -69,6 +69,64 @@ const ScoreCard = ({ title, score, maxScore, description, icon, color = 'blue', 
     red: 'from-red-50 to-red-100 dark:from-red-950/30 dark:to-red-900/30 border-red-200 dark:border-red-800',
     indigo: 'from-indigo-50 to-indigo-100 dark:from-indigo-950/30 dark:to-indigo-900/30 border-indigo-200 dark:border-indigo-800'
   };
+
+  // Get coverage bar color based on percentage
+  const getCoverageColor = (percent) => {
+    if (percent >= 80) return 'bg-green-500';
+    if (percent >= 60) return 'bg-emerald-500';
+    if (percent >= 40) return 'bg-yellow-500';
+    if (percent >= 25) return 'bg-orange-500';
+    return 'bg-red-500';
+  };
+
+  // Coverage-only mode for Skills card
+  if (coverageOnly && coverage && coverage.totalRoleSkills > 0) {
+    const covPercent = coverage.coveragePercent || 0;
+    return (
+      <div className={`bg-gradient-to-br ${colorMap[color]} border rounded-xl p-6 hover:shadow-lg dark:hover:shadow-glow transition-all duration-300 transform hover:scale-105`}>
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center space-x-3">
+            {icon && <span className="text-2xl">{icon}</span>}
+            <div>
+              <h3 className="font-semibold text-gray-800 dark:text-gray-100">{title}</h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400">{description}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Coverage progress bar */}
+        <div className="mb-4">
+          <div className="flex items-center justify-between text-xs mb-1.5">
+            <span className="text-gray-600 dark:text-gray-400 font-medium">Role Coverage</span>
+            <span className="font-semibold text-gray-700 dark:text-gray-300">
+              {coverage.matchedSkills}/{coverage.totalRoleSkills} skills
+            </span>
+          </div>
+          <div className="w-full h-2.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+            <div 
+              className={`h-full ${getCoverageColor(covPercent)} transition-all duration-500 rounded-full`}
+              style={{ width: `${Math.min(100, covPercent)}%` }}
+            />
+          </div>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 text-right">{covPercent}% covered</p>
+        </div>
+
+        {/* Score out of 32 */}
+        <div className="flex items-center justify-between">
+          <div className="text-3xl font-bold text-gray-800 dark:text-gray-100">
+            {typeof score === 'number' ? Math.round(score * 10) / 10 : score}
+            <span className="text-sm text-gray-500 dark:text-gray-400 ml-1">/{maxScore}</span>
+          </div>
+          <CircularProgress
+            percentage={percentage}
+            size={80}
+            strokeWidth={6}
+            color={color}
+          />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={`bg-gradient-to-br ${colorMap[color]} border rounded-xl p-6 hover:shadow-lg dark:hover:shadow-glow transition-all duration-300 transform hover:scale-105`}>
@@ -85,7 +143,7 @@ const ScoreCard = ({ title, score, maxScore, description, icon, color = 'blue', 
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
           <div className="text-3xl font-bold text-gray-800 dark:text-gray-100">
-            {typeof score === 'number' ? Math.round(score) : score}
+            {typeof score === 'number' ? Math.round(score * 10) / 10 : score}
             <span className="text-sm text-gray-500 dark:text-gray-400 ml-1">/{maxScore}</span>
           </div>
         </div>
@@ -549,46 +607,56 @@ const PredictionResult = () => {
               </div>
 
               {/* Score Cards Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
                 <ScoreCard
                   title="Academic"
-                  score={predictionData.academicScore || 0}
-                  maxScore={100}
+                  score={predictionData.scoreBreakdown?.academics ?? Math.round((predictionData.academicScore || 0) * 0.20 * 10) / 10}
+                  maxScore={20}
                   description="CGPA & Academic Performance"
                   icon=""
                   color="blue"
                 />
                 <ScoreCard
                   title="Skills"
-                  score={predictionData.skillScore || 0}
-                  maxScore={100}
+                  score={Math.round(((predictionData.skillCoverage?.coveragePercent || 0) / 100) * 32 * 10) / 10}
+                  maxScore={32}
                   description="Technical & Domain Skills"
                   icon=""
                   color="green"
+                  coverage={predictionData.skillCoverage}
+                  coverageOnly={true}
                 />
                 <ScoreCard
                   title="Projects"
-                  score={predictionData.projectScore || 0}
-                  maxScore={100}
+                  score={predictionData.scoreBreakdown?.projects ?? Math.round((predictionData.projectScore || 0) * 0.20 * 10) / 10}
+                  maxScore={20}
                   description="Project Quality & Impact"
                   icon=""
                   color="purple"
                 />
                 <ScoreCard
                   title="DSA"
-                  score={predictionData.dsaScore || 0}
-                  maxScore={100}
+                  score={predictionData.scoreBreakdown?.dsa ?? Math.round((predictionData.dsaScore || 0) * 0.10 * 10) / 10}
+                  maxScore={10}
                   description="Problem Solving Skills"
                   icon=""
                   color="indigo"
                 />
                 <ScoreCard
                   title="Experience"
-                  score={predictionData.experienceScore || 0}
-                  maxScore={10}
+                  score={predictionData.scoreBreakdown?.experience ?? Math.round((predictionData.experienceScore || 0) * 0.08 * 10) / 10}
+                  maxScore={8}
                   description="Internships & Work Experience"
                   icon=""
                   color="orange"
+                />
+                <ScoreCard
+                  title="Achievements & Certs"
+                  score={predictionData.scoreBreakdown?.achievements_certifications ?? Math.round(((predictionData.certificationScore || 0) + (predictionData.achievementScore || 0)) / 2 * 0.10 * 10) / 10}
+                  maxScore={10}
+                  description="Certifications & Awards"
+                  icon=""
+                  color="red"
                 />
               </div>
 

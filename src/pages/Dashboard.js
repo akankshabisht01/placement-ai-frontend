@@ -707,6 +707,13 @@ const Dashboard = () => {
   // Weekly Progress Tracker collapsible state
   const [showWeeklyProgress, setShowWeeklyProgress] = useState(false);
   
+  // Placement Prediction Score collapsible state
+  const [showPlacementPrediction, setShowPlacementPrediction] = useState(false);
+  const [placementPredictionData, setPlacementPredictionData] = useState(null);
+  const [loadingPlacementPrediction, setLoadingPlacementPrediction] = useState(false);
+  const [placementPredictionError, setPlacementPredictionError] = useState(null);
+  const [recalculatingScore, setRecalculatingScore] = useState(false);
+  
   // Nested expansion states for months and weeks
   const [expandedMonths, setExpandedMonths] = useState({});
   const [expandedWeeks, setExpandedWeeks] = useState({});
@@ -2152,6 +2159,81 @@ const Dashboard = () => {
     }
   };
 
+  // Fetch Placement Prediction Score Data
+  const fetchPlacementPredictionData = async () => {
+    const mobile = getUserMobile();
+
+    if (!mobile) {
+      setPlacementPredictionError('Mobile number not found. Please ensure your profile is complete.');
+      return;
+    }
+
+    setLoadingPlacementPrediction(true);
+    setPlacementPredictionError(null);
+
+    try {
+      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
+      const url = `${backendUrl}/api/get-placement-prediction/${encodeURIComponent(mobile)}`;
+      
+      console.log('🎯 [Placement Prediction] Fetching from:', url);
+      
+      const response = await fetch(url);
+      const result = await response.json();
+
+      console.log('📊 [Placement Prediction] Response:', result);
+
+      if (result.success && result.hasPrediction) {
+        setPlacementPredictionData(result.data);
+        setShowPlacementPrediction(true);
+        setPlacementPredictionError(null);
+      } else {
+        setPlacementPredictionError(result.error || 'No placement prediction found. Please complete the prediction test first.');
+        setShowPlacementPrediction(true);
+      }
+    } catch (error) {
+      console.error('❌ [Placement Prediction] Error:', error);
+      setPlacementPredictionError(error.message || 'Failed to fetch placement prediction data.');
+    } finally {
+      setLoadingPlacementPrediction(false);
+    }
+  };
+
+  // Manually recalculate placement score based on test performance
+  const recalculatePlacementScore = async () => {
+    const mobile = getUserMobile();
+
+    if (!mobile) {
+      return;
+    }
+
+    setRecalculatingScore(true);
+
+    try {
+      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
+      const url = `${backendUrl}/api/recalculate-placement-score`;
+      
+      console.log('🔄 [Recalculate Score] Triggering recalculation...');
+      
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mobile })
+      });
+      const result = await response.json();
+
+      console.log('📊 [Recalculate Score] Response:', result);
+
+      if (result.success) {
+        // Refresh the prediction data to show updated score
+        await fetchPlacementPredictionData();
+      }
+    } catch (error) {
+      console.error('❌ [Recalculate Score] Error:', error);
+    } finally {
+      setRecalculatingScore(false);
+    }
+  };
+
   // Fetch weekly test analysis data from database
   const fetchWeeklyTestAnalysisData = async () => {
     console.log('🔄 [Weekly Test Analysis] Function called');
@@ -2876,6 +2958,9 @@ const Dashboard = () => {
             // Refetch current week info to advance to next month's first week
             fetchCurrentWeekInfo();
             
+            // Refresh placement prediction data to show updated score after monthly test
+            fetchPlacementPredictionData();
+            
             setTimeout(() => {
               const element = document.getElementById('monthly-test-analysis-section');
               if (element) {
@@ -3034,6 +3119,9 @@ const Dashboard = () => {
             
             // Refetch current week info to advance to next month's first week
             fetchCurrentWeekInfo();
+            
+            // Refresh placement prediction data to show updated score after monthly test
+            fetchPlacementPredictionData();
             
             // Start the 5-minute post-monthly-analysis timer before generating next week test
             // IMPORTANT: Only start if not already running
@@ -7392,6 +7480,501 @@ const Dashboard = () => {
                     </svg>
                   </div>
                 </div>
+              </div>
+
+              {/* Placement Prediction Score - Collapsible */}
+              <div className={`bg-white/80 dark:bg-[#1e1a2e]/80 backdrop-blur-sm rounded-2xl shadow-lg border ${themeClasses.cardBorder}/50 dark:border-pink-500/20 overflow-hidden`}>
+                {/* Header - Clickable */}
+                <button
+                  onClick={() => {
+                    if (!showPlacementPrediction && !placementPredictionData) {
+                      fetchPlacementPredictionData();
+                    } else {
+                      setShowPlacementPrediction(!showPlacementPrediction);
+                    }
+                  }}
+                  className="w-full p-6 flex items-center justify-between hover:bg-amber-50 dark:hover:bg-tech-gray-800 transition-colors"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
+                      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+                      </svg>
+                    </div>
+                    <div className="text-left">
+                      <h3 className={`text-xl font-bold ${themeClasses.textPrimary}`}>Placement Prediction Score</h3>
+                      <p className={`text-sm ${themeClasses.textSecondary}`}>Click to view your placement readiness score</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    {loadingPlacementPrediction && (
+                      <svg className="animate-spin h-5 w-5 text-purple-600" viewBox="0 0 24 24" fill="none">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                    )}
+                    <svg 
+                      className={`w-6 h-6 text-purple-500 dark:text-purple-400 transition-transform duration-200 ${showPlacementPrediction ? 'rotate-180' : ''}`}
+                      fill="none" 
+                      stroke="currentColor" 
+                      viewBox="0 0 24 24"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+                </button>
+
+                {/* Collapsible Content */}
+                {showPlacementPrediction && (
+                  <div className={`border-t ${themeClasses.cardBorder} dark:border-pink-500/20 p-6 bg-purple-50/50 dark:bg-[#2a2438]/50`}>
+                    {placementPredictionError && (
+                      <div className={`bg-yellow-50 dark:bg-yellow-900/20 border ${themeClasses.cardBorder} dark:border-yellow-800 rounded-xl p-4 mb-4`}>
+                        <div className="flex items-start gap-3">
+                          <svg className="w-5 h-5 text-yellow-600 dark:text-yellow-400 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                          </svg>
+                          <div>
+                            <p className="text-yellow-800 dark:text-yellow-300">{placementPredictionError}</p>
+                            <button
+                              onClick={() => navigate('/prediction')}
+                              className="mt-2 text-sm font-semibold text-purple-600 dark:text-purple-400 hover:underline"
+                            >
+                              Take Prediction Test →
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {placementPredictionData && (
+                      <div className="space-y-6 animate-fadeIn">
+                        {/* Main Score Display */}
+                        <div className={`${themeClasses.cardBackground} rounded-xl p-8 border-2 ${themeClasses.cardBorder} shadow-lg`}>
+                          <div className="text-center">
+                            <div className="mb-4">
+                              <span className="text-sm font-semibold text-purple-600 dark:text-purple-400 uppercase tracking-wide">
+                                Your Placement Readiness
+                              </span>
+                            </div>
+                            <div className={`text-7xl font-bold bg-gradient-to-r from-purple-600 to-indigo-600 dark:from-purple-400 dark:to-indigo-400 bg-clip-text text-transparent mb-3`}>
+                              {Math.round(placementPredictionData.placementScore || 0)}
+                            </div>
+                            <div className="flex items-center justify-center gap-2 mb-4">
+                              <div className={`px-4 py-2 rounded-full ${
+                                placementPredictionData.placementScore >= 80 ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' :
+                                placementPredictionData.placementScore >= 60 ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400' :
+                                placementPredictionData.placementScore >= 40 ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400' :
+                                'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
+                              }`}>
+                                <span className="text-sm font-semibold">
+                                  {placementPredictionData.placementScore >= 80 ? '🌟 Excellent' :
+                                   placementPredictionData.placementScore >= 60 ? '👍 Good' :
+                                   placementPredictionData.placementScore >= 40 ? '⚠️ Fair' :
+                                   '❌ Needs Improvement'}
+                                </span>
+                              </div>
+                            </div>
+                            {placementPredictionData.isEligible !== undefined && (
+                              <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg ${
+                                placementPredictionData.isEligible 
+                                  ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400' 
+                                  : 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400'
+                              }`}>
+                                <span className="text-2xl">{placementPredictionData.isEligible ? '✅' : '❌'}</span>
+                                <span className="text-sm font-semibold">
+                                  {placementPredictionData.isEligible ? 'Placement Eligible' : 'Not Eligible Yet'}
+                                </span>
+                              </div>
+                            )}
+                            {placementPredictionData.lastUpdated && (
+                              <p className={`text-xs ${themeClasses.textSecondary} mt-4`}>
+                                Last updated: {new Date(placementPredictionData.lastUpdated).toLocaleDateString('en-US', { 
+                                  year: 'numeric', 
+                                  month: 'long', 
+                                  day: 'numeric' 
+                                })}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Component Scores Grid */}
+                        {placementPredictionData.componentScores && (
+                          <div className={`${themeClasses.cardBackground} rounded-xl p-6 border-2 ${themeClasses.cardBorder}`}>
+                            <h4 className={`text-lg font-semibold ${themeClasses.textPrimary} mb-4`}>Score Breakdown</h4>
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                              {Object.entries(placementPredictionData.componentScores)
+                                .filter(([key]) => ['academicScore', 'skillScore', 'projectScore', 'dsaScore', 'experienceScore', 'certificationScore', 'achievementScore'].includes(key))
+                                .map(([key, value]) => {
+                                const displayValue = value || 0;
+                                
+                                const labelMap = {
+                                  academicScore: 'Academic',
+                                  skillScore: 'Skill',
+                                  projectScore: 'Project',
+                                  dsaScore: 'DSA',
+                                  experienceScore: 'Experience',
+                                  certificationScore: 'Certification',
+                                  achievementScore: 'Achievement'
+                                };
+                                const label = labelMap[key] || key.replace(/Score$/, '').replace(/([A-Z])/g, ' $1').trim();
+                                const maxVal = key === 'experienceScore' ? 10 : 100;
+                                
+                                return (
+                                  <div key={key} className={`p-4 rounded-lg ${themeClasses.sectionBackground}`}>
+                                    <div className="flex items-center justify-between mb-2">
+                                      <span className={`text-sm font-medium ${themeClasses.textPrimary}`}>{label}</span>
+                                      <span className="text-sm font-bold text-purple-600 dark:text-purple-400">
+                                        {Math.round(displayValue)}
+                                      </span>
+                                    </div>
+                                    <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                                      <div 
+                                        className="bg-gradient-to-r from-purple-500 to-indigo-600 h-2 rounded-full transition-all duration-500" 
+                                        style={{ width: `${Math.min((displayValue / maxVal) * 100, 100)}%` }}
+                                      ></div>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* After Monthly Tests - Separate Block for Each Month */}
+                        {placementPredictionData.scoreHistory && placementPredictionData.scoreHistory.length > 0 && (() => {
+                          // Deduplicate: keep only the latest entry for each month
+                          const monthMap = {};
+                          placementPredictionData.scoreHistory.forEach((entry) => {
+                            const month = entry.month || entry.monthsCompleted || 1;
+                            // Always keep the latest entry (last one wins)
+                            monthMap[month] = entry;
+                          });
+                          const uniqueHistory = Object.values(monthMap).sort((a, b) => 
+                            (a.month || a.monthsCompleted || 1) - (b.month || b.monthsCompleted || 1)
+                          );
+                          
+                          // Get original scores from first history entry
+                          const firstEntry = uniqueHistory[0] || {};
+                          const originalScore = firstEntry.originalScore || placementPredictionData.placementScore;
+                          const originalSkillScore = firstEntry.originalSkillScore || placementPredictionData.componentScores?.skillScore;
+                          
+                          return (
+                          <div className="space-y-4">
+                            {/* Original Prediction Score Block - from Resume Upload */}
+                            <div className="bg-gradient-to-br from-gray-50 via-slate-50 to-zinc-50 dark:from-gray-800/50 dark:via-slate-800/40 dark:to-zinc-800/50 rounded-xl p-6 border-2 border-gray-300 dark:border-gray-600 shadow-lg">
+                              <div className="flex items-center justify-between mb-4">
+                                <div className="flex items-center gap-3">
+                                  <div className="w-12 h-12 bg-gradient-to-br from-gray-400 to-slate-500 rounded-xl flex items-center justify-center shadow-lg">
+                                    <span className="text-2xl">📄</span>
+                                  </div>
+                                  <div>
+                                    <h4 className="text-xl font-bold text-gray-700 dark:text-gray-300">
+                                      Original Prediction Score
+                                    </h4>
+                                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                                      Initial score when you uploaded your resume
+                                    </p>
+                                  </div>
+                                </div>
+                                <div className="text-right">
+                                  <div className="text-4xl font-black text-gray-700 dark:text-gray-300">
+                                    {Math.round(originalScore || 0)}
+                                  </div>
+                                  <div className="text-sm text-gray-500 dark:text-gray-400">
+                                    Baseline Score
+                                  </div>
+                                </div>
+                              </div>
+                              {/* All Component Scores Grid */}
+                              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+                                {/* Academic */}
+                                <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/30 rounded-lg p-3 border border-blue-200 dark:border-blue-700">
+                                  <div className="flex flex-col items-center text-center">
+                                    <span className="text-lg mb-1">📚</span>
+                                    <span className="text-xs font-medium text-blue-600 dark:text-blue-400">Academic</span>
+                                    <span className="text-xl font-bold text-blue-700 dark:text-blue-300">{Math.round(placementPredictionData.componentScores?.academicScore || 0)}<span className="text-xs text-blue-500">/100</span></span>
+                                  </div>
+                                </div>
+                                {/* Skills */}
+                                <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/30 dark:to-green-800/30 rounded-lg p-3 border border-green-200 dark:border-green-700">
+                                  <div className="flex flex-col items-center text-center">
+                                    <span className="text-lg mb-1">💡</span>
+                                    <span className="text-xs font-medium text-green-600 dark:text-green-400">Skills</span>
+                                    <span className="text-xl font-bold text-green-700 dark:text-green-300">{Math.round(originalSkillScore || 0)}<span className="text-xs text-green-500">/100</span></span>
+                                  </div>
+                                </div>
+                                {/* Projects */}
+                                <div className="bg-gradient-to-br from-pink-50 to-pink-100 dark:from-pink-900/30 dark:to-pink-800/30 rounded-lg p-3 border border-pink-200 dark:border-pink-700">
+                                  <div className="flex flex-col items-center text-center">
+                                    <span className="text-lg mb-1">🚀</span>
+                                    <span className="text-xs font-medium text-pink-600 dark:text-pink-400">Projects</span>
+                                    <span className="text-xl font-bold text-pink-700 dark:text-pink-300">{Math.round(placementPredictionData.componentScores?.projectScore || 0)}<span className="text-xs text-pink-500">/100</span></span>
+                                  </div>
+                                </div>
+                                {/* DSA */}
+                                <div className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/30 dark:to-purple-800/30 rounded-lg p-3 border border-purple-200 dark:border-purple-700">
+                                  <div className="flex flex-col items-center text-center">
+                                    <span className="text-lg mb-1">🧩</span>
+                                    <span className="text-xs font-medium text-purple-600 dark:text-purple-400">DSA</span>
+                                    <span className="text-xl font-bold text-purple-700 dark:text-purple-300">{Math.round(placementPredictionData.componentScores?.dsaScore || 0)}<span className="text-xs text-purple-500">/100</span></span>
+                                  </div>
+                                </div>
+                                {/* Experience */}
+                                <div className="bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/30 dark:to-orange-800/30 rounded-lg p-3 border border-orange-200 dark:border-orange-700">
+                                  <div className="flex flex-col items-center text-center">
+                                    <span className="text-lg mb-1">💼</span>
+                                    <span className="text-xs font-medium text-orange-600 dark:text-orange-400">Experience</span>
+                                    <span className="text-xl font-bold text-orange-700 dark:text-orange-300">{Math.round(placementPredictionData.componentScores?.experienceScore || 0)}<span className="text-xs text-orange-500">/10</span></span>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                            
+                            {/* Render a block for each month from score history */}
+                            {uniqueHistory.map((historyEntry, index) => {
+                              const monthNum = historyEntry.month || historyEntry.monthsCompleted || (index + 1);
+                              const previousEntry = index > 0 ? uniqueHistory[index - 1] : null;
+                              const previousScore = previousEntry ? previousEntry.score : (historyEntry.originalScore || historyEntry.previousScore);
+                              const previousSkillScore = previousEntry ? previousEntry.skillScore : (historyEntry.originalSkillScore || historyEntry.previousSkillScore);
+                              const scoreChange = Math.round((historyEntry.score || 0) - (previousScore || 0));
+                              const skillChange = Math.round((historyEntry.skillScore || 0) - (previousSkillScore || 0));
+                              
+                              // Different color schemes for each month
+                              const colorSchemes = [
+                                { bg: 'from-emerald-50 via-green-50 to-teal-50', darkBg: 'dark:from-emerald-900/30 dark:via-green-900/20 dark:to-teal-900/30', border: 'border-green-300 dark:border-green-700', text: 'text-green-700 dark:text-green-300', accent: 'from-green-400 to-emerald-500', icon: '📈' },
+                                { bg: 'from-blue-50 via-indigo-50 to-purple-50', darkBg: 'dark:from-blue-900/30 dark:via-indigo-900/20 dark:to-purple-900/30', border: 'border-blue-300 dark:border-blue-700', text: 'text-blue-700 dark:text-blue-300', accent: 'from-blue-400 to-indigo-500', icon: '🚀' },
+                                { bg: 'from-amber-50 via-orange-50 to-yellow-50', darkBg: 'dark:from-amber-900/30 dark:via-orange-900/20 dark:to-yellow-900/30', border: 'border-amber-300 dark:border-amber-700', text: 'text-amber-700 dark:text-amber-300', accent: 'from-amber-400 to-orange-500', icon: '🏆' },
+                              ];
+                              const colors = colorSchemes[(monthNum - 1) % colorSchemes.length];
+                              
+                              return (
+                                <div 
+                                  key={`month-${monthNum}-${index}`}
+                                  className={`bg-gradient-to-br ${colors.bg} ${colors.darkBg} rounded-xl p-6 border-2 ${colors.border} shadow-lg`}
+                                >
+                                  {/* Header */}
+                                  <div className="flex items-center justify-between mb-6">
+                                    <div className="flex items-center gap-3">
+                                      <div className={`w-12 h-12 bg-gradient-to-br ${colors.accent} rounded-xl flex items-center justify-center shadow-lg`}>
+                                        <span className="text-2xl">{colors.icon}</span>
+                                      </div>
+                                      <div>
+                                        <h4 className={`text-xl font-bold ${colors.text}`}>
+                                          After Month {monthNum} Prediction Score
+                                        </h4>
+                                        <p className={`text-sm ${colors.text} opacity-80`}>
+                                          Updated after Month {monthNum} test completion
+                                        </p>
+                                      </div>
+                                    </div>
+                                    <div className="text-right">
+                                      <div className={`text-4xl font-black ${colors.text}`}>
+                                        {Math.round(historyEntry.score || 0)}
+                                      </div>
+                                      <div className="flex items-center gap-2 justify-end mt-1">
+                                        <span className="text-sm text-gray-500 dark:text-gray-400 line-through">
+                                          {Math.round(previousScore || 0)}
+                                        </span>
+                                        {scoreChange > 0 && (
+                                          <span className={`text-sm font-bold px-2 py-0.5 rounded-full ${colors.text} bg-white/50 dark:bg-gray-800/50`}>
+                                            +{scoreChange} pts
+                                          </span>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  {/* Score Comparison Grid */}
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {/* Skill Score - Main Improvement */}
+                                    <div className="bg-white/70 dark:bg-gray-800/50 rounded-lg p-4 border border-white/50 dark:border-gray-600">
+                                      <div className="flex items-center justify-between mb-3">
+                                        <div className="flex items-center gap-2">
+                                          <span className="text-lg">💡</span>
+                                          <span className="font-semibold text-gray-800 dark:text-gray-200">Skill Score</span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                          <span className="text-sm text-gray-500 dark:text-gray-400 line-through">
+                                            {Math.round(previousSkillScore || 0)}
+                                          </span>
+                                          <span className={colors.text}>→</span>
+                                          <span className={`text-lg font-bold ${colors.text}`}>
+                                            {Math.round(historyEntry.skillScore || 0)}
+                                          </span>
+                                          {skillChange > 0 && (
+                                            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${colors.text} bg-white/50 dark:bg-gray-800/50`}>
+                                              +{skillChange}
+                                            </span>
+                                          )}
+                                        </div>
+                                      </div>
+                                      <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-3">
+                                        <div 
+                                          className={`bg-gradient-to-r ${colors.accent} h-3 rounded-full transition-all duration-500`}
+                                          style={{ width: `${Math.min(historyEntry.skillScore || 0, 100)}%` }}
+                                        ></div>
+                                      </div>
+                                    </div>
+
+                                    {/* Overall Score Card */}
+                                    <div className="bg-white/70 dark:bg-gray-800/50 rounded-lg p-4 border border-white/50 dark:border-gray-600">
+                                      <div className="flex items-center justify-between mb-3">
+                                        <div className="flex items-center gap-2">
+                                          <span className="text-lg">🎯</span>
+                                          <span className="font-semibold text-gray-800 dark:text-gray-200">Overall Score</span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                          <span className="text-sm text-gray-500 dark:text-gray-400 line-through">
+                                            {Math.round(previousScore || 0)}%
+                                          </span>
+                                          <span className={colors.text}>→</span>
+                                          <span className={`text-lg font-bold ${colors.text}`}>
+                                            {Math.round(historyEntry.score || 0)}%
+                                          </span>
+                                        </div>
+                                      </div>
+                                      <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-3">
+                                        <div 
+                                          className={`bg-gradient-to-r ${colors.accent} h-3 rounded-full transition-all duration-500`}
+                                          style={{ width: `${Math.min(historyEntry.score || 0, 100)}%` }}
+                                        ></div>
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  {/* All Component Scores Grid for this month */}
+                                  {historyEntry.componentScores && (
+                                    <div className="mt-4">
+                                      <h5 className={`text-sm font-semibold ${colors.text} mb-3 flex items-center gap-2`}>
+                                        <span>📊</span> All Scores After Month {monthNum}
+                                      </h5>
+                                      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+                                        {/* Academic */}
+                                        <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/30 rounded-lg p-3 border border-blue-200 dark:border-blue-700">
+                                          <div className="flex flex-col items-center text-center">
+                                            <span className="text-lg mb-1">📚</span>
+                                            <span className="text-xs font-medium text-blue-600 dark:text-blue-400">Academic</span>
+                                            <span className="text-xl font-bold text-blue-700 dark:text-blue-300">{Math.round(historyEntry.componentScores.academicScore || 0)}<span className="text-xs text-blue-500">/100</span></span>
+                                          </div>
+                                        </div>
+                                        {/* Skills - Highlighted as it improves */}
+                                        <div className={`bg-gradient-to-br ${colors.bg} ${colors.darkBg} rounded-lg p-3 border-2 ${colors.border}`}>
+                                          <div className="flex flex-col items-center text-center">
+                                            <span className="text-lg mb-1">💡</span>
+                                            <span className={`text-xs font-medium ${colors.text}`}>Skills</span>
+                                            <span className={`text-xl font-bold ${colors.text}`}>{Math.round(historyEntry.componentScores.skillScore || historyEntry.skillScore || 0)}<span className="text-xs">/100</span></span>
+                                            {skillChange > 0 && <span className={`text-xs ${colors.text} font-bold`}>↑ +{skillChange}</span>}
+                                          </div>
+                                        </div>
+                                        {/* Projects */}
+                                        <div className="bg-gradient-to-br from-pink-50 to-pink-100 dark:from-pink-900/30 dark:to-pink-800/30 rounded-lg p-3 border border-pink-200 dark:border-pink-700">
+                                          <div className="flex flex-col items-center text-center">
+                                            <span className="text-lg mb-1">🚀</span>
+                                            <span className="text-xs font-medium text-pink-600 dark:text-pink-400">Projects</span>
+                                            <span className="text-xl font-bold text-pink-700 dark:text-pink-300">{Math.round(historyEntry.componentScores.projectScore || 0)}<span className="text-xs text-pink-500">/100</span></span>
+                                          </div>
+                                        </div>
+                                        {/* DSA */}
+                                        <div className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/30 dark:to-purple-800/30 rounded-lg p-3 border border-purple-200 dark:border-purple-700">
+                                          <div className="flex flex-col items-center text-center">
+                                            <span className="text-lg mb-1">🧩</span>
+                                            <span className="text-xs font-medium text-purple-600 dark:text-purple-400">DSA</span>
+                                            <span className="text-xl font-bold text-purple-700 dark:text-purple-300">{Math.round(historyEntry.componentScores.dsaScore || 0)}<span className="text-xs text-purple-500">/100</span></span>
+                                          </div>
+                                        </div>
+                                        {/* Experience */}
+                                        <div className="bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/30 dark:to-orange-800/30 rounded-lg p-3 border border-orange-200 dark:border-orange-700">
+                                          <div className="flex flex-col items-center text-center">
+                                            <span className="text-lg mb-1">💼</span>
+                                            <span className="text-xs font-medium text-orange-600 dark:text-orange-400">Experience</span>
+                                            <span className="text-xl font-bold text-orange-700 dark:text-orange-300">{Math.round(historyEntry.componentScores.experienceScore || 0)}<span className="text-xs text-orange-500">/10</span></span>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {/* Timestamp */}
+                                  {historyEntry.timestamp && (
+                                    <p className={`text-xs ${colors.text} opacity-70 mt-3 text-center`}>
+                                      🕐 Updated on {new Date(historyEntry.timestamp).toLocaleDateString('en-US', { 
+                                        year: 'numeric', 
+                                        month: 'long', 
+                                        day: 'numeric'
+                                      })}
+                                    </p>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        );})()}
+
+                        {/* Legacy single block for users without scoreHistory but with recalculationDetails */}
+                        {!placementPredictionData.scoreHistory?.length && placementPredictionData.wasRecalculated && placementPredictionData.recalculationDetails && (
+                          <div className="bg-gradient-to-br from-emerald-50 via-green-50 to-teal-50 dark:from-emerald-900/30 dark:via-green-900/20 dark:to-teal-900/30 rounded-xl p-6 border-2 border-green-300 dark:border-green-700 shadow-lg">
+                            {/* Header */}
+                            <div className="flex items-center justify-between mb-6">
+                              <div className="flex items-center gap-3">
+                                <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg">
+                                  <span className="text-2xl">📈</span>
+                                </div>
+                                <div>
+                                  <h4 className="text-xl font-bold text-green-800 dark:text-green-300">
+                                    After {placementPredictionData.recalculationDetails.monthsCompleted || 1} Month{(placementPredictionData.recalculationDetails.monthsCompleted || 1) > 1 ? 's' : ''} Prediction Score
+                                  </h4>
+                                  <p className="text-sm text-green-600 dark:text-green-400">
+                                    Updated based on your monthly test performance
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <div className="text-4xl font-black text-green-700 dark:text-green-300">
+                                  {Math.round(placementPredictionData.placementScore || 0)}
+                                </div>
+                                <div className="flex items-center gap-2 justify-end mt-1">
+                                  <span className="text-sm text-gray-500 dark:text-gray-400 line-through">
+                                    {Math.round(placementPredictionData.recalculationDetails.previousScore || 0)}
+                                  </span>
+                                  <span className="text-sm font-bold px-2 py-0.5 bg-green-200 dark:bg-green-800 text-green-700 dark:text-green-300 rounded-full">
+                                    +{Math.round((placementPredictionData.placementScore || 0) - (placementPredictionData.recalculationDetails.previousScore || 0))} pts
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Skill Score Card */}
+                            <div className="bg-white/70 dark:bg-gray-800/50 rounded-lg p-4 border border-green-200 dark:border-green-700">
+                              <div className="flex items-center justify-between mb-3">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-lg">💡</span>
+                                  <span className="font-semibold text-gray-800 dark:text-gray-200">Skill Score</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <span className="text-sm text-gray-500 dark:text-gray-400 line-through">
+                                    {Math.round(placementPredictionData.recalculationDetails.previousSkillScore || 0)}
+                                  </span>
+                                  <span className="text-green-500">→</span>
+                                  <span className="text-lg font-bold text-green-600 dark:text-green-400">
+                                    {Math.round(placementPredictionData.componentScores?.skillScore || 0)}
+                                  </span>
+                                </div>
+                              </div>
+                              <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-3">
+                                <div 
+                                  className="bg-gradient-to-r from-green-400 to-emerald-500 h-3 rounded-full transition-all duration-500"
+                                  style={{ width: `${Math.min(placementPredictionData.componentScores?.skillScore || 0, 100)}%` }}
+                                ></div>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Test Analysis Report of Skills - Collapsible */}
