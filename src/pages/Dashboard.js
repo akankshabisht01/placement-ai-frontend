@@ -731,6 +731,7 @@ const Dashboard = () => {
   
   // Current week info for Weekly Test section
   const [currentWeekInfo, setCurrentWeekInfo] = useState({ week: 1, month: 1 });
+  const [allWeeksCompleted, setAllWeeksCompleted] = useState(false);
   const [loadingWeekInfo, setLoadingWeekInfo] = useState(false);
   
   // Generate Weekly Test states
@@ -851,6 +852,15 @@ const Dashboard = () => {
   // Certifications states
   const [certificationsData, setCertificationsData] = useState(null);
   const [loadingCertifications, setLoadingCertifications] = useState(false);
+
+  // Certification Submission states
+  const [certName, setCertName] = useState('');
+  const [certPlatform, setCertPlatform] = useState('');
+  const [submittingCert, setSubmittingCert] = useState(false);
+  const [certSubmitError, setCertSubmitError] = useState(null);
+  const [certSubmitSuccess, setCertSubmitSuccess] = useState(null);
+  const [submittedCerts, setSubmittedCerts] = useState([]);
+  const [loadingSubmittedCerts, setLoadingSubmittedCerts] = useState(false);
 
   // Project Submission states
   const [projectTitle, setProjectTitle] = useState('');
@@ -1429,6 +1439,9 @@ const Dashboard = () => {
   useEffect(() => {
     if (activeSection === 'certifications' && !certificationsData && !loadingCertifications) {
       fetchCertificationsData();
+    }
+    if (activeSection === 'certifications') {
+      fetchSubmittedCerts();
     }
   }, [activeSection]);
 
@@ -2359,6 +2372,78 @@ const Dashboard = () => {
     }
   };
 
+  // Fetch submitted certifications
+  const fetchSubmittedCerts = async () => {
+    const mobile = getUserMobile();
+    if (!mobile) return;
+    
+    setLoadingSubmittedCerts(true);
+    try {
+      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
+      const response = await fetch(`${backendUrl}/api/get-certifications-submitted/${encodeURIComponent(mobile)}`);
+      const result = await response.json();
+      if (result.success) {
+        setSubmittedCerts(result.data.certifications || []);
+      }
+    } catch (error) {
+      console.error('Error fetching submitted certs:', error);
+    } finally {
+      setLoadingSubmittedCerts(false);
+    }
+  };
+
+  // Handle certification submission
+  const handleCertSubmit = async () => {
+    const mobile = getUserMobile();
+    if (!mobile) {
+      setCertSubmitError('Mobile number not found. Please log in again.');
+      return;
+    }
+    if (!certName.trim()) {
+      setCertSubmitError('Please enter the certification name.');
+      return;
+    }
+
+    setSubmittingCert(true);
+    setCertSubmitError(null);
+    setCertSubmitSuccess(null);
+
+    try {
+      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
+      const response = await fetch(`${backendUrl}/api/submit-certification`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          mobile,
+          certificationName: certName.trim(),
+          platform: certPlatform.trim()
+        })
+      });
+      const result = await response.json();
+      
+      if (result.success) {
+        setCertSubmitSuccess(`"${certName}" submitted! Tier ${result.data.tier} (+${result.data.boostPoints} points). Score updating...`);
+        setCertName('');
+        setCertPlatform('');
+        // Refresh submitted certs list
+        fetchSubmittedCerts();
+        // Re-fetch placement prediction data after recalculation completes (background thread ~2-3s)
+        setTimeout(() => {
+          fetchPlacementPredictionData();
+          setCertSubmitSuccess(prev => prev ? prev.replace('. Score updating...', '. Score updated!') : prev);
+        }, 3000);
+        // Clear success message after 8 seconds
+        setTimeout(() => setCertSubmitSuccess(null), 8000);
+      } else {
+        setCertSubmitError(result.message || 'Failed to submit certification.');
+      }
+    } catch (error) {
+      setCertSubmitError(error.message || 'Failed to submit certification.');
+    } finally {
+      setSubmittingCert(false);
+    }
+  };
+
   // Fetch current week info for the Weekly Test section
   const fetchCurrentWeekInfo = async () => {
     const mobile = getUserMobile();
@@ -2382,7 +2467,19 @@ const Dashboard = () => {
             month: result.data.month || 1,
             testTitle: result.data.test_title || ''
           });
+<<<<<<< Updated upstream
           console.log('âœ… Current week info fetched:', result.data);
+=======
+          setAllWeeksCompleted(result.data.all_completed || false);
+          console.log('✅ Current week info fetched:', result.data, 'All completed:', result.data.all_completed);
+          
+          // If all weeks completed, no need to check test generation
+          if (result.data.all_completed) {
+            console.log('🎉 All 12 weeks completed! No more tests to generate.');
+            setCheckingTestGeneration(false);
+            return;
+          }
+>>>>>>> Stashed changes
           
           // After fetching week info, check if test exists for this specific week
           await checkWeeklyTestGenerationForWeek(mobile, result.data.week, result.data.month);
@@ -3706,8 +3803,8 @@ const Dashboard = () => {
                 <span className={`${themeClasses.textPrimary} font-bold text-xl`}>{name.charAt(0)}</span>
               </div>
               <div>
-                <h1 className={`text-2xl font-bold ${themeClasses.textPrimary} drop-shadow-sm`}>Welcome back, {name.split(' ')[0]}!</h1>
-                <p className={themeClasses.textSecondary}>Let's continue your placement journey</p>
+                <h1 className={`text-2xl font-bold ${themeClasses.textPrimary} drop-shadow-sm`}>{skillTestCompleted ? 'Welcome back' : 'Welcome'}, {name.split(' ')[0]}!</h1>
+                <p className={themeClasses.textSecondary}>{skillTestCompleted ? "Let's continue your placement journey" : "Let's start your placement journey"}</p>
               </div>
             </div>
             
@@ -5747,7 +5844,24 @@ const Dashboard = () => {
                       </div>
                     ) : (
                     <>
+                    {/* All Weeks Completed Message - Guide to Monthly Test */}
+                    {allWeeksCompleted && (
+                      <div className="mb-3 pb-3 text-center">
+                        <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border-2 border-green-400 dark:border-green-600 rounded-xl p-4">
+                          <div className="flex items-center justify-center gap-2 mb-2">
+                            <span className="text-3xl">🎉</span>
+                            <h3 className="text-lg font-bold text-green-800 dark:text-green-300">All Weekly Tests Completed!</h3>
+                            <span className="text-3xl">🎉</span>
+                          </div>
+                          <p className="text-sm text-green-700 dark:text-green-400">
+                            You've completed all 12 weekly tests. Proceed to your Monthly Test below to complete the assessment.
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
                     {/* Generate Weekly Test Button - Show only when:
+                        - all weeks NOT completed
                         - test not generated 
                         - no timer modal showing
                         - no analysis pending
@@ -5755,7 +5869,7 @@ const Dashboard = () => {
                         - monthly post-analysis timer not active
                         - AND NOT when next action should be monthly test (month-end week completed)
                     */}
-                    {!weeklyTestGenerated && !showTimerModal && !weeklyTestHasAnalysis && !postAnalysisTimerActive && !monthlyPostAnalysisTimerActive && !(postAnalysisIsMonthEnd && postAnalysisNextAction === 'generate_monthly_test') && (
+                    {!allWeeksCompleted && !weeklyTestGenerated && !showTimerModal && !weeklyTestHasAnalysis && !postAnalysisTimerActive && !monthlyPostAnalysisTimerActive && !(postAnalysisIsMonthEnd && postAnalysisNextAction === 'generate_monthly_test') && (
                       <div className={`mb-3 pb-3 border-b ${themeClasses.cardBorder}`}>
                         <button
                         onClick={async () => {
@@ -7757,9 +7871,11 @@ const Dashboard = () => {
                               const previousScore = previousEntry ? previousEntry.score : (historyEntry.originalScore || historyEntry.previousScore);
                               const previousSkillScore = previousEntry ? previousEntry.skillScore : (historyEntry.originalSkillScore || historyEntry.previousSkillScore);
                               const previousProjectScore = previousEntry ? (previousEntry.projectScore || previousEntry.componentScores?.projectScore) : (historyEntry.originalProjectScore || historyEntry.previousProjectScore || historyEntry.componentScores?.projectScore);
+                              const previousCertScore = previousEntry ? (previousEntry.certificationScore || previousEntry.componentScores?.certificationScore || 0) : (historyEntry.originalCertScore || placementPredictionData?.originalScores?.certificationScore || historyEntry.componentScores?.certificationScore || 0);
                               const scoreChange = Math.round((historyEntry.score || 0) - (previousScore || 0));
                               const skillChange = Math.round((historyEntry.skillScore || 0) - (previousSkillScore || 0));
                               const projectChange = Math.round((historyEntry.projectScore || historyEntry.componentScores?.projectScore || 0) - (previousProjectScore || 0));
+                              const certChange = Math.round((historyEntry.certificationScore || historyEntry.componentScores?.certificationScore || 0) - (previousCertScore || 0));
                               
                               // Different color schemes for each month
                               const colorSchemes = [
@@ -7904,7 +8020,7 @@ const Dashboard = () => {
                                       <h5 className={`text-sm font-semibold ${colors.text} mb-3 flex items-center gap-2`}>
                                         <span>ðŸ“Š</span> All Scores After Month {monthNum}
                                       </h5>
-                                      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+                                      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
                                         {/* Academic */}
                                         <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/30 rounded-lg p-3 border border-blue-200 dark:border-blue-700">
                                           <div className="flex flex-col items-center text-center">
@@ -7945,6 +8061,22 @@ const Dashboard = () => {
                                             <span className="text-lg mb-1">ðŸ’¼</span>
                                             <span className="text-xs font-medium text-orange-600 dark:text-orange-400">Experience</span>
                                             <span className="text-xl font-bold text-orange-700 dark:text-orange-300">{Math.round(historyEntry.componentScores.experienceScore || 0)}<span className="text-xs text-orange-500">/10</span></span>
+                                          </div>
+                                        </div>
+                                        {/* Certifications - Highlighted if boosted */}
+                                        <div className={`bg-gradient-to-br ${certChange > 0 ? 'from-emerald-100 to-teal-200 dark:from-emerald-900/40 dark:to-teal-800/40 border-2 border-emerald-300 dark:border-emerald-600' : 'from-emerald-50 to-emerald-100 dark:from-emerald-900/30 dark:to-emerald-800/30 border border-emerald-200 dark:border-emerald-700'} rounded-lg p-3`}>
+                                          <div className="flex flex-col items-center text-center">
+                                            <span className="text-lg mb-1">🎓</span>
+                                            <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">Certs</span>
+                                            <span className="text-xl font-bold text-emerald-700 dark:text-emerald-300">{Math.round(historyEntry.certificationScore || historyEntry.componentScores?.certificationScore || 0)}<span className="text-xs text-emerald-500">/100</span></span>
+                                            {certChange > 0 && <span className="text-xs text-emerald-600 dark:text-emerald-400 font-bold">↑ +{certChange}</span>}
+                                            {historyEntry.certsThisMonth && historyEntry.certsThisMonth.length > 0 && (
+                                              <div className="mt-1">
+                                                {historyEntry.certsThisMonth.map((cn, ci) => (
+                                                  <span key={ci} className="inline-block text-[9px] bg-emerald-200 dark:bg-emerald-700 text-emerald-800 dark:text-emerald-200 rounded px-1 py-0.5 mt-0.5 mr-0.5 leading-tight">{cn.length > 15 ? cn.substring(0, 15) + '...' : cn}</span>
+                                                ))}
+                                              </div>
+                                            )}
                                           </div>
                                         </div>
                                       </div>
@@ -9218,6 +9350,170 @@ const Dashboard = () => {
                     </svg>
                   </div>
                 </div>
+              </div>
+
+              {/* Certification Submission Section */}
+              <div className={`bg-white/80 dark:bg-[#1e1a2e]/80 backdrop-blur-sm rounded-2xl p-8 shadow-lg border-2 border-emerald-300 dark:border-emerald-500/30`}>
+                <div className="flex items-center justify-between mb-6">
+                  <div>
+                    <h3 className="text-2xl font-bold text-emerald-900 dark:text-white flex items-center gap-3">
+                      <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center shadow-md">
+                        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                        </svg>
+                      </div>
+                      Submit Completed Certification
+                    </h3>
+                    <p className="text-emerald-700 dark:text-gray-400 mt-2 text-sm">
+                      Add certifications you've completed to boost your score. Each cert adds +1 to +3 points based on relevance to your role.
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
+                      {submittedCerts.length}/5
+                    </div>
+                    <div className="text-xs text-emerald-500 dark:text-emerald-500">submitted</div>
+                  </div>
+                </div>
+
+                {/* Submission Form */}
+                <div className="space-y-4 mb-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className={`block text-sm font-semibold ${themeClasses.textPrimary} mb-2`}>
+                        Certification Name <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={certName}
+                        onChange={(e) => { setCertName(e.target.value); setCertSubmitError(null); }}
+                        placeholder="e.g., AWS Cloud Practitioner"
+                        disabled={submittingCert || submittedCerts.length >= 5}
+                        className={`w-full px-4 py-3 rounded-xl border-2 ${themeClasses.cardBorder} ${themeClasses.cardBackground} ${themeClasses.textPrimary} focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 dark:focus:ring-emerald-800 outline-none transition-all text-sm disabled:opacity-50`}
+                      />
+                    </div>
+                    <div>
+                      <label className={`block text-sm font-semibold ${themeClasses.textPrimary} mb-2`}>
+                        Platform <span className="text-gray-400 font-normal">(optional)</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={certPlatform}
+                        onChange={(e) => setCertPlatform(e.target.value)}
+                        placeholder="e.g., Coursera, Udemy, AWS"
+                        disabled={submittingCert || submittedCerts.length >= 5}
+                        className={`w-full px-4 py-3 rounded-xl border-2 ${themeClasses.cardBorder} ${themeClasses.cardBackground} ${themeClasses.textPrimary} focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 dark:focus:ring-emerald-800 outline-none transition-all text-sm disabled:opacity-50`}
+                      />
+                    </div>
+                  </div>
+
+                  {certSubmitError && (
+                    <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl px-4 py-3 text-red-700 dark:text-red-400 text-sm">
+                      {certSubmitError}
+                    </div>
+                  )}
+
+                  {certSubmitSuccess && (
+                    <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-xl px-4 py-3 text-emerald-700 dark:text-emerald-400 text-sm flex items-center gap-2">
+                      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      </svg>
+                      {certSubmitSuccess}
+                    </div>
+                  )}
+
+                  <button
+                    onClick={handleCertSubmit}
+                    disabled={submittingCert || !certName.trim() || submittedCerts.length >= 5}
+                    className="px-6 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  >
+                    {submittingCert ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                        Submitting...
+                      </>
+                    ) : submittedCerts.length >= 5 ? (
+                      <>Maximum 5 Certifications Reached</>
+                    ) : (
+                      <>
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                        </svg>
+                        Submit Certification
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                {/* Tier explanation */}
+                <div className={`${themeClasses.sectionBackground} rounded-xl p-4 mb-6 border ${themeClasses.cardBorder}`}>
+                  <p className={`text-xs font-semibold ${themeClasses.textPrimary} mb-2`}>Score Boost Tiers:</p>
+                  <div className="flex flex-wrap gap-3 text-xs">
+                    <span className="bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 px-3 py-1 rounded-full font-medium">
+                      Tier 1: +20 pts (Core Role Skill)
+                    </span>
+                    <span className="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 px-3 py-1 rounded-full font-medium">
+                      Tier 2: +13 pts (Domain Related)
+                    </span>
+                    <span className="bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 px-3 py-1 rounded-full font-medium">
+                      Tier 3: +8 pts (General)
+                    </span>
+                  </div>
+                </div>
+
+                {/* Submitted Certifications List */}
+                {loadingSubmittedCerts ? (
+                  <div className="flex items-center justify-center py-6">
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-emerald-500"></div>
+                    <span className={`ml-3 ${themeClasses.textSecondary} text-sm`}>Loading...</span>
+                  </div>
+                ) : submittedCerts.length > 0 ? (
+                  <div>
+                    <h4 className={`text-sm font-semibold ${themeClasses.textPrimary} mb-3`}>Your Submitted Certifications</h4>
+                    <div className="space-y-3">
+                      {submittedCerts.map((cert, idx) => {
+                        const tierColors = {
+                          1: 'border-emerald-300 dark:border-emerald-600 bg-emerald-50/50 dark:bg-emerald-900/10',
+                          2: 'border-blue-300 dark:border-blue-600 bg-blue-50/50 dark:bg-blue-900/10',
+                          3: 'border-gray-300 dark:border-gray-600 bg-gray-50/50 dark:bg-gray-800/30'
+                        };
+                        const tierBadgeColors = {
+                          1: 'bg-emerald-500 text-white',
+                          2: 'bg-blue-500 text-white',
+                          3: 'bg-gray-400 text-white'
+                        };
+                        return (
+                          <div key={idx} className={`flex items-center justify-between p-4 rounded-xl border-2 ${tierColors[cert.tier] || tierColors[3]} transition-all`}>
+                            <div className="flex items-center gap-3">
+                              <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold ${tierBadgeColors[cert.tier] || tierBadgeColors[3]}`}>
+                                +{cert.boostPoints}
+                              </div>
+                              <div>
+                                <p className={`font-semibold ${themeClasses.textPrimary} text-sm`}>{cert.certificationName}</p>
+                                <p className={`text-xs ${themeClasses.textSecondary}`}>
+                                  {cert.platform && <span>{cert.platform} · </span>}
+                                  Tier {cert.tier} · {cert.tierReason}
+                                  {cert.month && <span> · Month {cert.month}</span>}
+                                </p>
+                              </div>
+                            </div>
+                            <span className={`text-xs ${themeClasses.textSecondary}`}>
+                              {cert.submittedAt ? new Date(cert.submittedAt).toLocaleDateString() : ''}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <div className={`mt-4 text-center text-sm ${themeClasses.textSecondary}`}>
+                      Total Boost: <span className="font-bold text-emerald-600 dark:text-emerald-400">+{submittedCerts.reduce((sum, c) => sum + (c.boostPoints || 0), 0)} points</span>
+                      {submittedCerts.length < 5 && <span> · {5 - submittedCerts.length} slot{5 - submittedCerts.length !== 1 ? 's' : ''} remaining</span>}
+                    </div>
+                  </div>
+                ) : (
+                  <div className={`text-center py-4 ${themeClasses.textSecondary} text-sm`}>
+                    No certifications submitted yet. Add your completed certifications above to boost your score!
+                  </div>
+                )}
               </div>
 
               {/* Free Certifications Section */}
