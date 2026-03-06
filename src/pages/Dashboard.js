@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useMemo, useState, useRef } from 'react';
+import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { getDomainById } from '../data/jobDomainData';
 import { useAuth } from '../contexts/AuthContext';
@@ -41,7 +41,7 @@ const InterviewHistory = ({ getUserMobile, themeClasses, navigate }) => {
   if (interviews.length === 0) {
     return (
       <div className={`${themeClasses.cardBackground} rounded-2xl p-6 border ${themeClasses.cardBorder} text-center`}>
-        <div className="text-4xl mb-3">ðŸŽ¯</div>
+        <div className="text-4xl mb-3">🎯</div>
         <h3 className={`text-lg font-semibold ${themeClasses.textPrimary} mb-2`}>No Interviews Yet</h3>
         <p className={`text-sm ${themeClasses.textSecondary} mb-4`}>Start your first AI mock interview to practice and improve your skills!</p>
         <button onClick={() => navigate('/interview')}
@@ -58,7 +58,7 @@ const InterviewHistory = ({ getUserMobile, themeClasses, navigate }) => {
 
   return (
     <div className={`${themeClasses.cardBackground} rounded-2xl p-6 border ${themeClasses.cardBorder}`}>
-      <h3 className={`text-lg font-semibold ${themeClasses.textPrimary} mb-4`}>ðŸ“‹ Interview History</h3>
+      <h3 className={`text-lg font-semibold ${themeClasses.textPrimary} mb-4`}>📋 Interview History</h3>
       
       {/* Stats */}
       <div className="grid grid-cols-3 gap-3 mb-5">
@@ -89,7 +89,7 @@ const InterviewHistory = ({ getUserMobile, themeClasses, navigate }) => {
                 </div>
                 <div>
                   <p className={`text-sm font-medium ${themeClasses.textPrimary}`}>{iv.position || 'Software Developer'}</p>
-                  <p className={`text-xs ${themeClasses.textSecondary}`}>{date} â€¢ {iv.feedback?.questions_answered || 0} questions</p>
+                  <p className={`text-xs ${themeClasses.textSecondary}`}>{date} • {iv.feedback?.questions_answered || 0} questions</p>
                 </div>
               </div>
               <span className={`text-xs font-medium px-2 py-1 rounded-lg ${score >= 70 ? 'bg-green-500/10 text-green-500' : score >= 50 ? 'bg-yellow-500/10 text-yellow-500' : 'bg-red-500/10 text-red-500'}`}>
@@ -158,15 +158,15 @@ const MonthlyRetakeButton = ({ getUserMobile, month, onAnalysisClick }) => {
   useEffect(() => {
     const handleTestSubmission = (event) => {
       // Re-check status after user submits test to see if they passed
-      console.log('ðŸ”„ Test submitted - checking if user passed or needs another retake...');
-      console.log('ðŸ“¢ Received monthlyTestSubmitted event:', event.detail);
+      console.log('🔄 Test submitted - checking if user passed or needs another retake...');
+      console.log('📢 Received monthlyTestSubmitted event:', event.detail);
       
       setTimeout(() => {
         checkRetakeStatus();
         
         // If monthly test was submitted, refetch that specific month's status
         if (event.detail && event.detail.month) {
-          console.log(`ðŸ”„ Refetching monthly test status for month ${event.detail.month}`);
+          console.log(`🔄 Refetching monthly test status for month ${event.detail.month}`);
           // eslint-disable-next-line no-undef
           fetchMonthlyTestStatus(event.detail.month);
         }
@@ -174,11 +174,11 @@ const MonthlyRetakeButton = ({ getUserMobile, month, onAnalysisClick }) => {
     };
 
     const handleWeeklyTestCompletion = (event) => {
-      console.log('ðŸ”„ Weekly test completed - refetching status...');
-      console.log('ðŸ“¢ Received weeklyTestCompleted event:', event.detail);
+      console.log('🔄 Weekly test completed - refetching status...');
+      console.log('📢 Received weeklyTestCompleted event:', event.detail);
       
       // Show analysis button immediately since we know test was just completed
-      console.log('âœ… Test completed - showing Analysis button');
+      console.log('✅ Test completed - showing Analysis button');
       // eslint-disable-next-line no-undef
       setWeeklyTestHasAnalysis(true);
       // Don't change weeklyTestGenerated or showTimerModal - keep buttons visible
@@ -237,7 +237,7 @@ const MonthlyRetakeButton = ({ getUserMobile, month, onAnalysisClick }) => {
   const handleRetake = async () => {
     const mobile = getUserMobile();
     if (!mobile) {
-      alert('âŒ Mobile number not found. Please ensure you are logged in.');
+      alert('❌ Mobile number not found. Please ensure you are logged in.');
       return;
     }
 
@@ -257,10 +257,10 @@ const MonthlyRetakeButton = ({ getUserMobile, month, onAnalysisClick }) => {
         // Notify parent that generation has started
         notifyRetakeStatusChange();
       } else {
-        alert('âŒ Error: ' + data.error);
+        alert('❌ Error: ' + data.error);
       }
     } catch (error) {
-      alert('âŒ Network error. Please try again.');
+      alert('❌ Network error. Please try again.');
     }
     setTriggering(false);
   };
@@ -303,7 +303,7 @@ const MonthlyRetakeButton = ({ getUserMobile, month, onAnalysisClick }) => {
           <div className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 border-2 border-purple-400 dark:border-purple-600 rounded-lg p-4">
             <div className="text-center">
               <div className="text-3xl font-bold text-purple-600 dark:text-purple-400 mb-2">
-                â³ {formatTime(generationTimerRemaining)}
+                ⏳ {formatTime(generationTimerRemaining)}
               </div>
               <p className="text-sm text-purple-700 dark:text-purple-300">
                 Generating your retest... Please wait.
@@ -325,7 +325,7 @@ const MonthlyRetakeButton = ({ getUserMobile, month, onAnalysisClick }) => {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            <span>ðŸš€ Start Monthly Test</span>
+            <span>🚀 Start Monthly Test</span>
           </button>
         )}
       </div>
@@ -340,10 +340,10 @@ const MonthlyRetakeButton = ({ getUserMobile, month, onAnalysisClick }) => {
       <div className="bg-gradient-to-r from-red-50 to-orange-50 dark:from-red-900/20 dark:to-orange-900/20 border-2 border-red-300 dark:border-red-700 rounded-lg p-3">
         <div className="flex items-center justify-between mb-2">
           <div>
-            <p className="text-sm font-bold text-red-700 dark:text-red-400">âŒ Test Not Passed (Attempt {retakeStatus.testAttempt}/3)</p>
+            <p className="text-sm font-bold text-red-700 dark:text-red-400">❌ Test Not Passed (Attempt {retakeStatus.testAttempt}/3)</p>
             <p className="text-xs text-red-600 dark:text-red-500">Score: {retakeStatus.percentage}% (Need 50%+)</p>
           </div>
-          <div className="text-2xl">ðŸ˜Ÿ</div>
+          <div className="text-2xl">😟</div>
         </div>
       </div>
 
@@ -351,7 +351,7 @@ const MonthlyRetakeButton = ({ getUserMobile, month, onAnalysisClick }) => {
       {retakeStatus.maxAttemptsReached && (
         <div className="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/30 dark:to-orange-900/30 border-2 border-amber-500 dark:border-amber-600 rounded-lg p-4">
           <div className="flex items-center gap-2 mb-3">
-            <span className="text-2xl">âš ï¸</span>
+            <span className="text-2xl">⚠️</span>
             <div>
               <p className="text-amber-800 dark:text-amber-300 font-bold">Maximum 3 Attempts Reached</p>
               <p className="text-sm text-amber-700 dark:text-amber-400">You did not pass Month {month} after 3 attempts</p>
@@ -420,7 +420,7 @@ const MonthlyRetakeButton = ({ getUserMobile, month, onAnalysisClick }) => {
         <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border-2 border-blue-400 dark:border-blue-600 rounded-lg p-4">
           <div className="text-center">
             <div className="text-3xl font-bold text-blue-600 dark:text-blue-400 mb-2">
-              â±ï¸ {formatTime(timerRemaining)}
+              ⏱️ {formatTime(timerRemaining)}
             </div>
             <p className="text-sm text-blue-700 dark:text-blue-300">
               Review your analysis. Retake button will appear when timer ends.
@@ -439,7 +439,7 @@ const MonthlyRetakeButton = ({ getUserMobile, month, onAnalysisClick }) => {
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
           </svg>
-          <span>{triggering ? 'Generating...' : 'ðŸ”„ Generate Monthly Retest'}</span>
+          <span>{triggering ? 'Generating...' : '🔄 Generate Monthly Retest'}</span>
         </button>
       )}
 
@@ -447,7 +447,7 @@ const MonthlyRetakeButton = ({ getUserMobile, month, onAnalysisClick }) => {
       {!retakeStatus.maxAttemptsReached && (
         <div className="bg-yellow-50 dark:bg-yellow-900/20 border-l-4 border-yellow-500 p-2 rounded">
           <p className="text-xs text-yellow-800 dark:text-yellow-400">
-            âš ï¸ <strong>Action Required:</strong> You must pass this test before continuing with weekly tests or next month.
+            ⚠️ <strong>Action Required:</strong> You must pass this test before continuing with weekly tests or next month.
           </p>
         </div>
       )}
@@ -561,7 +561,7 @@ const WeeklyTestGeneratingModal = ({ isGenerating, theme }) => {
           </div>
           
           <p className={`text-sm ${themeClasses.textSecondary} mb-8 font-medium`}>
-            â±ï¸ This may take 1-2 minutes â€¢ Please don't close this page
+            ⏱️ This may take 1-2 minutes • Please don't close this page
           </p>
           
           {/* Interactive Facts/Questions Section with enhanced styling - theme aware */}
@@ -773,16 +773,16 @@ const Dashboard = () => {
     
     // Only start if timer should be active
     if (postAnalysisTimerActive) {
-      console.log('ðŸ”„ Starting post-analysis timer interval (useEffect)');
+      console.log('🔄 Starting post-analysis timer interval (useEffect)');
       postAnalysisTimerRef.current = setInterval(() => {
         setPostAnalysisTimerRemaining(prev => {
-          console.log(`â±ï¸ Timer tick: ${prev}s remaining`);
+          console.log(`⏱️ Timer tick: ${prev}s remaining`);
           if (prev <= 1) {
             clearInterval(postAnalysisTimerRef.current);
             postAnalysisTimerRef.current = null;
             setPostAnalysisTimerActive(false);
             setPostAnalysisIsRoadmapTimer(false);
-            console.log('âœ… Timer completed!');
+            console.log('✅ Timer completed!');
             return 0;
           }
           return prev - 1;
@@ -793,7 +793,7 @@ const Dashboard = () => {
     // Cleanup on unmount or when effect re-runs
     return () => {
       if (postAnalysisTimerRef.current) {
-        console.log('ðŸ§¹ Cleaning up post-analysis timer interval');
+        console.log('🧹 Cleaning up post-analysis timer interval');
         clearInterval(postAnalysisTimerRef.current);
         postAnalysisTimerRef.current = null;
       }
@@ -808,7 +808,7 @@ const Dashboard = () => {
     }
     
     if (monthlyPostAnalysisTimerActive) {
-      console.log('ðŸ”„ Starting monthly post-analysis timer interval');
+      console.log('🔄 Starting monthly post-analysis timer interval');
       monthlyPostAnalysisTimerRef.current = setInterval(() => {
         setMonthlyPostAnalysisTimerRemaining(prev => {
           if (prev <= 1) {
@@ -967,7 +967,7 @@ const Dashboard = () => {
             // Trigger re-render
             setLocalStorageUpdateTrigger(prev => prev + 1);
             
-            console.log('âœ… Synced skills from database:', data.skills);
+            console.log('✅ Synced skills from database:', data.skills);
           }
         }
       } catch (error) {
@@ -992,7 +992,7 @@ const Dashboard = () => {
         if (response.ok) {
           const data = await response.json();
           setSkillTestCompleted(data.completed === true);
-          console.log('ðŸ“ Skills Test completed:', data.completed);
+          console.log('📝 Skills Test completed:', data.completed);
         }
       } catch (error) {
         console.warn('Failed to check skill test status:', error);
@@ -1030,7 +1030,7 @@ const Dashboard = () => {
         if (assessmentResponse.ok) {
           const data = await assessmentResponse.json();
           setAssessmentReportGenerated(data.exists === true);
-          console.log('ðŸ“Š Assessment Report generated:', data.exists);
+          console.log('📊 Assessment Report generated:', data.exists);
         }
         
         // Process roadmap check
@@ -1038,7 +1038,7 @@ const Dashboard = () => {
           const data = await roadmapResponse.json();
           const hasRoadmap = data.success && data.data?.courses && Object.keys(data.data.courses).length > 0;
           setRoadmapExists(hasRoadmap);
-          console.log('ðŸ—ºï¸ Roadmap exists:', hasRoadmap);
+          console.log('🗺️ Roadmap exists:', hasRoadmap);
         }
       } catch (error) {
         console.warn('Failed to check roadmap section status:', error);
@@ -1071,7 +1071,7 @@ const Dashboard = () => {
       }
       
       if (!jobRole) {
-        console.log('âš ï¸ No job role in localStorage, fetching from backend Resume collection');
+        console.log('⚠️ No job role in localStorage, fetching from backend Resume collection');
         // Fallback: Let backend fetch from Resume collection
       }
       
@@ -1089,7 +1089,7 @@ const Dashboard = () => {
           if (data.success) {
             // Store the entire response which includes skillRatings and jobRoleSkills
             setSkillRatings(data);
-            console.log('ðŸ“Š Skill ratings loaded:', data);
+            console.log('📊 Skill ratings loaded:', data);
           }
         }
       } catch (error) {
@@ -1224,9 +1224,9 @@ const Dashboard = () => {
       
       if (result.success) {
         setProjectDescription(result.data.description);
-        console.log('âœ… AI generated description:', result.data.description);
-        console.log('ðŸ“Š Analyzed', result.data.filesAnalyzed, 'files');
-        console.log('ðŸ”§ Detected:', result.data.detectedTechnologies);
+        console.log('✅ AI generated description:', result.data.description);
+        console.log('📊 Analyzed', result.data.filesAnalyzed, 'files');
+        console.log('🔧 Detected:', result.data.detectedTechnologies);
       } else {
         setProjectSubmitError(result.message || 'Failed to generate description');
       }
@@ -1287,8 +1287,8 @@ const Dashboard = () => {
       
       const result = await response.json();
       
-      console.log('ðŸ“Š Project evaluation result:', result);
-      console.log('ðŸ“ Feedback:', result.data?.feedback ? 'Present (' + result.data.feedback.length + ' chars)' : 'Missing');
+      console.log('📊 Project evaluation result:', result);
+      console.log('📝 Feedback:', result.data?.feedback ? 'Present (' + result.data.feedback.length + ' chars)' : 'Missing');
       
       if (result.success) {
         // Add evaluation metadata
@@ -1297,16 +1297,16 @@ const Dashboard = () => {
           evaluatedBy: result.evaluatedBy || 'Unknown'
         };
         
-        console.log('ðŸ’¾ Setting evaluation data:', evaluationData);
+        console.log('💾 Setting evaluation data:', evaluationData);
         
         setProjectEvaluation(evaluationData);
         setShowEvaluation(true);
         
         // Show notification about AI evaluation status
         if (result.evaluatedBy === 'AI') {
-          console.log('âœ… Project evaluated by AI');
+          console.log('✅ Project evaluated by AI');
         } else {
-          console.warn('âš ï¸ AI evaluation failed - using fallback system');
+          console.warn('⚠️ AI evaluation failed - using fallback system');
         }
         
         // Clear form
@@ -1361,26 +1361,26 @@ const Dashboard = () => {
       const data = await response.json();
       
       if (data.success) {
-        alert(`âœ… Success!\n\nGenerated skill mappings for ${data.months_processed?.length || 0} month(s)\nTotal skills: ${data.totalSkills || 0}\n\nStars will now appear based on your weekly test performance!`);
+        alert(`✅ Success!\n\nGenerated skill mappings for ${data.months_processed?.length || 0} month(s)\nTotal skills: ${data.totalSkills || 0}\n\nStars will now appear based on your weekly test performance!`);
         
         // Refresh skill ratings
         setLocalStorageUpdateTrigger(prev => prev + 1);
       } else {
         // More detailed error message
-        let errorMsg = 'âŒ Could not generate skill mappings\n\n';
+        let errorMsg = '❌ Could not generate skill mappings\n\n';
         
         if (data.details) {
           if (!data.details.roadmap_found) {
-            errorMsg += 'âš ï¸ No roadmap found for your account.\n\n';
+            errorMsg += '⚠️ No roadmap found for your account.\n\n';
             errorMsg += 'Please generate a roadmap first:\n';
             errorMsg += '1. Go to "Plans" section\n';
             errorMsg += '2. Select your job domain and role\n';
             errorMsg += '3. Generate your monthly roadmap';
           } else if (!data.details.roadmap_has_data) {
-            errorMsg += 'âš ï¸ Your roadmap is empty.\n\n';
+            errorMsg += '⚠️ Your roadmap is empty.\n\n';
             errorMsg += 'Please regenerate your roadmap.';
           } else if (data.details.months_in_roadmap?.length === 0) {
-            errorMsg += 'âš ï¸ No month data in roadmap.\n\n';
+            errorMsg += '⚠️ No month data in roadmap.\n\n';
             errorMsg += 'Please regenerate your roadmap.';
           } else {
             errorMsg += data.message || 'Unknown error occurred.';
@@ -1393,7 +1393,7 @@ const Dashboard = () => {
       }
     } catch (error) {
       console.error('Error regenerating mappings:', error);
-      alert('âŒ Failed to regenerate skill mappings. Please try again.');
+      alert('❌ Failed to regenerate skill mappings. Please try again.');
     } finally {
       setRegeneratingMappings(false);
     }
@@ -2202,12 +2202,12 @@ const Dashboard = () => {
       const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
       const url = `${backendUrl}/api/get-placement-prediction/${encodeURIComponent(mobile)}`;
       
-      console.log('ðŸŽ¯ [Placement Prediction] Fetching from:', url);
+      console.log('🎯 [Placement Prediction] Fetching from:', url);
       
       const response = await fetch(url);
       const result = await response.json();
 
-      console.log('ðŸ“Š [Placement Prediction] Response:', result);
+      console.log('📊 [Placement Prediction] Response:', result);
 
       if (result.success && result.hasPrediction) {
         setPlacementPredictionData(result.data);
@@ -2218,7 +2218,7 @@ const Dashboard = () => {
         setShowPlacementPrediction(true);
       }
     } catch (error) {
-      console.error('âŒ [Placement Prediction] Error:', error);
+      console.error('❌ [Placement Prediction] Error:', error);
       setPlacementPredictionError(error.message || 'Failed to fetch placement prediction data.');
     } finally {
       setLoadingPlacementPrediction(false);
@@ -2239,7 +2239,7 @@ const Dashboard = () => {
       const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
       const url = `${backendUrl}/api/recalculate-placement-score`;
       
-      console.log('ðŸ”„ [Recalculate Score] Triggering recalculation...');
+      console.log('🔄 [Recalculate Score] Triggering recalculation...');
       
       const response = await fetch(url, {
         method: 'POST',
@@ -2248,14 +2248,14 @@ const Dashboard = () => {
       });
       const result = await response.json();
 
-      console.log('ðŸ“Š [Recalculate Score] Response:', result);
+      console.log('📊 [Recalculate Score] Response:', result);
 
       if (result.success) {
         // Refresh the prediction data to show updated score
         await fetchPlacementPredictionData();
       }
     } catch (error) {
-      console.error('âŒ [Recalculate Score] Error:', error);
+      console.error('❌ [Recalculate Score] Error:', error);
     } finally {
       setRecalculatingScore(false);
     }
@@ -2263,7 +2263,7 @@ const Dashboard = () => {
 
   // Fetch weekly test analysis data from database
   const fetchWeeklyTestAnalysisData = async () => {
-    console.log('ðŸ”„ [Weekly Test Analysis] Function called');
+    console.log('🔄 [Weekly Test Analysis] Function called');
     
     const mobile = (() => {
       const linkedData = localStorage.getItem('linkedResumeData');
@@ -2287,10 +2287,10 @@ const Dashboard = () => {
       return null;
     })();
 
-    console.log('ðŸ“± [Weekly Test Analysis] Mobile number:', mobile);
+    console.log('📱 [Weekly Test Analysis] Mobile number:', mobile);
 
     if (!mobile) {
-      console.error('âŒ [Weekly Test Analysis] No mobile number found');
+      console.error('❌ [Weekly Test Analysis] No mobile number found');
       setWeeklyTestAnalysisError('Mobile number not found. Please ensure your profile is complete.');
       setShowWeeklyTestAnalysis(true);
       return;
@@ -2303,7 +2303,7 @@ const Dashboard = () => {
       const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
       const apiUrl = `${backendUrl}/api/weekly-test-analysis/${encodeURIComponent(mobile)}`;
       
-      console.log('ðŸŒ [Weekly Test Analysis] Fetching from:', apiUrl);
+      console.log('🌐 [Weekly Test Analysis] Fetching from:', apiUrl);
       
       const response = await fetch(apiUrl, {
         method: 'GET',
@@ -2312,25 +2312,25 @@ const Dashboard = () => {
         }
       });
 
-      console.log('ðŸ“¥ [Weekly Test Analysis] Response status:', response.status);
+      console.log('📥 [Weekly Test Analysis] Response status:', response.status);
       
       const result = await response.json();
-      console.log('ðŸ“Š [Weekly Test Analysis] Response data:', result);
+      console.log('📊 [Weekly Test Analysis] Response data:', result);
 
       if (result.success) {
-        console.log('âœ… [Weekly Test Analysis] Success!');
+        console.log('✅ [Weekly Test Analysis] Success!');
         setWeeklyTestAnalysisData(result.data);
         setShowWeeklyTestAnalysis(true);
         
         // Also refresh month test eligibility when weekly test analysis is fetched
         fetchMonthTestEligibility();
       } else {
-        console.error('âŒ [Weekly Test Analysis] Failed:', result.message);
+        console.error('❌ [Weekly Test Analysis] Failed:', result.message);
         setWeeklyTestAnalysisError(result.message || 'Failed to fetch weekly test analysis.');
         setShowWeeklyTestAnalysis(true);
       }
     } catch (error) {
-      console.error('âŒ [Weekly Test Analysis] Error:', error);
+      console.error('❌ [Weekly Test Analysis] Error:', error);
       setWeeklyTestAnalysisError(error.message || 'Failed to fetch weekly test analysis.');
       setShowWeeklyTestAnalysis(true);
     } finally {
@@ -2352,20 +2352,20 @@ const Dashboard = () => {
     setCertificationsError(null);
     
     try {
-      console.log(`ðŸŽ“ [Certifications] Fetching data for mobile: ${mobile}`);
+      console.log(`🎓 [Certifications] Fetching data for mobile: ${mobile}`);
       
       const response = await fetch(`${process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000'}/api/certifications/${mobile}`);
       const result = await response.json();
 
       if (result.success) {
-        console.log('âœ… [Certifications] Success!');
+        console.log('✅ [Certifications] Success!');
         setCertificationsData(result.data);
       } else {
-        console.error('âŒ [Certifications] Failed:', result.message);
+        console.error('❌ [Certifications] Failed:', result.message);
         setCertificationsError(result.message || 'Failed to fetch certifications.');
       }
     } catch (error) {
-      console.error('âŒ [Certifications] Error:', error);
+      console.error('❌ [Certifications] Error:', error);
       setCertificationsError(error.message || 'Failed to fetch certifications.');
     } finally {
       setLoadingCertifications(false);
@@ -2495,7 +2495,7 @@ const Dashboard = () => {
       return;
     }
 
-    console.log(`ðŸ”„ Checking test for Week ${week}, Month ${month}...`);
+    console.log(`🔄 Checking test for Week ${week}, Month ${month}...`);
     
     setCheckingTestGeneration(true);
     
@@ -2503,18 +2503,18 @@ const Dashboard = () => {
       const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
       
       // Use unified endpoint to get all test status in one call
-      console.log(`ðŸ” Fetching unified test status for Week ${week}, Month ${month}...`);
+      console.log(`🔍 Fetching unified test status for Week ${week}, Month ${month}...`);
       const statusResponse = await fetch(`${backendUrl}/api/weekly-test-status/${mobile}/${week}/${month}`);
       const statusData = await statusResponse.json();
       
       if (statusData.success && statusData.data) {
         const { testGenerated, testCompleted, analysisExists, timerRemaining, canGenerateNext, nextAction, isMonthEndWeek, timerDuration } = statusData.data;
         
-        console.log(`ðŸ“Š Unified status: testGenerated=${testGenerated}, testCompleted=${testCompleted}, analysisExists=${analysisExists}`);
+        console.log(`📊 Unified status: testGenerated=${testGenerated}, testCompleted=${testCompleted}, analysisExists=${analysisExists}`);
         
         if (analysisExists) {
           // Analysis exists - cycle complete, check timer for next week
-          console.log(`âœ… Analysis exists for Week ${week} - checking timer status`);
+          console.log(`✅ Analysis exists for Week ${week} - checking timer status`);
           setWeeklyTestGenerated(false);
           setWeeklyTestHasAnalysis(false); // Hide analysis button (already done)
           setShowTimerModal(false);
@@ -2548,23 +2548,23 @@ const Dashboard = () => {
             setWeeklyTestHasAnalysis(false);
             
             if (nextAction === 'monthly_test' && isMonthEndWeek) {
-              console.log(`ðŸ“ Month end - redirecting to monthly test`);
+              console.log(`📝 Month end - redirecting to monthly test`);
             }
           }
         } else if (testCompleted) {
           // Test completed but no analysis yet - show Analysis button
-          console.log(`âœ… Test completed, analysis pending - showing Analysis button`);
+          console.log(`✅ Test completed, analysis pending - showing Analysis button`);
           setWeeklyTestGenerated(false);
           setWeeklyTestHasAnalysis(true); // Show analysis button
           setShowTimerModal(false);
           setTimerCompleted(true);
         } else if (testGenerated) {
           // Test generated but not completed - check timer then show Start Test
-          console.log(`âœ… Test generated, not completed - checking timer status`);
+          console.log(`✅ Test generated, not completed - checking timer status`);
           
           // Check timer status
           if (timerRemaining > 0) {
-            console.log(`â±ï¸ Timer active: ${timerRemaining}s remaining`);
+            console.log(`⏱️ Timer active: ${timerRemaining}s remaining`);
             setShowTimerModal(true);
             setTimerCompleted(false);
             setWeeklyTestGenerated(true);
@@ -2572,7 +2572,7 @@ const Dashboard = () => {
             // Timer is stored in week_test collection, will be fetched by timer component
           } else {
             // Timer expired or not set - show Start Test button
-            console.log(`â±ï¸ Timer expired - showing Start Test button`);
+            console.log(`⏱️ Timer expired - showing Start Test button`);
             setShowTimerModal(false);
             setTimerCompleted(true);
             setWeeklyTestGenerated(true);
@@ -2580,13 +2580,13 @@ const Dashboard = () => {
           }
         } else {
           // No test generated - show Generate button
-          console.log(`ðŸ“ No test exists for Week ${week}, Month ${month}`);
+          console.log(`📝 No test exists for Week ${week}, Month ${month}`);
           setWeeklyTestGenerated(false);
           setWeeklyTestHasAnalysis(false);
         }
       } else {
         // API error - fallback to no test state
-        console.log(`ðŸ“ Error fetching status, assuming no test exists`);
+        console.log(`📝 Error fetching status, assuming no test exists`);
         setWeeklyTestGenerated(false);
         setWeeklyTestHasAnalysis(false);
       }
@@ -2626,13 +2626,13 @@ const Dashboard = () => {
     // Hide weekly test section when monthly test should be generated
     // This happens after week 4/8/12/etc. analysis timer completes
     if (postAnalysisIsMonthEnd && postAnalysisNextAction === 'generate_monthly_test') {
-      console.log('ðŸš« Hiding weekly test section - Monthly test should be generated');
+      console.log('🚫 Hiding weekly test section - Monthly test should be generated');
       return false;
     }
     
     // Also hide when post-analysis timer is active for month-end week
     if (postAnalysisTimerActive && postAnalysisIsMonthEnd) {
-      console.log('ðŸš« Hiding weekly test section - Month-end timer active');
+      console.log('🚫 Hiding weekly test section - Month-end timer active');
       return false;
     }
     
@@ -2657,7 +2657,7 @@ const Dashboard = () => {
       
       if (!hasMonthlyAnalysis) {
         // Monthly test analysis not completed, hide weekly test section
-        console.log(`ðŸš« Hiding weekly test section - Month ${completedMonthNumber} analysis pending`);
+        console.log(`🚫 Hiding weekly test section - Month ${completedMonthNumber} analysis pending`);
         return false;
       }
     }
@@ -2684,7 +2684,7 @@ const Dashboard = () => {
         const result = await response.json();
         if (result.success && result.data) {
           setMonthTestEligibility(result.data);
-          console.log('âœ… Month test eligibility fetched:', result.data);
+          console.log('✅ Month test eligibility fetched:', result.data);
         }
       }
     } catch (error) {
@@ -2707,7 +2707,7 @@ const Dashboard = () => {
     setMonthlyTimerMonth(monthNumber);
 
     try {
-      console.log(`ðŸ“… Triggering monthly test webhook for Month ${monthNumber}, mobile:`, mobile);
+      console.log(`📅 Triggering monthly test webhook for Month ${monthNumber}, mobile:`, mobile);
 
       // Get backend URL
       const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
@@ -2730,14 +2730,14 @@ const Dashboard = () => {
 
       if (response.ok) {
         const result = await response.json();
-        console.log('âœ… Monthly test webhook triggered successfully:', result);
+        console.log('✅ Monthly test webhook triggered successfully:', result);
         
         // Reset post-analysis states since monthly test is now being generated
         setPostAnalysisIsMonthEnd(false);
         setPostAnalysisNextAction('generate_weekly_test');
         
         // Wait 15 seconds before starting to check (like weekly test)
-        console.log('â³ Waiting 15 seconds before checking for test...');
+        console.log('⏳ Waiting 15 seconds before checking for test...');
         await new Promise(resolve => setTimeout(resolve, 15000));
         
         // Start polling to check if test is generated in MongoDB
@@ -2771,7 +2771,7 @@ const Dashboard = () => {
                 }
               }));
               
-              console.log('âœ… Monthly test generated! Opening 5-minute timer...');
+              console.log('✅ Monthly test generated! Opening 5-minute timer...');
               // Start the 5-minute timer automatically
               setShowMonthlyTimerModal(true);
               setMonthlyTimerCompleted(false);
@@ -2788,12 +2788,12 @@ const Dashboard = () => {
         }, 2000); // Check every 2 seconds
         
       } else {
-        console.error('âŒ Monthly test webhook failed:', response.status);
+        console.error('❌ Monthly test webhook failed:', response.status);
         setGeneratingMonthlyTest(false);
         alert('Failed to trigger monthly test. Please try again.');
       }
     } catch (error) {
-      console.error('âŒ Error triggering monthly test webhook:', error);
+      console.error('❌ Error triggering monthly test webhook:', error);
       setGeneratingMonthlyTest(false);
       alert('Error triggering monthly test. Please check your connection and try again.');
     }
@@ -2952,13 +2952,13 @@ const Dashboard = () => {
     }
 
     try {
-      console.log(`ðŸ“± Starting monthly test for Month ${monthNumber}, mobile:`, mobile);
+      console.log(`📱 Starting monthly test for Month ${monthNumber}, mobile:`, mobile);
       
       // Navigate to monthly test page with month info
       navigate('/monthly-test', { state: { month: monthNumber } });
       
     } catch (error) {
-      console.error('âŒ Error starting monthly test:', error);
+      console.error('❌ Error starting monthly test:', error);
       alert('Error starting monthly test. Please try again.');
     }
   };
@@ -2967,7 +2967,7 @@ const Dashboard = () => {
   useEffect(() => {
     const handleStartRetakeTest = (event) => {
       if (event.detail && event.detail.month) {
-        console.log(`ðŸ”„ Starting monthly retake test for Month ${event.detail.month}`);
+        console.log(`🔄 Starting monthly retake test for Month ${event.detail.month}`);
         handleStartMonthlyTest(event.detail.month);
       }
     };
@@ -2988,12 +2988,12 @@ const Dashboard = () => {
     }
 
     try {
-      console.log(`ðŸ“Š Starting Monthly Test Analysis flow for Month ${monthNumber}, mobile:`, mobile);
+      console.log(`📊 Starting Monthly Test Analysis flow for Month ${monthNumber}, mobile:`, mobile);
 
       const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
       
       // STEP 1: Check if analysis already exists
-      console.log(`ðŸ” Step 1: Checking for existing Month ${monthNumber} analysis...`);
+      console.log(`🔍 Step 1: Checking for existing Month ${monthNumber} analysis...`);
       setProgressTrackingMessage(`Checking for Month ${monthNumber} analysis...`);
       setRedirectingToProgressTracking(true);
       
@@ -3002,7 +3002,7 @@ const Dashboard = () => {
       if (checkResponse.ok) {
         const existingAnalysis = await checkResponse.json();
         if (existingAnalysis && existingAnalysis._id) {
-          console.log(`âœ… Analysis found! ID: ${existingAnalysis._id}`);
+          console.log(`✅ Analysis found! ID: ${existingAnalysis._id}`);
           setProgressTrackingMessage(`Month ${monthNumber} Analysis Found! Redirecting...`);
           
           // Record analysis completion for timer tracking (will only record once)
@@ -3024,7 +3024,7 @@ const Dashboard = () => {
           try {
             const timerResponse = await fetch(`${backendUrl}/api/monthly-analysis-timer-status/${mobile}/${monthNumber}`);
             const timerData = await timerResponse.json();
-            console.log('â±ï¸ Monthly analysis timer status:', timerData);
+            console.log('⏱️ Monthly analysis timer status:', timerData);
             
             if (timerData.success && timerData.data) {
               const { timer_remaining, can_generate_next } = timerData.data;
@@ -3032,13 +3032,13 @@ const Dashboard = () => {
               if (!can_generate_next && timer_remaining > 0) {
                 // IMPORTANT: Only start timer if not already running
                 if (!monthlyPostAnalysisTimerRef.current) {
-                  console.log(`â³ Starting monthly post-analysis timer: ${timer_remaining}s remaining`);
+                  console.log(`⏳ Starting monthly post-analysis timer: ${timer_remaining}s remaining`);
                   
                   // Set timer state - useEffect will start the interval
                   setMonthlyPostAnalysisTimerRemaining(timer_remaining);
                   setMonthlyPostAnalysisTimerActive(true); // Set active LAST to trigger useEffect
                 } else {
-                  console.log(`â³ Monthly timer already running, skipping reset`);
+                  console.log(`⏳ Monthly timer already running, skipping reset`);
                 }
               }
             }
@@ -3086,7 +3086,7 @@ const Dashboard = () => {
       }
       
       // STEP 2: No existing analysis - trigger webhook
-      console.log(`âš™ï¸ Step 2: No analysis found. Generating new analysis for Month ${monthNumber}...`);
+      console.log(`⚙️ Step 2: No analysis found. Generating new analysis for Month ${monthNumber}...`);
       
       // Extract test_number from the 404 response if available
       let testAttempt = 1;
@@ -3094,7 +3094,7 @@ const Dashboard = () => {
         const errorData = await checkResponse.json().catch(() => ({}));
         if (errorData.testAttempt) {
           testAttempt = errorData.testAttempt;
-          console.log(`ðŸ“ Using test attempt number: ${testAttempt}`);
+          console.log(`📝 Using test attempt number: ${testAttempt}`);
         }
       }
       
@@ -3109,7 +3109,7 @@ const Dashboard = () => {
         timestamp: new Date().toISOString()
       };
       
-      console.log('ðŸ“¤ Sending payload to webhook:', payload);
+      console.log('📤 Sending payload to webhook:', payload);
       
       const response = await fetch(monthlyAnalysisWebhook, {
         method: 'POST',
@@ -3120,11 +3120,11 @@ const Dashboard = () => {
         mode: 'cors'
       });
 
-      console.log('ðŸ“¥ Webhook response status:', response.status);
+      console.log('📥 Webhook response status:', response.status);
       
       if (response.ok) {
         const result = await response.json().catch(() => ({}));
-        console.log('âœ… Monthly analysis webhook triggered successfully', result);
+        console.log('✅ Monthly analysis webhook triggered successfully', result);
         
         // Record analysis completion for timer tracking
         try {
@@ -3137,12 +3137,12 @@ const Dashboard = () => {
               month: monthNumber
             })
           });
-          console.log('âœ… Recorded monthly analysis completion for timer');
+          console.log('✅ Recorded monthly analysis completion for timer');
         } catch (recordErr) {
           console.error('Failed to record analysis completion:', recordErr);
         }
         
-        // STEP 3: Check if user PASSED the monthly test (â‰¥50%)
+        // STEP 3: Check if user PASSED the monthly test (≥50%)
         setProgressTrackingMessage(`Checking Month ${monthNumber} test results...`);
         let testPassed = true; // Default to true for safety
         let scorePercentage = 0;
@@ -3156,7 +3156,7 @@ const Dashboard = () => {
               testPassed = resultData.data.passed;
               scorePercentage = resultData.data.scorePercentage;
               testAttempt = resultData.data.testAttempt;
-              console.log(`ðŸ“Š Monthly test result: passed=${testPassed}, score=${scorePercentage}%, attempt=${testAttempt}`);
+              console.log(`📊 Monthly test result: passed=${testPassed}, score=${scorePercentage}%, attempt=${testAttempt}`);
             }
           }
         } catch (resultErr) {
@@ -3167,7 +3167,7 @@ const Dashboard = () => {
         // STEP 4: Handle based on pass/fail
         if (!testPassed) {
           // User FAILED (<50%) - Show retake UI
-          console.log(`âŒ Monthly test FAILED with ${scorePercentage}% - showing retake option`);
+          console.log(`❌ Monthly test FAILED with ${scorePercentage}% - showing retake option`);
           setProgressTrackingMessage(`You scored ${scorePercentage.toFixed(1)}%. Need 50% to proceed.`);
           await new Promise(resolve => setTimeout(resolve, 2000));
           
@@ -3200,8 +3200,8 @@ const Dashboard = () => {
           }, 500);
           
         } else {
-          // User PASSED (â‰¥50%) - Continue with normal flow
-          console.log(`âœ… Monthly test PASSED with ${scorePercentage}% - proceeding to next month`);
+          // User PASSED (≥50%) - Continue with normal flow
+          console.log(`✅ Monthly test PASSED with ${scorePercentage}% - proceeding to next month`);
           
           // Clear any previous failed state
           setMonthlyTestFailed(false);
@@ -3233,11 +3233,11 @@ const Dashboard = () => {
             // Start the 5-minute post-monthly-analysis timer before generating next week test
             // IMPORTANT: Only start if not already running
             if (!monthlyPostAnalysisTimerRef.current) {
-              console.log(`â±ï¸ Starting 5-minute post-monthly-analysis timer for next week test generation`);
+              console.log(`⏱️ Starting 5-minute post-monthly-analysis timer for next week test generation`);
               setMonthlyPostAnalysisTimerRemaining(300); // 5 minutes
               setMonthlyPostAnalysisTimerActive(true); // Set active LAST to trigger useEffect
             } else {
-              console.log(`â±ï¸ Monthly timer already running, skipping new timer start`);
+              console.log(`⏱️ Monthly timer already running, skipping new timer start`);
             }
             
             setTimeout(() => {
@@ -3255,13 +3255,13 @@ const Dashboard = () => {
         }
       } else {
         const errorText = await response.text().catch(() => 'Unknown error');
-        console.error('âŒ Failed to trigger monthly analysis webhook:', response.status, errorText);
+        console.error('❌ Failed to trigger monthly analysis webhook:', response.status, errorText);
         setRedirectingToProgressTracking(false);
         setProgressTrackingMessage('');
         alert(`Failed to generate analysis. Status: ${response.status}. Please try again.`);
       }
     } catch (error) {
-      console.error('âŒ Error in monthly analysis flow:', error);
+      console.error('❌ Error in monthly analysis flow:', error);
       console.error('Error details:', error.message, error.stack);
       setRedirectingToProgressTracking(false);
       setProgressTrackingMessage('');
@@ -3453,32 +3453,32 @@ const Dashboard = () => {
         throw new Error('No skills selected. Please select skills in the prediction form first.');
       }
 
-      console.log('ðŸŽ¯ Generating test for:', mobile);
-      console.log('ðŸ“ Skills:', selectedSkills);
-      console.log('ðŸ“Š Test Type:', testType);
+      console.log('🎯 Generating test for:', mobile);
+      console.log('📝 Skills:', selectedSkills);
+      console.log('📊 Test Type:', testType);
 
       const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
 
       // STEP 1: Check if test already exists in database (quiz_test collection)
-      console.log('ðŸ” Checking if test exists in database...');
+      console.log('🔍 Checking if test exists in database...');
       const checkResponse = await fetch(`${backendUrl}/api/check-quiz-test/${encodeURIComponent(mobile)}`);
       
       if (!checkResponse.ok) {
-        console.warn('âš ï¸ Could not check database, proceeding with generation');
+        console.warn('⚠️ Could not check database, proceeding with generation');
       } else {
         const checkData = await checkResponse.json();
         if (checkData.exists) {
-          console.log('âœ… Test already exists in database, navigating to test page');
+          console.log('✅ Test already exists in database, navigating to test page');
           setTestAvailable(true);
           setIsGeneratingTest(false);
           navigate('/skills-test');
           return;
         }
-        console.log('âŒ No test found in database, triggering webhook to generate new test');
+        console.log('❌ No test found in database, triggering webhook to generate new test');
       }
 
       // STEP 2: If test doesn't exist, trigger webhook to generate new test
-      console.log('ðŸ“¤ Calling backend to trigger test generation');
+      console.log('📤 Calling backend to trigger test generation');
       
       const response = await fetch(`${backendUrl}/api/generate-test`, {
         method: 'POST',
@@ -3536,7 +3536,7 @@ const Dashboard = () => {
         throw new Error('Mobile number not found. Please complete your profile first.');
       }
 
-      console.log('ðŸ“± Loading weekly test for:', mobile);
+      console.log('📱 Loading weekly test for:', mobile);
 
       const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
       
@@ -3556,10 +3556,10 @@ const Dashboard = () => {
       }
 
       const result = await response.json();
-      console.log('âœ… Weekly test response:', result);
+      console.log('✅ Weekly test response:', result);
 
       if (result.success) {
-        console.log('âœ… Weekly test loaded successfully');
+        console.log('✅ Weekly test loaded successfully');
         setWeeklyTestLoading(false);
         
         // Navigate to weekly-test page to display the weekly test
@@ -3569,7 +3569,7 @@ const Dashboard = () => {
       }
 
     } catch (error) {
-      console.error('âŒ Weekly test error:', error);
+      console.error('❌ Weekly test error:', error);
       setWeeklyTestMessage(error.message || 'Failed to load weekly test. Please try again.');
       setWeeklyTestLoading(false);
       
@@ -5596,7 +5596,7 @@ const Dashboard = () => {
                           
                           try {
                             const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
-                            console.log('ðŸš€ Generating roadmap for:', mobile);
+                            console.log('🚀 Generating roadmap for:', mobile);
                             
                             // Trigger roadmap webhook
                             const response = await fetch(`${backendUrl}/api/notify-answer-response`, {
@@ -5606,7 +5606,7 @@ const Dashboard = () => {
                             });
                             
                             const result = await response.json();
-                            console.log('âœ… Roadmap webhook response:', result);
+                            console.log('✅ Roadmap webhook response:', result);
                             
                             if (result.success) {
                               // Poll for courses in Course collection
@@ -5617,7 +5617,7 @@ const Dashboard = () => {
                               while (attempts < maxAttempts && !coursesFound) {
                                 await new Promise(resolve => setTimeout(resolve, 5000));
                                 attempts++;
-                                console.log(`ðŸ”„ Checking for roadmap... (Attempt ${attempts}/${maxAttempts})`);
+                                console.log(`🔄 Checking for roadmap... (Attempt ${attempts}/${maxAttempts})`);
                                 
                                 const checkResponse = await fetch(`${backendUrl}/api/get-user-courses`, {
                                   method: 'POST',
@@ -5629,7 +5629,7 @@ const Dashboard = () => {
                                 
                                 if (checkData.success && checkData.data?.courses && 
                                     Object.keys(checkData.data.courses).length > 0) {
-                                  console.log('âœ… Roadmap generated successfully!');
+                                  console.log('✅ Roadmap generated successfully!');
                                   coursesFound = true;
                                   setRoadmapExists(true);
                                   break;
@@ -5755,10 +5755,10 @@ const Dashboard = () => {
                     </div>
                     <div>
                       <h3 className={`text-2xl font-bold ${themeClasses.textPrimary} mb-2`}>
-                        ðŸŽ¯ Monthly Test Required!
+                        🎯 Monthly Test Required!
                       </h3>
                       <p className={`text-lg ${themeClasses.textSecondary} mb-4`}>
-                        Great job completing 4 weeks of learning! ðŸŽ‰
+                        Great job completing 4 weeks of learning! 🎉
                       </p>
                       <div className={`${themeClasses.cardBackground} border ${themeClasses.cardBorder} rounded-xl p-4 mb-4`}>
                         <p className={`${themeClasses.textPrimary} text-sm`}>
@@ -5781,7 +5781,7 @@ const Dashboard = () => {
                       </div>
                       <div className="bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-300 dark:border-blue-700 rounded-lg p-3">
                         <p className="text-sm text-blue-800 dark:text-blue-300">
-                          ðŸ’¡ <strong>Tip:</strong> <strong>Monthly Test section is shown below</strong> - complete your monthly assessment to continue
+                          💡 <strong>Tip:</strong> <strong>Monthly Test section is shown below</strong> - complete your monthly assessment to continue
                         </p>
                       </div>
                     </div>
@@ -5812,7 +5812,7 @@ const Dashboard = () => {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
                     </div>
-                    <h4 className={`font-bold text-lg ${themeClasses.textPrimary}`}>ðŸ“‹ Quick Start Guide</h4>
+                    <h4 className={`font-bold text-lg ${themeClasses.textPrimary}`}>📋 Quick Start Guide</h4>
                   </div>
                   <ol className="space-y-3 text-sm">
                     <li className={`flex items-start gap-3 ${themeClasses.cardBackground} p-3 rounded-lg border ${themeClasses.cardBorder}`}>
@@ -5879,7 +5879,7 @@ const Dashboard = () => {
                           
                           try {
                             const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
-                            console.log('ðŸ”„ Triggering Generate Weekly Test webhook for mobile:', mobile);
+                            console.log('🔄 Triggering Generate Weekly Test webhook for mobile:', mobile);
                             
                             await fetch(`${backendUrl}/api/notify-answer-response`, {
                               method: 'POST',
@@ -5891,7 +5891,7 @@ const Dashboard = () => {
                             });
                             
                             // Wait 15 seconds before starting to check
-                            console.log('â³ Waiting 15 seconds before checking for test...');
+                            console.log('⏳ Waiting 15 seconds before checking for test...');
                             await new Promise(resolve => setTimeout(resolve, 15000));
                             
                             // Start polling to check if test is generated in MongoDB
@@ -5920,7 +5920,7 @@ const Dashboard = () => {
                                   clearInterval(weeklyTestPollRef.current);
                                   setGeneratingWeeklyTest(false);
                                   setWeeklyTestGenerated(true);
-                                  console.log('âœ… Test generated! Opening 5-minute timer...');
+                                  console.log('✅ Test generated! Opening 5-minute timer...');
                                   // Start the 5-minute timer automatically
                                   setShowTimerModal(true);
                                   setTimerCompleted(false);
@@ -6022,7 +6022,7 @@ const Dashboard = () => {
                           <p className={`font-semibold ${themeClasses.textPrimary}`}>
                             {loadingWeekInfo ? 'Loading...' : `Week ${currentWeekInfo.week} Test`}
                           </p>
-                          <p className={`text-xs ${themeClasses.textSecondary}`}>Month {currentWeekInfo.month} â€¢ Test your skills and earn certifications</p>
+                          <p className={`text-xs ${themeClasses.textSecondary}`}>Month {currentWeekInfo.month} • Test your skills and earn certifications</p>
                         </div>
                       </div>
                       <button
@@ -6077,38 +6077,38 @@ const Dashboard = () => {
                             }
                             
                             const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
-                            console.log(`ðŸ“Š Starting Weekly Test Analysis Flow for Week ${currentWeek}, Month ${currentMonth}`);
+                            console.log(`📊 Starting Weekly Test Analysis Flow for Week ${currentWeek}, Month ${currentMonth}`);
                             
                             // STEP 1: Check if data already exists in database
-                            console.log(`ðŸ” Step 1: Checking database for existing Week ${currentWeek} analysis...`);
+                            console.log(`🔍 Step 1: Checking database for existing Week ${currentWeek} analysis...`);
                             setProgressTrackingMessage(`Checking for Week ${currentWeek} analysis...`);
                             setRedirectingToProgressTracking(true);
                             
                             const checkResponse = await fetch(`${backendUrl}/api/weekly-test-analysis/${mobile}`);
                             const checkData = await checkResponse.json();
                             
-                            console.log('ðŸ“¥ Database check result:', checkData);
+                            console.log('📥 Database check result:', checkData);
                             
                             // Check if data exists for the CURRENT week
                             let hasCurrentWeekAnalysis = false;
                             
                             if (checkData.success && checkData.data) {
-                              console.log(`ðŸ“‹ Database response structure:`, checkData.data);
+                              console.log(`📋 Database response structure:`, checkData.data);
                               
                               // Check in the months array structure
                               if (checkData.data.months && Array.isArray(checkData.data.months)) {
-                                console.log(`ðŸ“‹ Found ${checkData.data.months.length} months of data`);
+                                console.log(`📋 Found ${checkData.data.months.length} months of data`);
                                 
                                 // Look for the current month and week
                                 for (const monthData of checkData.data.months) {
                                   if (monthData.month === currentMonth) {
-                                    console.log(`ðŸ“‹ Found Month ${currentMonth} data. Checking weeks...`);
+                                    console.log(`📋 Found Month ${currentMonth} data. Checking weeks...`);
                                     if (monthData.weeks && Array.isArray(monthData.weeks)) {
                                       for (const weekData of monthData.weeks) {
                                         if (weekData.week === currentWeek) {
                                           hasCurrentWeekAnalysis = true;
-                                          console.log(`âœ… FOUND: Week ${currentWeek} analysis exists in Month ${currentMonth}!`);
-                                          console.log(`ðŸ“Š Analysis data:`, weekData.analysis);
+                                          console.log(`✅ FOUND: Week ${currentWeek} analysis exists in Month ${currentMonth}!`);
+                                          console.log(`📊 Analysis data:`, weekData.analysis);
                                           break;
                                         }
                                       }
@@ -6118,22 +6118,22 @@ const Dashboard = () => {
                                 }
                                 
                                 if (!hasCurrentWeekAnalysis) {
-                                  console.log(`âŒ NOT FOUND: Week ${currentWeek} of Month ${currentMonth} not in database`);
+                                  console.log(`❌ NOT FOUND: Week ${currentWeek} of Month ${currentMonth} not in database`);
                                 }
                               } else {
-                                console.log(`âŒ NO DATA: No months array in response`);
+                                console.log(`❌ NO DATA: No months array in response`);
                               }
                             } else {
-                              console.log(`âŒ NO DATA: API returned failure or no data`);
+                              console.log(`❌ NO DATA: API returned failure or no data`);
                             }
                             
                             // STEP 2: If data exists, check timer status and redirect
                             if (hasCurrentWeekAnalysis) {
-                              console.log(`âœ… Step 2: Data exists! Checking timer status...`);
+                              console.log(`✅ Step 2: Data exists! Checking timer status...`);
                               setProgressTrackingMessage(`Week ${currentWeek} Analysis Found! Redirecting...`);
                               
                               // Reset weekly test state so new timer starts for next week
-                              console.log('ðŸ”„ Resetting weekly test state for next week generation...');
+                              console.log('🔄 Resetting weekly test state for next week generation...');
                               setWeeklyTestGenerated(false);
                               setTimerCompleted(false);
                               setShowTimerModal(false);
@@ -6142,12 +6142,12 @@ const Dashboard = () => {
                               try {
                                 const timerResponse = await fetch(`${backendUrl}/api/weekly-analysis-timer-status/${mobile}/${currentWeek}/${currentMonth}`);
                                 const timerData = await timerResponse.json();
-                                console.log('â±ï¸ Timer status for existing analysis:', timerData);
+                                console.log('⏱️ Timer status for existing analysis:', timerData);
                                 
                                 if (timerData.success && timerData.data && !timerData.data.can_generate_next && timerData.data.timer_remaining > 0) {
                                   // IMPORTANT: Only start timer if not already running
                                   if (!postAnalysisTimerRef.current) {
-                                    console.log(`â³ Starting timer: ${timerData.data.timer_remaining}s remaining`);
+                                    console.log(`⏳ Starting timer: ${timerData.data.timer_remaining}s remaining`);
                                     const isMonthEndWeek = currentWeek % 4 === 0;
                                     
                                     // Set timer state - useEffect will start the interval
@@ -6158,7 +6158,7 @@ const Dashboard = () => {
                                     setPostAnalysisIsRoadmapTimer(false); // Not a roadmap timer
                                     setPostAnalysisTimerActive(true); // Set active LAST to trigger useEffect
                                   } else {
-                                    console.log(`â³ Timer already running, skipping reset`);
+                                    console.log(`⏳ Timer already running, skipping reset`);
                                   }
                                 }
                               } catch (timerError) {
@@ -6190,7 +6190,7 @@ const Dashboard = () => {
                             }
                             
                             // STEP 3: Data doesn't exist - trigger webhook and poll
-                            console.log(`âš ï¸ Step 3: No data found. Triggering webhook for Week ${currentWeek}...`);
+                            console.log(`⚠️ Step 3: No data found. Triggering webhook for Week ${currentWeek}...`);
                             setProgressTrackingMessage(`Generating Week ${currentWeek} Test Analysis...`);
                             
                             const webhookResponse = await fetch(`${backendUrl}/api/notify-answer-response`, {
@@ -6204,10 +6204,10 @@ const Dashboard = () => {
                               })
                             });
                             
-                            console.log('ðŸ”„ Webhook triggered successfully. Status:', webhookResponse.status);
+                            console.log('🔄 Webhook triggered successfully. Status:', webhookResponse.status);
                             
                             // STEP 4: Poll for data generation
-                            console.log(`ðŸ”„ Step 4: Polling for Week ${currentWeek} analysis generation...`);
+                            console.log(`🔄 Step 4: Polling for Week ${currentWeek} analysis generation...`);
                             let attempts = 0;
                             const maxAttempts = 24; // 24 attempts x 5 seconds = 120 seconds max
                             let dataFound = false;
@@ -6216,7 +6216,7 @@ const Dashboard = () => {
                               await new Promise(resolve => setTimeout(resolve, 5000));
                               attempts++;
                               const elapsedTime = attempts * 5;
-                              console.log(`ðŸ”„ Poll attempt ${attempts}/${maxAttempts} (${elapsedTime}s elapsed)...`);
+                              console.log(`🔄 Poll attempt ${attempts}/${maxAttempts} (${elapsedTime}s elapsed)...`);
                               setProgressTrackingMessage(`Generating Week ${currentWeek} Test Analysis... (${elapsedTime}s)`);
                               
                               const pollResponse = await fetch(`${backendUrl}/api/weekly-test-analysis/${mobile}`);
@@ -6230,7 +6230,7 @@ const Dashboard = () => {
                                     for (const weekData of monthData.weeks) {
                                       if (weekData.week === currentWeek) {
                                         weekFound = true;
-                                        console.log(`âœ… SUCCESS: Week ${currentWeek} analysis found in database!`);
+                                        console.log(`✅ SUCCESS: Week ${currentWeek} analysis found in database!`);
                                         break;
                                       }
                                     }
@@ -6255,13 +6255,13 @@ const Dashboard = () => {
                                       month: currentMonth
                                     })
                                   });
-                                  console.log('âœ… Recorded weekly analysis completion for timer');
+                                  console.log('✅ Recorded weekly analysis completion for timer');
                                 } catch (recordErr) {
                                   console.error('Failed to record weekly analysis completion:', recordErr);
                                 }
                                 
                                 // Reset weekly test state so new timer starts for next week
-                                console.log('ðŸ”„ Resetting weekly test state for next week generation...');
+                                console.log('🔄 Resetting weekly test state for next week generation...');
                                 setWeeklyTestGenerated(false);
                                 setTimerCompleted(false);
                                 setShowTimerModal(false);
@@ -6274,7 +6274,7 @@ const Dashboard = () => {
                                   const timerDuration = isMonthEndWeek ? 180 : 300; // 3 min or 5 min
                                   const nextAction = isMonthEndWeek ? 'generate_monthly_test' : 'generate_weekly_test';
                                   
-                                  console.log(`â±ï¸ Starting ${timerDuration/60}-minute post-analysis timer. Next action: ${nextAction}`);
+                                  console.log(`⏱️ Starting ${timerDuration/60}-minute post-analysis timer. Next action: ${nextAction}`);
                                   setPostAnalysisTimerRemaining(timerDuration);
                                   setPostAnalysisTimerDuration(timerDuration);
                                   setPostAnalysisNextAction(nextAction);
@@ -6282,7 +6282,7 @@ const Dashboard = () => {
                                   setPostAnalysisIsRoadmapTimer(false); // Not a roadmap timer
                                   setPostAnalysisTimerActive(true); // Set active LAST to trigger useEffect
                                 } else {
-                                  console.log(`â±ï¸ Timer already running, skipping new timer start`);
+                                  console.log(`⏱️ Timer already running, skipping new timer start`);
                                 }
                                 
                                 // Switch to progress section
@@ -6308,13 +6308,13 @@ const Dashboard = () => {
                                 
                                 break;
                               } else {
-                                console.log(`â³ Week ${currentWeek} analysis not ready yet. Checking again in 5s...`);
+                                console.log(`⏳ Week ${currentWeek} analysis not ready yet. Checking again in 5s...`);
                               }
                             }
                             
                             // STEP 5: Handle timeout
                             if (!dataFound) {
-                              console.error(`âŒ TIMEOUT: Week ${currentWeek} analysis not generated after ${maxAttempts * 5}s`);
+                              console.error(`❌ TIMEOUT: Week ${currentWeek} analysis not generated after ${maxAttempts * 5}s`);
                               setRedirectingToProgressTracking(false);
                               setProgressTrackingMessage('');
                               alert(`Week ${currentWeek} analysis generation is taking longer than expected. Please try again in a few moments.`);
@@ -6418,7 +6418,7 @@ const Dashboard = () => {
                                       </svg>
                                     </div>
                                     <div>
-                                      <h4 className="text-lg font-bold text-red-800 dark:text-red-300">Month {monthData.month} - Failed âŒ</h4>
+                                      <h4 className="text-lg font-bold text-red-800 dark:text-red-300">Month {monthData.month} - Failed ❌</h4>
                                       <p className="text-sm text-red-700 dark:text-red-400">
                                         {monthData.test_percentage ? `Score: ${monthData.test_percentage}%` : 'Did not pass after 3 attempts'}
                                       </p>
@@ -6442,11 +6442,11 @@ const Dashboard = () => {
                                       </svg>
                                     </div>
                                     <div>
-                                      <h4 className="text-lg font-bold text-green-800 dark:text-green-300">Month {monthData.month} - Completed! âœ…</h4>
+                                      <h4 className="text-lg font-bold text-green-800 dark:text-green-300">Month {monthData.month} - Completed! ✅</h4>
                                       <p className="text-sm text-green-700 dark:text-green-400">{monthData.test_percentage ? `Score: ${monthData.test_percentage}%` : 'Passed'}</p>
                                     </div>
                                   </div>
-                                  <div className="text-4xl">ðŸŽ‰</div>
+                                  <div className="text-4xl">🎉</div>
                                 </div>
                                 
                                 {/* Show different message based on analysis status */}
@@ -6664,7 +6664,7 @@ const Dashboard = () => {
                                   {monthData.blocked_by_previous_month ? (
                                     <div className="mt-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-2">
                                       <p className="text-xs text-red-700 dark:text-red-400 text-center">
-                                        ðŸ”’ <strong>Blocked:</strong> You must pass Month {monthData.month - 1} test (50%+) before unlocking Month {monthData.month}
+                                        🔒 <strong>Blocked:</strong> You must pass Month {monthData.month - 1} test (50%+) before unlocking Month {monthData.month}
                                       </p>
                                     </div>
                                   ) : (
@@ -6718,7 +6718,7 @@ const Dashboard = () => {
                                 {monthData.blocked_by_previous_month ? (
                                   <div className="mt-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-2">
                                     <p className="text-xs text-red-700 dark:text-red-400 text-center">
-                                      ðŸ”’ <strong>Blocked:</strong> You must pass Month {monthData.month - 1} test (50%+) before unlocking Month {monthData.month}
+                                      🔒 <strong>Blocked:</strong> You must pass Month {monthData.month - 1} test (50%+) before unlocking Month {monthData.month}
                                     </p>
                                   </div>
                                 ) : (
@@ -6959,7 +6959,7 @@ const Dashboard = () => {
                         className={`w-full px-4 py-3 rounded-lg border ${themeClasses.cardBorder} ${themeClasses.cardBackground} ${themeClasses.textPrimary} focus:outline-none focus:ring-2 focus:ring-blue-500`}
                       />
                       <p className={`mt-1 text-xs ${themeClasses.textSecondary}`}>
-                        ðŸ’¡ Tip: Upload files first, then click "AI" to generate a description based on your files and title
+                        💡 Tip: Upload files first, then click "AI" to generate a description based on your files and title
                       </p>
                     </div>
 
@@ -7170,7 +7170,7 @@ const Dashboard = () => {
                           />
                         </div>
                         <p className={`mt-2 text-xs ${themeClasses.textSecondary}`}>
-                          ðŸ’¡ Tip: Paste your GitHub, GitLab, Bitbucket, or any public repository link
+                          💡 Tip: Paste your GitHub, GitLab, Bitbucket, or any public repository link
                         </p>
                         <div className={`mt-3 ${themeClasses.sectionBackground} rounded-lg p-3 border ${themeClasses.cardBorder}`}>
                           <div className="space-y-2">
@@ -7179,9 +7179,9 @@ const Dashboard = () => {
                                 <strong>Requirements:</strong>
                               </p>
                               <ul className={`text-xs ${themeClasses.textSecondary} space-y-1 ml-4`}>
-                                <li>â€¢ Repository must be <strong className="text-purple-600 dark:text-purple-400">public</strong></li>
-                                <li>â€¢ Maximum size: <strong className="text-purple-600 dark:text-purple-400">1 GB</strong></li>
-                                <li>â€¢ Repository will be temporarily cloned for analysis then deleted</li>
+                                <li>• Repository must be <strong className="text-purple-600 dark:text-purple-400">public</strong></li>
+                                <li>• Maximum size: <strong className="text-purple-600 dark:text-purple-400">1 GB</strong></li>
+                                <li>• Repository will be temporarily cloned for analysis then deleted</li>
                               </ul>
                             </div>
                             <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
@@ -7250,7 +7250,7 @@ const Dashboard = () => {
                           <div className="flex items-center gap-2 mt-1">
                             {projectEvaluation.evaluatedBy === 'AI' ? (
                               <>
-                                <span className="text-green-500 text-xs font-semibold">âœ“ Evaluated by AI</span>
+                                <span className="text-green-500 text-xs font-semibold">✓ Evaluated by AI</span>
                                 <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
                                   <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/>
                                   <path fillRule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clipRule="evenodd"/>
@@ -7258,7 +7258,7 @@ const Dashboard = () => {
                               </>
                             ) : (
                               <>
-                                <span className="text-yellow-500 text-xs font-semibold">âš  Fallback Evaluation (AI unavailable)</span>
+                                <span className="text-yellow-500 text-xs font-semibold">⚠ Fallback Evaluation (AI unavailable)</span>
                                 <svg className="w-4 h-4 text-yellow-500" fill="currentColor" viewBox="0 0 20 20">
                                   <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd"/>
                                 </svg>
@@ -7298,7 +7298,7 @@ const Dashboard = () => {
                         {(() => {
                           const feedback = projectEvaluation.feedback || '';
                           
-                          console.log('ðŸ” Feedback Parsing:');
+                          console.log('🔍 Feedback Parsing:');
                           console.log('  - Feedback length:', feedback.length);
                           console.log('  - Feedback preview:', feedback.substring(0, 200));
                           
@@ -7371,26 +7371,26 @@ const Dashboard = () => {
                                             section.title.toLowerCase().includes('evaluation');
                               
                               let badgeColor = 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
-                              let badgeIcon = 'ðŸ“‹';
+                              let badgeIcon = '📋';
                               
                               if (isNegative) {
                                 badgeColor = 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
-                                badgeIcon = 'âš ï¸';
+                                badgeIcon = '⚠️';
                               } else if (isPositive) {
                                 badgeColor = 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
-                                badgeIcon = 'âœ…';
+                                badgeIcon = '✅';
                               } else if (isAction) {
                                 badgeColor = 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200';
-                                badgeIcon = 'ðŸŽ¯';
+                                badgeIcon = '🎯';
                               } else if (isScore) {
                                 badgeColor = 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
-                                badgeIcon = 'ðŸ“Š';
+                                badgeIcon = '📊';
                               }
                               
                               // Parse content - check for different formatting types
                               const contentLines = section.content.split('\n').filter(l => l.trim());
                               const hasNumberedList = /^\d+\.\s/.test(section.content);
-                              const hasBulletPoints = section.content.includes('â€¢');
+                              const hasBulletPoints = section.content.includes('•');
                               
                               return (
                                 <div key={idx} className="mb-6 last:mb-0">
@@ -7419,10 +7419,10 @@ const Dashboard = () => {
                                       <ul className="space-y-2">
                                         {contentLines.map((line, i) => (
                                           <li key={i} className="leading-relaxed text-base flex items-start gap-2">
-                                            {line.trim().startsWith('â€¢') ? (
+                                            {line.trim().startsWith('•') ? (
                                               <>
-                                                <span className="text-blue-500 mt-1">â€¢</span>
-                                                <span className="flex-1">{line.replace(/^â€¢\s*/, '').trim()}</span>
+                                                <span className="text-blue-500 mt-1">•</span>
+                                                <span className="flex-1">{line.replace(/^•\s*/, '').trim()}</span>
                                               </>
                                             ) : (
                                               <span>{line}</span>
@@ -7459,7 +7459,7 @@ const Dashboard = () => {
                         <ul className="space-y-2">
                           {projectEvaluation.strengths.map((strength, idx) => (
                             <li key={idx} className={`flex items-start gap-2 ${themeClasses.textSecondary} text-sm`}>
-                              <span className="text-green-500 mt-1">âœ“</span>
+                              <span className="text-green-500 mt-1">✓</span>
                               <span>{strength}</span>
                             </li>
                           ))}
@@ -7499,7 +7499,7 @@ const Dashboard = () => {
                         <ul className="space-y-2">
                           {projectEvaluation.improvements.map((improvement, idx) => (
                             <li key={idx} className={`flex items-start gap-2 ${themeClasses.textSecondary} text-sm`}>
-                              <span className="text-blue-500 mt-1">â†’</span>
+                              <span className="text-blue-500 mt-1">→</span>
                               <span>{improvement}</span>
                             </li>
                           ))}
@@ -7546,21 +7546,21 @@ const Dashboard = () => {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className={`${themeClasses.cardBackground} rounded-xl p-5 border ${themeClasses.cardBorder} shadow-sm hover:shadow-md transition-shadow`}>
                   <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center mb-4">
-                    <span className="text-2xl">ðŸŽ¤</span>
+                    <span className="text-2xl">🎤</span>
                   </div>
                   <h3 className={`font-semibold ${themeClasses.textPrimary} mb-2`}>Voice Powered</h3>
                   <p className={`text-sm ${themeClasses.textSecondary}`}>Speak naturally with the AI interviewer using your microphone. Real-time speech recognition.</p>
                 </div>
                 <div className={`${themeClasses.cardBackground} rounded-xl p-5 border ${themeClasses.cardBorder} shadow-sm hover:shadow-md transition-shadow`}>
                   <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900/30 rounded-xl flex items-center justify-center mb-4">
-                    <span className="text-2xl">ðŸ§ </span>
+                    <span className="text-2xl">🧠</span>
                   </div>
                   <h3 className={`font-semibold ${themeClasses.textPrimary} mb-2`}>Smart Questions</h3>
                   <p className={`text-sm ${themeClasses.textSecondary}`}>AI generates role-specific questions that adapt based on your responses and experience.</p>
                 </div>
                 <div className={`${themeClasses.cardBackground} rounded-xl p-5 border ${themeClasses.cardBorder} shadow-sm hover:shadow-md transition-shadow`}>
                   <div className="w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-xl flex items-center justify-center mb-4">
-                    <span className="text-2xl">ðŸ“Š</span>
+                    <span className="text-2xl">📊</span>
                   </div>
                   <h3 className={`font-semibold ${themeClasses.textPrimary} mb-2`}>Instant Feedback</h3>
                   <p className={`text-sm ${themeClasses.textSecondary}`}>Get detailed scoring on communication, technical skills, and areas for improvement.</p>
@@ -7573,7 +7573,7 @@ const Dashboard = () => {
               {/* Tips */}
               <div className={`${themeClasses.cardBackground} rounded-2xl p-6 border ${themeClasses.cardBorder}`}>
                 <h3 className={`text-lg font-semibold ${themeClasses.textPrimary} mb-4 flex items-center gap-2`}>
-                  ðŸ’¡ Interview Tips
+                  💡 Interview Tips
                 </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {[
@@ -7585,7 +7585,7 @@ const Dashboard = () => {
                     'Review your feedback after each interview to track improvement'
                   ].map((tip, i) => (
                     <div key={i} className={`flex items-start gap-2 p-3 rounded-lg ${themeClasses.sectionBackground}`}>
-                      <span className="text-amber-500 mt-0.5 flex-shrink-0">âœ¦</span>
+                      <span className="text-amber-500 mt-0.5 flex-shrink-0">✦</span>
                       <span className={`text-sm ${themeClasses.textSecondary}`}>{tip}</span>
                     </div>
                   ))}
@@ -7668,7 +7668,7 @@ const Dashboard = () => {
                               onClick={() => navigate('/prediction')}
                               className="mt-2 text-sm font-semibold text-purple-600 dark:text-purple-400 hover:underline"
                             >
-                              Take Prediction Test â†’
+                              Take Prediction Test →
                             </button>
                           </div>
                         </div>
@@ -7696,10 +7696,10 @@ const Dashboard = () => {
                                 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
                               }`}>
                                 <span className="text-sm font-semibold">
-                                  {placementPredictionData.placementScore >= 80 ? 'ðŸŒŸ Excellent' :
-                                   placementPredictionData.placementScore >= 60 ? 'ðŸ‘ Good' :
-                                   placementPredictionData.placementScore >= 40 ? 'âš ï¸ Fair' :
-                                   'âŒ Needs Improvement'}
+                                  {placementPredictionData.placementScore >= 80 ? '🌟 Excellent' :
+                                   placementPredictionData.placementScore >= 60 ? '👍 Good' :
+                                   placementPredictionData.placementScore >= 40 ? '⚠️ Fair' :
+                                   '❌ Needs Improvement'}
                                 </span>
                               </div>
                             </div>
@@ -7709,7 +7709,7 @@ const Dashboard = () => {
                                   ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400' 
                                   : 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400'
                               }`}>
-                                <span className="text-2xl">{placementPredictionData.isEligible ? 'âœ…' : 'âŒ'}</span>
+                                <span className="text-2xl">{placementPredictionData.isEligible ? '✅' : '❌'}</span>
                                 <span className="text-sm font-semibold">
                                   {placementPredictionData.isEligible ? 'Placement Eligible' : 'Not Eligible Yet'}
                                 </span>
@@ -7795,7 +7795,7 @@ const Dashboard = () => {
                               <div className="flex items-center justify-between mb-4">
                                 <div className="flex items-center gap-3">
                                   <div className="w-12 h-12 bg-gradient-to-br from-gray-400 to-slate-500 rounded-xl flex items-center justify-center shadow-lg">
-                                    <span className="text-2xl">ðŸ“„</span>
+                                    <span className="text-2xl">📄</span>
                                   </div>
                                   <div>
                                     <h4 className="text-xl font-bold text-gray-700 dark:text-gray-300">
@@ -7820,7 +7820,7 @@ const Dashboard = () => {
                                 {/* Academic */}
                                 <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/30 rounded-lg p-3 border border-blue-200 dark:border-blue-700">
                                   <div className="flex flex-col items-center text-center">
-                                    <span className="text-lg mb-1">ðŸ“š</span>
+                                    <span className="text-lg mb-1">📚</span>
                                     <span className="text-xs font-medium text-blue-600 dark:text-blue-400">Academic</span>
                                     <span className="text-xl font-bold text-blue-700 dark:text-blue-300">{Math.round(placementPredictionData.componentScores?.academicScore || 0)}<span className="text-xs text-blue-500">/100</span></span>
                                   </div>
@@ -7828,7 +7828,7 @@ const Dashboard = () => {
                                 {/* Skills */}
                                 <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/30 dark:to-green-800/30 rounded-lg p-3 border border-green-200 dark:border-green-700">
                                   <div className="flex flex-col items-center text-center">
-                                    <span className="text-lg mb-1">ðŸ’¡</span>
+                                    <span className="text-lg mb-1">💡</span>
                                     <span className="text-xs font-medium text-green-600 dark:text-green-400">Skills</span>
                                     <span className="text-xl font-bold text-green-700 dark:text-green-300">{Math.round(originalSkillScore || 0)}<span className="text-xs text-green-500">/100</span></span>
                                   </div>
@@ -7836,7 +7836,7 @@ const Dashboard = () => {
                                 {/* Projects */}
                                 <div className="bg-gradient-to-br from-pink-50 to-pink-100 dark:from-pink-900/30 dark:to-pink-800/30 rounded-lg p-3 border border-pink-200 dark:border-pink-700">
                                   <div className="flex flex-col items-center text-center">
-                                    <span className="text-lg mb-1">ðŸš€</span>
+                                    <span className="text-lg mb-1">🚀</span>
                                     <span className="text-xs font-medium text-pink-600 dark:text-pink-400">Projects</span>
                                     <span className="text-xl font-bold text-pink-700 dark:text-pink-300">{Math.round(placementPredictionData.componentScores?.projectScore || 0)}<span className="text-xs text-pink-500">/100</span></span>
                                   </div>
@@ -7844,7 +7844,7 @@ const Dashboard = () => {
                                 {/* DSA */}
                                 <div className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/30 dark:to-purple-800/30 rounded-lg p-3 border border-purple-200 dark:border-purple-700">
                                   <div className="flex flex-col items-center text-center">
-                                    <span className="text-lg mb-1">ðŸ§©</span>
+                                    <span className="text-lg mb-1">🧩</span>
                                     <span className="text-xs font-medium text-purple-600 dark:text-purple-400">DSA</span>
                                     <span className="text-xl font-bold text-purple-700 dark:text-purple-300">{Math.round(placementPredictionData.componentScores?.dsaScore || 0)}<span className="text-xs text-purple-500">/100</span></span>
                                   </div>
@@ -7852,7 +7852,7 @@ const Dashboard = () => {
                                 {/* Experience */}
                                 <div className="bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/30 dark:to-orange-800/30 rounded-lg p-3 border border-orange-200 dark:border-orange-700">
                                   <div className="flex flex-col items-center text-center">
-                                    <span className="text-lg mb-1">ðŸ’¼</span>
+                                    <span className="text-lg mb-1">💼</span>
                                     <span className="text-xs font-medium text-orange-600 dark:text-orange-400">Experience</span>
                                     <span className="text-xl font-bold text-orange-700 dark:text-orange-300">{Math.round(placementPredictionData.componentScores?.experienceScore || 0)}<span className="text-xs text-orange-500">/10</span></span>
                                   </div>
@@ -7875,9 +7875,9 @@ const Dashboard = () => {
                               
                               // Different color schemes for each month
                               const colorSchemes = [
-                                { bg: 'from-emerald-50 via-green-50 to-teal-50', darkBg: 'dark:from-emerald-900/30 dark:via-green-900/20 dark:to-teal-900/30', border: 'border-green-300 dark:border-green-700', text: 'text-green-700 dark:text-green-300', accent: 'from-green-400 to-emerald-500', icon: 'ðŸ“ˆ' },
-                                { bg: 'from-blue-50 via-indigo-50 to-purple-50', darkBg: 'dark:from-blue-900/30 dark:via-indigo-900/20 dark:to-purple-900/30', border: 'border-blue-300 dark:border-blue-700', text: 'text-blue-700 dark:text-blue-300', accent: 'from-blue-400 to-indigo-500', icon: 'ðŸš€' },
-                                { bg: 'from-amber-50 via-orange-50 to-yellow-50', darkBg: 'dark:from-amber-900/30 dark:via-orange-900/20 dark:to-yellow-900/30', border: 'border-amber-300 dark:border-amber-700', text: 'text-amber-700 dark:text-amber-300', accent: 'from-amber-400 to-orange-500', icon: 'ðŸ†' },
+                                { bg: 'from-emerald-50 via-green-50 to-teal-50', darkBg: 'dark:from-emerald-900/30 dark:via-green-900/20 dark:to-teal-900/30', border: 'border-green-300 dark:border-green-700', text: 'text-green-700 dark:text-green-300', accent: 'from-green-400 to-emerald-500', icon: '📈' },
+                                { bg: 'from-blue-50 via-indigo-50 to-purple-50', darkBg: 'dark:from-blue-900/30 dark:via-indigo-900/20 dark:to-purple-900/30', border: 'border-blue-300 dark:border-blue-700', text: 'text-blue-700 dark:text-blue-300', accent: 'from-blue-400 to-indigo-500', icon: '🚀' },
+                                { bg: 'from-amber-50 via-orange-50 to-yellow-50', darkBg: 'dark:from-amber-900/30 dark:via-orange-900/20 dark:to-yellow-900/30', border: 'border-amber-300 dark:border-amber-700', text: 'text-amber-700 dark:text-amber-300', accent: 'from-amber-400 to-orange-500', icon: '🏆' },
                               ];
                               const colors = colorSchemes[(monthNum - 1) % colorSchemes.length];
                               
@@ -7924,14 +7924,14 @@ const Dashboard = () => {
                                     <div className="bg-white/70 dark:bg-gray-800/50 rounded-lg p-4 border border-white/50 dark:border-gray-600">
                                       <div className="flex items-center justify-between mb-3">
                                         <div className="flex items-center gap-2">
-                                          <span className="text-lg">ðŸ’¡</span>
+                                          <span className="text-lg">💡</span>
                                           <span className="font-semibold text-gray-800 dark:text-gray-200">Skill Score</span>
                                         </div>
                                         <div className="flex items-center gap-2">
                                           <span className="text-sm text-gray-500 dark:text-gray-400 line-through">
                                             {Math.round(previousSkillScore || 0)}
                                           </span>
-                                          <span className={colors.text}>â†’</span>
+                                          <span className={colors.text}>→</span>
                                           <span className={`text-lg font-bold ${colors.text}`}>
                                             {Math.round(historyEntry.skillScore || 0)}
                                           </span>
@@ -7988,14 +7988,14 @@ const Dashboard = () => {
                                     <div className="bg-white/70 dark:bg-gray-800/50 rounded-lg p-4 border border-white/50 dark:border-gray-600">
                                       <div className="flex items-center justify-between mb-3">
                                         <div className="flex items-center gap-2">
-                                          <span className="text-lg">ðŸŽ¯</span>
+                                          <span className="text-lg">🎯</span>
                                           <span className="font-semibold text-gray-800 dark:text-gray-200">Overall Score</span>
                                         </div>
                                         <div className="flex items-center gap-2">
                                           <span className="text-sm text-gray-500 dark:text-gray-400 line-through">
                                             {Math.round(previousScore || 0)}%
                                           </span>
-                                          <span className={colors.text}>â†’</span>
+                                          <span className={colors.text}>→</span>
                                           <span className={`text-lg font-bold ${colors.text}`}>
                                             {Math.round(historyEntry.score || 0)}%
                                           </span>
@@ -8014,13 +8014,13 @@ const Dashboard = () => {
                                   {historyEntry.componentScores && (
                                     <div className="mt-4">
                                       <h5 className={`text-sm font-semibold ${colors.text} mb-3 flex items-center gap-2`}>
-                                        <span>ðŸ“Š</span> All Scores After Month {monthNum}
+                                        <span>📊</span> All Scores After Month {monthNum}
                                       </h5>
                                       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
                                         {/* Academic */}
                                         <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/30 rounded-lg p-3 border border-blue-200 dark:border-blue-700">
                                           <div className="flex flex-col items-center text-center">
-                                            <span className="text-lg mb-1">ðŸ“š</span>
+                                            <span className="text-lg mb-1">📚</span>
                                             <span className="text-xs font-medium text-blue-600 dark:text-blue-400">Academic</span>
                                             <span className="text-xl font-bold text-blue-700 dark:text-blue-300">{Math.round(historyEntry.componentScores.academicScore || 0)}<span className="text-xs text-blue-500">/100</span></span>
                                           </div>
@@ -8028,16 +8028,16 @@ const Dashboard = () => {
                                         {/* Skills - Highlighted as it improves */}
                                         <div className={`bg-gradient-to-br ${colors.bg} ${colors.darkBg} rounded-lg p-3 border-2 ${colors.border}`}>
                                           <div className="flex flex-col items-center text-center">
-                                            <span className="text-lg mb-1">ðŸ’¡</span>
+                                            <span className="text-lg mb-1">💡</span>
                                             <span className={`text-xs font-medium ${colors.text}`}>Skills</span>
                                             <span className={`text-xl font-bold ${colors.text}`}>{Math.round(historyEntry.componentScores.skillScore || historyEntry.skillScore || 0)}<span className="text-xs">/100</span></span>
-                                            {skillChange > 0 && <span className={`text-xs ${colors.text} font-bold`}>â†‘ +{skillChange}</span>}
+                                            {skillChange > 0 && <span className={`text-xs ${colors.text} font-bold`}>↑ +{skillChange}</span>}
                                           </div>
                                         </div>
                                         {/* Projects - Highlighted if boosted */}
                                         <div className={`bg-gradient-to-br ${projectChange > 0 ? 'from-pink-100 to-rose-200 dark:from-pink-900/40 dark:to-rose-800/40 border-2 border-pink-300 dark:border-pink-600' : 'from-pink-50 to-pink-100 dark:from-pink-900/30 dark:to-pink-800/30 border border-pink-200 dark:border-pink-700'} rounded-lg p-3`}>
                                           <div className="flex flex-col items-center text-center">
-                                            <span className="text-lg mb-1">ðŸš€</span>
+                                            <span className="text-lg mb-1">🚀</span>
                                             <span className="text-xs font-medium text-pink-600 dark:text-pink-400">Projects</span>
                                             <span className="text-xl font-bold text-pink-700 dark:text-pink-300">{Math.round(historyEntry.componentScores.projectScore || 0)}<span className="text-xs text-pink-500">/100</span></span>
                                             {projectChange > 0 && <span className="text-xs text-pink-600 dark:text-pink-400 font-bold">↑ +{projectChange}</span>}
@@ -8046,7 +8046,7 @@ const Dashboard = () => {
                                         {/* DSA */}
                                         <div className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/30 dark:to-purple-800/30 rounded-lg p-3 border border-purple-200 dark:border-purple-700">
                                           <div className="flex flex-col items-center text-center">
-                                            <span className="text-lg mb-1">ðŸ§©</span>
+                                            <span className="text-lg mb-1">🧩</span>
                                             <span className="text-xs font-medium text-purple-600 dark:text-purple-400">DSA</span>
                                             <span className="text-xl font-bold text-purple-700 dark:text-purple-300">{Math.round(historyEntry.componentScores.dsaScore || 0)}<span className="text-xs text-purple-500">/100</span></span>
                                           </div>
@@ -8054,7 +8054,7 @@ const Dashboard = () => {
                                         {/* Experience */}
                                         <div className="bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/30 dark:to-orange-800/30 rounded-lg p-3 border border-orange-200 dark:border-orange-700">
                                           <div className="flex flex-col items-center text-center">
-                                            <span className="text-lg mb-1">ðŸ’¼</span>
+                                            <span className="text-lg mb-1">💼</span>
                                             <span className="text-xs font-medium text-orange-600 dark:text-orange-400">Experience</span>
                                             <span className="text-xl font-bold text-orange-700 dark:text-orange-300">{Math.round(historyEntry.componentScores.experienceScore || 0)}<span className="text-xs text-orange-500">/10</span></span>
                                           </div>
@@ -8082,7 +8082,7 @@ const Dashboard = () => {
                                   {/* Timestamp */}
                                   {historyEntry.timestamp && (
                                     <p className={`text-xs ${colors.text} opacity-70 mt-3 text-center`}>
-                                      ðŸ• Updated on {new Date(historyEntry.timestamp).toLocaleDateString('en-US', { 
+                                      🕐 Updated on {new Date(historyEntry.timestamp).toLocaleDateString('en-US', { 
                                         year: 'numeric', 
                                         month: 'long', 
                                         day: 'numeric'
@@ -8102,7 +8102,7 @@ const Dashboard = () => {
                             <div className="flex items-center justify-between mb-6">
                               <div className="flex items-center gap-3">
                                 <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg">
-                                  <span className="text-2xl">ðŸ“ˆ</span>
+                                  <span className="text-2xl">📈</span>
                                 </div>
                                 <div>
                                   <h4 className="text-xl font-bold text-green-800 dark:text-green-300">
@@ -8132,14 +8132,14 @@ const Dashboard = () => {
                             <div className="bg-white/70 dark:bg-gray-800/50 rounded-lg p-4 border border-green-200 dark:border-green-700">
                               <div className="flex items-center justify-between mb-3">
                                 <div className="flex items-center gap-2">
-                                  <span className="text-lg">ðŸ’¡</span>
+                                  <span className="text-lg">💡</span>
                                   <span className="font-semibold text-gray-800 dark:text-gray-200">Skill Score</span>
                                 </div>
                                 <div className="flex items-center gap-2">
                                   <span className="text-sm text-gray-500 dark:text-gray-400 line-through">
                                     {Math.round(placementPredictionData.recalculationDetails.previousSkillScore || 0)}
                                   </span>
-                                  <span className="text-green-500">â†’</span>
+                                  <span className="text-green-500">→</span>
                                   <span className="text-lg font-bold text-green-600 dark:text-green-400">
                                     {Math.round(placementPredictionData.componentScores?.skillScore || 0)}
                                   </span>
@@ -8294,8 +8294,8 @@ const Dashboard = () => {
                 <button
                   onClick={(e) => {
                     e.preventDefault();
-                    console.log('ðŸ–±ï¸ [Weekly Test Analysis] Button clicked');
-                    console.log('ðŸ” [Weekly Test Analysis] Current state:', {
+                    console.log('🖱️ [Weekly Test Analysis] Button clicked');
+                    console.log('🔍 [Weekly Test Analysis] Current state:', {
                       showWeeklyTestAnalysis,
                       weeklyTestAnalysisData,
                       loadingWeeklyTestAnalysis
@@ -8303,11 +8303,11 @@ const Dashboard = () => {
                     
                     if (!showWeeklyTestAnalysis) {
                       // Opening the section - always fetch fresh data from database
-                      console.log('â–¶ï¸ [Weekly Test Analysis] Opening section - fetching fresh data...');
+                      console.log('▶️ [Weekly Test Analysis] Opening section - fetching fresh data...');
                       fetchWeeklyTestAnalysisData();
                     } else {
                       // Closing the section
-                      console.log('ðŸ”½ [Weekly Test Analysis] Closing section');
+                      console.log('🔽 [Weekly Test Analysis] Closing section');
                       setShowWeeklyTestAnalysis(false);
                     }
                   }}
@@ -8562,7 +8562,7 @@ const Dashboard = () => {
                                             <ul className="space-y-1">
                                               {week.analysis.recommendations.map((rec, recIndex) => (
                                                 <li key={recIndex} className={`text-sm ${themeClasses.textSecondary} flex items-start gap-2`}>
-                                                  <span className="text-green-500 mt-1">â€¢</span>
+                                                  <span className="text-green-500 mt-1">•</span>
                                                   {rec}
                                                 </li>
                                               ))}
@@ -8590,7 +8590,7 @@ const Dashboard = () => {
                               {weeklyTestAnalysisData.analysis.analysis_title || 'Weekly Test Analysis'}
                             </h4>
                             <p className="text-sm text-purple-600 dark:text-purple-400 mb-4">
-                              Week {weeklyTestAnalysisData.analysis.week || 1} â€¢ Month {weeklyTestAnalysisData.analysis.month || 1}
+                              Week {weeklyTestAnalysisData.analysis.week || 1} • Month {weeklyTestAnalysisData.analysis.month || 1}
                             </p>
                             
                             {/* Score Summary */}
@@ -8672,7 +8672,7 @@ const Dashboard = () => {
                         </svg>
                       </div>
                       <div className="text-left">
-                        <h3 className="text-xl font-bold text-indigo-900 dark:text-white">ðŸ“Š Weekly Progress Tracker</h3>
+                        <h3 className="text-xl font-bold text-indigo-900 dark:text-white">📊 Weekly Progress Tracker</h3>
                         <p className="text-sm text-indigo-700 dark:text-gray-400">Click to view your performance across all weeks and months</p>
                       </div>
                     </div>
@@ -8878,13 +8878,13 @@ const Dashboard = () => {
                                           <div className="text-xl font-bold text-green-600 dark:text-green-400">
                                             {weekCorrect}
                                           </div>
-                                          <div className={`text-xs ${themeClasses.textSecondary} font-medium`}>âœ“ Correct</div>
+                                          <div className={`text-xs ${themeClasses.textSecondary} font-medium`}>✓ Correct</div>
                                         </div>
                                         <div className={`${themeClasses.cardBackground} rounded-lg p-3 text-center border-2 border-red-300 dark:border-red-700/50 shadow-sm`}>
                                           <div className="text-xl font-bold text-red-600 dark:text-red-400">
                                             {weekIncorrect}
                                           </div>
-                                          <div className={`text-xs ${themeClasses.textSecondary} font-medium`}>âœ— Incorrect</div>
+                                          <div className={`text-xs ${themeClasses.textSecondary} font-medium`}>✗ Incorrect</div>
                                         </div>
                                         <div className={`${themeClasses.cardBackground} rounded-lg p-3 text-center border-2 border-indigo-300 dark:border-indigo-700/50 shadow-sm`}>
                                           <div className="text-xl font-bold text-indigo-600 dark:text-indigo-400">
@@ -8902,7 +8902,7 @@ const Dashboard = () => {
                                           ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 border border-yellow-300 dark:border-yellow-700'
                                           : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 border border-red-300 dark:border-red-700'
                                       }`}>
-                                        {weekPercentage >= 75 ? 'ðŸŒŸ Excellent Performance!' : weekPercentage >= 50 ? 'ðŸ‘ Good Job!' : 'ðŸ’ª Keep Practicing!'}
+                                        {weekPercentage >= 75 ? '🌟 Excellent Performance!' : weekPercentage >= 50 ? '👍 Good Job!' : '💪 Keep Practicing!'}
                                       </div>
 
                                       {/* Topic Analysis */}
@@ -9101,7 +9101,7 @@ const Dashboard = () => {
                               {/* Overall Performance */}
                               {analysis.overallPerformance && (
                                 <div className="bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 p-4 rounded-lg">
-                                  <h5 className="font-bold text-purple-800 dark:text-purple-300 mb-2">ðŸ“Š Overall Performance</h5>
+                                  <h5 className="font-bold text-purple-800 dark:text-purple-300 mb-2">📊 Overall Performance</h5>
                                   <p className={`${themeClasses.textPrimary} dark:text-gray-300 mb-3`}>{analysis.overallPerformance.summary}</p>
                                   <div className="flex gap-3">
                                     <span className="bg-purple-200 dark:bg-purple-800 text-purple-900 dark:text-purple-200 px-3 py-1 rounded-full text-sm font-semibold">
@@ -9139,7 +9139,7 @@ const Dashboard = () => {
                               {/* Topic-wise Analysis */}
                               {analysis.topicWiseAnalysis && analysis.topicWiseAnalysis.length > 0 && (
                                 <div>
-                                  <h5 className={`font-bold ${themeClasses.textPrimary} mb-3`}>ðŸ“š Topic-wise Performance</h5>
+                                  <h5 className={`font-bold ${themeClasses.textPrimary} mb-3`}>📚 Topic-wise Performance</h5>
                                   <div className="space-y-2">
                                     {analysis.topicWiseAnalysis.map((topic, idx) => (
                                       <div key={idx} className="bg-gray-50 dark:bg-gray-800/50 p-3 rounded-lg">
@@ -9167,7 +9167,7 @@ const Dashboard = () => {
                               {/* Difficulty Analysis */}
                               {analysis.difficultyAnalysis && (
                                 <div>
-                                  <h5 className={`font-bold ${themeClasses.textPrimary} dark:text-white mb-3`}>âš¡ Difficulty Level Analysis</h5>
+                                  <h5 className={`font-bold ${themeClasses.textPrimary} dark:text-white mb-3`}>⚡ Difficulty Level Analysis</h5>
                                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                     <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
                                       <h6 className="font-semibold text-blue-800 dark:text-blue-300 mb-2">Medium Questions</h6>
@@ -9193,11 +9193,11 @@ const Dashboard = () => {
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 {analysis.strengths && analysis.strengths.length > 0 && (
                                   <div>
-                                    <h5 className="font-bold text-green-800 dark:text-green-300 mb-2">ðŸ’ª Strengths</h5>
+                                    <h5 className="font-bold text-green-800 dark:text-green-300 mb-2">💪 Strengths</h5>
                                     <ul className="space-y-1 text-sm">
                                       {analysis.strengths.slice(0, 3).map((strength, idx) => (
                                         <li key={idx} className="flex items-start gap-2">
-                                          <span className="text-green-600 dark:text-green-400">âœ“</span>
+                                          <span className="text-green-600 dark:text-green-400">✓</span>
                                           <span className={`${themeClasses.textPrimary} dark:text-gray-300`}>{strength}</span>
                                         </li>
                                       ))}
@@ -9206,11 +9206,11 @@ const Dashboard = () => {
                                 )}
                                 {analysis.weaknesses && analysis.weaknesses.length > 0 && (
                                   <div>
-                                    <h5 className="font-bold text-red-800 dark:text-red-300 mb-2">âš ï¸ Areas to Improve</h5>
+                                    <h5 className="font-bold text-red-800 dark:text-red-300 mb-2">⚠️ Areas to Improve</h5>
                                     <ul className="space-y-1 text-sm">
                                       {analysis.weaknesses.slice(0, 3).map((weakness, idx) => (
                                         <li key={idx} className="flex items-start gap-2">
-                                          <span className="text-red-600 dark:text-red-400">â†’</span>
+                                          <span className="text-red-600 dark:text-red-400">→</span>
                                           <span className={`${themeClasses.textPrimary} dark:text-gray-300`}>{weakness}</span>
                                         </li>
                                       ))}
@@ -9222,7 +9222,7 @@ const Dashboard = () => {
                               {/* Recommendations */}
                               {analysis.recommendations && analysis.recommendations.length > 0 && (
                                 <div>
-                                  <h5 className="font-bold text-purple-800 dark:text-purple-300 mb-3">ðŸŽ¯ Top Recommendations</h5>
+                                  <h5 className="font-bold text-purple-800 dark:text-purple-300 mb-3">🎯 Top Recommendations</h5>
                                   <div className="space-y-2">
                                     {analysis.recommendations.slice(0, 3).map((rec, idx) => (
                                       <div key={idx} className="bg-purple-50 dark:bg-purple-900/20 p-3 rounded-lg border-l-4 border-purple-500">
@@ -9246,7 +9246,7 @@ const Dashboard = () => {
                               {/* Motivational Message */}
                               {analysis.insights?.motivationalMessage && (
                                 <div className="bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 p-4 rounded-lg border-l-4 border-orange-500">
-                                  <p className={`text-sm italic ${themeClasses.textPrimary} dark:text-gray-300`}>ðŸ’¬ {analysis.insights.motivationalMessage}</p>
+                                  <p className={`text-sm italic ${themeClasses.textPrimary} dark:text-gray-300`}>💬 {analysis.insights.motivationalMessage}</p>
                                 </div>
                               )}
                             </div>
@@ -9792,7 +9792,7 @@ const Dashboard = () => {
               { cat:'Powers & Exponents',abbr:'PE',color:'from-purple-500 to-pink-500',bg:'bg-purple-50',border:'border-purple-200 dark:border-purple-800',problems:[{n:5,title:'Power of Two',diff:'Easy',link:'https://leetcode.com/problems/power-of-two/'},{n:6,title:'Power of Four',diff:'Easy',link:'https://leetcode.com/problems/power-of-four/'},{n:7,title:'Pow(x, n)',diff:'Medium',link:'https://leetcode.com/problems/powx-n/'},{n:62,title:'Modular Exponentiation',diff:'Medium',link:'https://www.geeksforgeeks.org/modular-exponentiation-power-in-modular-arithmetic/'}]},
               { cat:'Fibonacci & Series',abbr:'FS',color:'from-green-500 to-emerald-500',bg:'bg-green-50',border:'border-green-200 dark:border-green-800',problems:[{n:8,title:'Check if the Number is Fibonacci',diff:'Easy',link:'https://www.geeksforgeeks.org/check-number-fibonacci-number/'},{n:9,title:'Nth Digit of Fibonacci',diff:'Medium',link:'https://www.geeksforgeeks.org/nth-digit-fibonacci-number/'},{n:10,title:'Fibonacci Sum',diff:'Easy',link:'https://www.geeksforgeeks.org/sum-of-fibonacci-numbers/'},{n:11,title:'N-th Tribonacci Number',diff:'Easy',link:'https://leetcode.com/problems/n-th-tribonacci-number/'}]},
               { cat:'Prime Numbers',abbr:'PN',color:'from-red-500 to-rose-500',bg:'bg-red-50',border:'border-red-200 dark:border-red-800',problems:[{n:12,title:'Prime Numbers',diff:'Easy',link:'https://www.geeksforgeeks.org/prime-numbers/'},{n:13,title:'Count Primes as Sum of Consecutive Primes',diff:'Hard',link:'https://www.geeksforgeeks.org/count-prime-numbers-that-can-be-expressed-as-sum-of-consecutive-prime-numbers/'},{n:14,title:'Number as Sum of Two Primes',diff:'Medium',link:'https://www.geeksforgeeks.org/goldbach-conjecture-check-if-a-given-number-can-be-expressed-as-sum-of-two-prime-numbers/'},{n:15,title:'Product of Primes',diff:'Easy',link:'https://www.geeksforgeeks.org/product-of-prime-numbers/'},{n:16,title:'Highest Occurring Digit in Primes in a Range',diff:'Medium',link:'https://www.geeksforgeeks.org/find-the-highest-occurring-digit-in-prime-numbers-in-a-range/'},{n:17,title:'Prime Numbers and Fibonacci',diff:'Medium',link:'https://www.geeksforgeeks.org/prime-fibonacci/'},{n:50,title:'Sieve of Eratosthenes',diff:'Medium',link:'https://leetcode.com/problems/count-primes/'},{n:58,title:'Prime Factors of a Given Number',diff:'Easy',link:'https://www.geeksforgeeks.org/prime-factors/'}]},
-              { cat:'Factorials & Strong Numbers',abbr:'FT',color:'from-orange-500 to-amber-500',bg:'bg-orange-50',border:'border-orange-200 dark:border-orange-800',problems:[{n:18,title:'Factorial of a Number',diff:'Easy',link:'https://www.geeksforgeeks.org/factorial/'},{n:19,title:'Find Sum of Factorials till N Factorial',diff:'Easy',link:'https://www.geeksforgeeks.org/find-sum-of-factorials-till-n-factorials/'},{n:20,title:'Print All Strong Numbers â‰¤ N',diff:'Medium',link:'https://www.geeksforgeeks.org/strong-numbers-1-n/'},{n:41,title:'Check if a Number is a Strong Number',diff:'Easy',link:'https://www.geeksforgeeks.org/strong-numbers/'},{n:49,title:'Compute n! Under Modulo p',diff:'Medium',link:'https://www.geeksforgeeks.org/compute-n-under-modulo-p/'}]},
+              { cat:'Factorials & Strong Numbers',abbr:'FT',color:'from-orange-500 to-amber-500',bg:'bg-orange-50',border:'border-orange-200 dark:border-orange-800',problems:[{n:18,title:'Factorial of a Number',diff:'Easy',link:'https://www.geeksforgeeks.org/factorial/'},{n:19,title:'Find Sum of Factorials till N Factorial',diff:'Easy',link:'https://www.geeksforgeeks.org/find-sum-of-factorials-till-n-factorials/'},{n:20,title:'Print All Strong Numbers ≤ N',diff:'Medium',link:'https://www.geeksforgeeks.org/strong-numbers-1-n/'},{n:41,title:'Check if a Number is a Strong Number',diff:'Easy',link:'https://www.geeksforgeeks.org/strong-numbers/'},{n:49,title:'Compute n! Under Modulo p',diff:'Medium',link:'https://www.geeksforgeeks.org/compute-n-under-modulo-p/'}]},
               { cat:'Digit Operations',abbr:'DO',color:'from-teal-500 to-cyan-500',bg:'bg-teal-50',border:'border-teal-200 dark:border-teal-800',problems:[{n:21,title:'Count Digits',diff:'Easy',link:'https://www.geeksforgeeks.org/count-digits-in-integers-n/'},{n:22,title:'Sum of Digits of a Number',diff:'Easy',link:'https://www.geeksforgeeks.org/sum-digits-given-number-repeatedly-till-single-digit/'},{n:23,title:'Count the Digits That Divide a Number',diff:'Easy',link:'https://leetcode.com/problems/count-the-digits-that-divide-a-number/'},{n:24,title:'Alternating Digit Sum',diff:'Easy',link:'https://leetcode.com/problems/alternating-digit-sum/'},{n:25,title:'Add Digits Till Single Digit',diff:'Easy',link:'https://leetcode.com/problems/add-digits/'},{n:26,title:'Largest and Smallest Digit',diff:'Easy',link:'https://www.geeksforgeeks.org/largest-and-smallest-digit-of-a-number/'},{n:27,title:"Replace '0' with '5' in Integer",diff:'Easy',link:'https://www.geeksforgeeks.org/replace-0-5-input-integer/'},{n:28,title:'Reverse Digits of a Number',diff:'Medium',link:'https://leetcode.com/problems/reverse-integer/'},{n:29,title:'Subtract Product and Sum of Digits',diff:'Easy',link:'https://leetcode.com/problems/subtract-the-product-and-sum-of-digits-of-an-integer/'},{n:30,title:'Minimum Sum After Splitting Digits',diff:'Easy',link:'https://leetcode.com/problems/minimum-sum-of-four-digit-number-after-splitting-digits/'}]},
               { cat:'Number Properties',abbr:'NP',color:'from-indigo-500 to-violet-500',bg:'bg-indigo-50',border:'border-indigo-200 dark:border-indigo-800',problems:[{n:31,title:'Positive, Negative, Odd, Even, Zero',diff:'Easy',link:'https://www.geeksforgeeks.org/cpp-program-to-check-whether-number-is-positive-negative-or-zero/'},{n:32,title:'Check Even or Odd',diff:'Easy',link:'https://www.geeksforgeeks.org/check-if-given-number-is-even-or-odd-in-java/'},{n:33,title:'Count Odd Numbers in Interval Range',diff:'Easy',link:'https://leetcode.com/problems/count-odd-numbers-in-an-interval-range/'},{n:34,title:'Harshad (Niven) Number',diff:'Easy',link:'https://www.geeksforgeeks.org/harshad-or-niven-number/'},{n:35,title:'Palindrome Number',diff:'Easy',link:'https://leetcode.com/problems/palindrome-number/'},{n:36,title:'Palindromes in a Given Range',diff:'Easy',link:'https://www.geeksforgeeks.org/print-all-palindromes-in-a-range/'},{n:38,title:'Perfect Number',diff:'Easy',link:'https://leetcode.com/problems/perfect-number/'},{n:39,title:'Armstrong Numbers',diff:'Easy',link:'https://www.geeksforgeeks.org/program-for-armstrong-numbers/'},{n:40,title:'Abundant Number',diff:'Easy',link:'https://www.geeksforgeeks.org/abundant-number/'},{n:57,title:'Primitive Abundant Number',diff:'Medium',link:'https://www.geeksforgeeks.org/primitive-abundant-number/'},{n:61,title:'Smith Numbers',diff:'Medium',link:'https://www.geeksforgeeks.org/smith-numbers/'},{n:63,title:'Square Free Number',diff:'Easy',link:'https://www.geeksforgeeks.org/square-free-number/'}]},
               { cat:'Natural Numbers & Series',abbr:'NS',color:'from-lime-500 to-green-500',bg:'bg-lime-50',border:'border-lime-200 dark:border-lime-800',problems:[{n:42,title:'Sum of First N Natural Numbers',diff:'Easy',link:'https://www.geeksforgeeks.org/sum-of-first-n-natural-numbers/'},{n:43,title:'Sum of Natural Numbers in Range L to R',diff:'Easy',link:'https://www.geeksforgeeks.org/sum-natural-numbers-range-l-r/'},{n:44,title:'Armstrong Numbers Between 1 and N',diff:'Easy',link:'https://www.geeksforgeeks.org/program-for-armstrong-numbers/'},{n:45,title:'Sum of Series: 1 + 1/2 + ... + 1/n',diff:'Easy',link:'https://www.geeksforgeeks.org/sum-series-1-12-13-1n/'},{n:46,title:'Sum of Arithmetic Series',diff:'Easy',link:'https://www.geeksforgeeks.org/program-to-find-sum-of-arithmatic-progression-series/'},{n:47,title:'Sum of Geometric Series',diff:'Easy',link:'https://www.geeksforgeeks.org/sum-of-geometric-series/'}]},
@@ -9826,7 +9826,7 @@ const Dashboard = () => {
 
             return (
               <div className={`${themeClasses.cardBackground} rounded-2xl border ${themeClasses.cardBorder} shadow-sm overflow-hidden`} style={{ minHeight: '82vh' }}>
-                {/* â”€â”€ Top Bar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+                {/* ── Top Bar ─────────────────────────────────────── */}
                 <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 px-6 py-4 flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="w-9 h-9 bg-white/20 rounded-xl flex items-center justify-center">
@@ -9849,10 +9849,10 @@ const Dashboard = () => {
                   </div>
                 </div>
 
-                {/* â”€â”€ Body: Nav + Content â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+                {/* ── Body: Nav + Content ──────────────────────────── */}
                 <div className="flex" style={{ minHeight: 'calc(82vh - 72px)' }}>
 
-                  {/* â”€â”€ Left Topic Navigation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+                  {/* ── Left Topic Navigation ──────────────────────── */}
                   <div className={`w-52 flex-shrink-0 border-r ${themeClasses.cardBorder} flex flex-col ${themeClasses.sectionBackground}`}>
                     <div className={`px-3 pt-4 pb-2 border-b ${themeClasses.cardBorder}`}>
                       <p className={`text-xs font-bold uppercase tracking-widest ${themeClasses.textSecondary} px-1`}>Topics</p>
@@ -9860,7 +9860,7 @@ const Dashboard = () => {
                     <div className="flex-1 overflow-y-auto px-3 py-3 space-y-1">
                       {mainNav.map(t => <NavBtn key={t.id} t={t} />)}
 
-                      {/* â”€â”€ More button â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+                      {/* ── More button ─────────────────────── */}
                       <div className="relative">
                         <button
                           onClick={() => setDsaMoreOpen(p => !p)}
@@ -9908,10 +9908,10 @@ const Dashboard = () => {
                     </div>
                   </div>
 
-                  {/* â”€â”€ Right Content Panel â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+                  {/* ── Right Content Panel ────────────────────────── */}
                   <div className="flex-1 overflow-y-auto p-6">
 
-                    {/* â”€â”€â”€â”€ OVERVIEW â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+                    {/* ──── OVERVIEW ──────────────────────────────── */}
                     {dsaActiveTopic === 'overview' && (
                       <div className="space-y-6">
                         {/* Study roadmap */}
@@ -10006,7 +10006,7 @@ const Dashboard = () => {
                       </div>
                     )}
 
-                    {/* â”€â”€â”€â”€ STANDARD DSA TOPICS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+                    {/* ──── STANDARD DSA TOPICS ───────────────────── */}
                     {dsaActiveTopic !== 'overview' && dsaActiveTopic !== 'math' && TOPIC_PROBLEMS[dsaActiveTopic] && (() => {
                       const probs = TOPIC_PROBLEMS[dsaActiveTopic];
                       const topicMeta = DSA_NAV.find(t => t.id === dsaActiveTopic);
@@ -10054,7 +10054,7 @@ const Dashboard = () => {
                       );
                     })()}
 
-                    {/* â”€â”€â”€â”€ MATHEMATICS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+                    {/* ──── MATHEMATICS ───────────────────────────── */}
                     {dsaActiveTopic === 'math' && (
                       <div className="space-y-4">
                         {/* Math header */}
@@ -10477,13 +10477,13 @@ const Dashboard = () => {
               {/* Status Info */}
               <div className="bg-purple-50 dark:bg-purple-900/20 rounded-xl p-4 border border-purple-200 dark:border-purple-500/30">
                 <p className="text-sm text-purple-800 dark:text-purple-300 font-medium">
-                  {progressTrackingMessage.includes('Checking') && progressTrackingMessage.includes('Month') && 'âš™ï¸ AI is generating your monthly test analysis...'}
-                  {progressTrackingMessage.includes('Checking') && !progressTrackingMessage.includes('Month') && 'âš™ï¸ AI is generating your weekly test analysis...'}
-                  {progressTrackingMessage.includes('Generating') && progressTrackingMessage.includes('Month') && 'âš™ï¸ AI is analyzing your monthly test performance...'}
-                  {progressTrackingMessage.includes('Generating') && !progressTrackingMessage.includes('Month') && 'âš™ï¸ AI is analyzing your test performance...'}
-                  {progressTrackingMessage.includes('Found') && 'âœ… Redirecting to Progress Tracking page...'}
-                  {progressTrackingMessage.includes('Generated') && 'âœ… Redirecting to Progress Tracking page...'}
-                  {!progressTrackingMessage && 'â³ Processing your request...'}
+                  {progressTrackingMessage.includes('Checking') && progressTrackingMessage.includes('Month') && '⚙️ AI is generating your monthly test analysis...'}
+                  {progressTrackingMessage.includes('Checking') && !progressTrackingMessage.includes('Month') && '⚙️ AI is generating your weekly test analysis...'}
+                  {progressTrackingMessage.includes('Generating') && progressTrackingMessage.includes('Month') && '⚙️ AI is analyzing your monthly test performance...'}
+                  {progressTrackingMessage.includes('Generating') && !progressTrackingMessage.includes('Month') && '⚙️ AI is analyzing your test performance...'}
+                  {progressTrackingMessage.includes('Found') && '✅ Redirecting to Progress Tracking page...'}
+                  {progressTrackingMessage.includes('Generated') && '✅ Redirecting to Progress Tracking page...'}
+                  {!progressTrackingMessage && '⏳ Processing your request...'}
                 </p>
               </div>
               
@@ -10847,19 +10847,19 @@ const MonthlyTestTimerInlineActive = ({ onTimerComplete, month, theme }) => {
         
         <ul className={`text-left max-w-md mx-auto mt-4 space-y-2 text-sm ${themeClasses.textSecondary}`}>
           <li className="flex items-start gap-2">
-            <span className="text-purple-500 dark:text-pink-500">â€¢</span>
+            <span className="text-purple-500 dark:text-pink-500">•</span>
             <span>Review all 4 weeks of skills covered this month</span>
           </li>
           <li className="flex items-start gap-2">
-            <span className="text-purple-500 dark:text-pink-500">â€¢</span>
+            <span className="text-purple-500 dark:text-pink-500">•</span>
             <span>Ensure a stable internet connection</span>
           </li>
           <li className="flex items-start gap-2">
-            <span className="text-purple-500 dark:text-pink-500">â€¢</span>
+            <span className="text-purple-500 dark:text-pink-500">•</span>
             <span>Find a quiet place without distractions</span>
           </li>
           <li className="flex items-start gap-2">
-            <span className="text-purple-500 dark:text-pink-500">â€¢</span>
+            <span className="text-purple-500 dark:text-pink-500">•</span>
             <span>Camera and microphone will be required for proctoring</span>
           </li>
         </ul>
