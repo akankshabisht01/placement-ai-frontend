@@ -700,6 +700,14 @@ const Dashboard = () => {
   // DSA page navigation
   const [dsaActiveTopic, setDsaActiveTopic] = useState('overview');
   const [dsaMoreOpen, setDsaMoreOpen] = useState(false);
+  // LeetCode integration states
+  const [leetcodeUsername, setLeetcodeUsername] = useState('');
+  const [leetcodeUsernameInput, setLeetcodeUsernameInput] = useState('');
+  const [leetcodeSolvedSlugs, setLeetcodeSolvedSlugs] = useState(new Set());
+  const [leetcodeStats, setLeetcodeStats] = useState({});
+  const [leetcodeLoading, setLeetcodeLoading] = useState(false);
+  const [leetcodeError, setLeetcodeError] = useState(null);
+  const [leetcodeConnected, setLeetcodeConnected] = useState(false);
   const [showProjects, setShowProjects] = useState(false);
   const [loadingWeeklyTestAnalysis, setLoadingWeeklyTestAnalysis] = useState(false);
   const [weeklyTestAnalysisError, setWeeklyTestAnalysisError] = useState(null);
@@ -1763,6 +1771,95 @@ const Dashboard = () => {
     return null;
   };
 
+  // ── LeetCode Integration ──────────────────────────────────
+  const extractLeetcodeSlug = (url) => {
+    if (!url || !url.includes('leetcode.com/problems/')) return null;
+    const match = url.match(/leetcode\.com\/problems\/([^/]+)/);
+    return match ? match[1] : null;
+  };
+
+  const fetchLeetcodeUsername = async () => {
+    const mobile = getUserMobile();
+    if (!mobile) return;
+    try {
+      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
+      const res = await fetch(`${backendUrl}/api/leetcode/get-username/${encodeURIComponent(mobile)}`);
+      const data = await res.json();
+      if (data.success && data.username) {
+        setLeetcodeUsername(data.username);
+        setLeetcodeUsernameInput(data.username);
+        setLeetcodeConnected(true);
+        fetchLeetcodeSolved(data.username);
+      }
+    } catch (e) {
+      console.error('Error fetching LeetCode username:', e);
+    }
+  };
+
+  const fetchLeetcodeSolved = async (username) => {
+    if (!username) return;
+    setLeetcodeLoading(true);
+    setLeetcodeError(null);
+    try {
+      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
+      const res = await fetch(`${backendUrl}/api/leetcode/solved/${encodeURIComponent(username)}`);
+      const data = await res.json();
+      if (data.success) {
+        setLeetcodeSolvedSlugs(new Set(data.solved_slugs || []));
+        setLeetcodeStats(data.stats || {});
+      } else {
+        setLeetcodeError(data.message || 'Failed to fetch solved problems');
+      }
+    } catch (e) {
+      setLeetcodeError('Could not connect to LeetCode');
+    } finally {
+      setLeetcodeLoading(false);
+    }
+  };
+
+  const handleLeetcodeConnect = async () => {
+    const username = leetcodeUsernameInput.trim();
+    if (!username) return;
+    const mobile = getUserMobile();
+    if (!mobile) return;
+    setLeetcodeLoading(true);
+    setLeetcodeError(null);
+    try {
+      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
+      // First verify the username works by fetching solved problems
+      const verifyRes = await fetch(`${backendUrl}/api/leetcode/solved/${encodeURIComponent(username)}`);
+      const verifyData = await verifyRes.json();
+      if (!verifyData.success) {
+        setLeetcodeError(verifyData.message || 'LeetCode username not found');
+        setLeetcodeLoading(false);
+        return;
+      }
+      // Save username
+      await fetch(`${backendUrl}/api/leetcode/save-username`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mobile, username })
+      });
+      setLeetcodeUsername(username);
+      setLeetcodeConnected(true);
+      setLeetcodeSolvedSlugs(new Set(verifyData.solved_slugs || []));
+      setLeetcodeStats(verifyData.stats || {});
+    } catch (e) {
+      setLeetcodeError('Failed to connect LeetCode account');
+    } finally {
+      setLeetcodeLoading(false);
+    }
+  };
+
+  const handleLeetcodeDisconnect = async () => {
+    setLeetcodeUsername('');
+    setLeetcodeUsernameInput('');
+    setLeetcodeConnected(false);
+    setLeetcodeSolvedSlugs(new Set());
+    setLeetcodeStats({});
+    setLeetcodeError(null);
+  };
+
   // Resume Analysis Handler
   const handleResumeAnalysis = async () => {
     setIsAnalyzing(true);
@@ -1936,6 +2033,13 @@ const Dashboard = () => {
   useEffect(() => {
     if (activeSection === 'weeklytest') {
       fetchCurrentWeekInfo();
+    }
+  }, [activeSection]);
+
+  // Fetch LeetCode username when DSA section is opened
+  useEffect(() => {
+    if (activeSection === 'dsa' && !leetcodeConnected) {
+      fetchLeetcodeUsername();
     }
   }, [activeSection]);
 
@@ -9798,8 +9902,21 @@ const Dashboard = () => {
               { cat:'Number Conversions',abbr:'NC',color:'from-amber-500 to-yellow-500',bg:'bg-amber-50',border:'border-amber-200 dark:border-amber-800',problems:[{n:73,title:'Decimal to Binary',diff:'Easy',link:'https://www.geeksforgeeks.org/decimal-binary-number/'},{n:74,title:'Binary to Decimal',diff:'Easy',link:'https://www.geeksforgeeks.org/binary-to-decimal/'},{n:75,title:'Fahrenheit to Celsius',diff:'Easy',link:'https://www.geeksforgeeks.org/program-to-convert-temperature-from-degree-celsius-to-fahrenheit/'},{n:76,title:'String to Integer Without parseInt()',diff:'Easy',link:'https://www.geeksforgeeks.org/convert-a-string-to-an-integer-in-java/'},{n:77,title:'Sum of Digits in Base K',diff:'Medium',link:'https://www.geeksforgeeks.org/sum-of-digits-of-a-number-in-base-k/'}]},
             ];
 
+            // Count solved LeetCode problems for a given topic
+            const getTopicSolvedCount = (topicId) => {
+              if (!leetcodeConnected || leetcodeSolvedSlugs.size === 0) return 0;
+              const probs = TOPIC_PROBLEMS[topicId];
+              if (!probs) return 0;
+              return probs.filter(p => {
+                const slug = extractLeetcodeSlug(p.link);
+                return slug && leetcodeSolvedSlugs.has(slug);
+              }).length;
+            };
+
             const NavBtn = ({ t }) => {
               const isActive = dsaActiveTopic === t.id;
+              const solvedCount = getTopicSolvedCount(t.id);
+              const hasSolved = leetcodeConnected && solvedCount > 0;
               return (
                 <button
                   onClick={() => { setDsaActiveTopic(t.id); setDsaMoreOpen(false); }}
@@ -9812,8 +9929,10 @@ const Dashboard = () => {
                   <span className={`text-sm font-medium truncate flex-1 ${isActive ? 'text-white' : themeClasses.textPrimary}`}>{t.label}</span>
                   {t.total && (
                     <span className={`text-xs font-bold px-1.5 py-0.5 rounded-md flex-shrink-0
-                      ${isActive ? 'bg-white/20 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300'}`}>
-                      {t.total}
+                      ${hasSolved
+                        ? (isActive ? 'bg-emerald-400/30 text-white' : 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400')
+                        : (isActive ? 'bg-white/20 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300')}`}>
+                      {hasSolved ? `${solvedCount}/${t.total}` : t.total}
                     </span>
                   )}
                 </button>
@@ -9843,6 +9962,53 @@ const Dashboard = () => {
                       </div>
                     ))}
                   </div>
+                </div>
+
+                {/* ── LeetCode Connection Bar ──────────────────────── */}
+                <div className="bg-gradient-to-r from-blue-700/50 via-indigo-700/50 to-violet-700/50 px-6 py-2.5 flex items-center justify-between border-t border-white/10">
+                  <div className="flex items-center gap-2">
+                    <span className="text-orange-400 text-sm font-bold">LC</span>
+                    <span className="text-white/80 text-xs">LeetCode Integration</span>
+                  </div>
+                  {leetcodeConnected ? (
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                        <span className="text-white text-xs font-medium">{leetcodeUsername}</span>
+                        {leetcodeStats.total_solved != null && (
+                          <span className="text-emerald-300 text-xs ml-1">({leetcodeStats.total_solved} solved)</span>
+                        )}
+                      </div>
+                      <button onClick={() => fetchLeetcodeSolved(leetcodeUsername)}
+                        disabled={leetcodeLoading}
+                        className="text-xs bg-white/15 hover:bg-white/25 text-white px-2.5 py-1 rounded-lg transition-colors disabled:opacity-50">
+                        {leetcodeLoading ? '...' : 'Refresh'}
+                      </button>
+                      <button onClick={handleLeetcodeDisconnect}
+                        className="text-xs bg-red-500/20 hover:bg-red-500/40 text-red-200 px-2.5 py-1 rounded-lg transition-colors">
+                        Disconnect
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={leetcodeUsernameInput}
+                        onChange={e => setLeetcodeUsernameInput(e.target.value)}
+                        onKeyDown={e => e.key === 'Enter' && handleLeetcodeConnect()}
+                        placeholder="LeetCode username"
+                        className="text-xs bg-white/10 border border-white/20 text-white placeholder-white/40 px-3 py-1.5 rounded-lg focus:outline-none focus:border-orange-400 w-40"
+                      />
+                      <button onClick={handleLeetcodeConnect}
+                        disabled={leetcodeLoading || !leetcodeUsernameInput.trim()}
+                        className="text-xs bg-orange-500 hover:bg-orange-600 text-white px-3 py-1.5 rounded-lg font-medium transition-colors disabled:opacity-50">
+                        {leetcodeLoading ? 'Connecting...' : 'Connect'}
+                      </button>
+                    </div>
+                  )}
+                  {leetcodeError && (
+                    <span className="text-red-300 text-xs ml-2">{leetcodeError}</span>
+                  )}
                 </div>
 
                 {/* ── Body: Nav + Content ──────────────────────────── */}
@@ -10009,6 +10175,7 @@ const Dashboard = () => {
                       const easyP  = probs.filter(p => p.diff === 'Easy');
                       const medP   = probs.filter(p => p.diff === 'Medium');
                       const hardP  = probs.filter(p => p.diff === 'Hard');
+                      const solvedInTopic = leetcodeConnected ? probs.filter(p => { const s = extractLeetcodeSlug(p.link); return s && leetcodeSolvedSlugs.has(s); }).length : 0;
                       return (
                         <div className="space-y-6">
                           {/* Topic header */}
@@ -10024,27 +10191,43 @@ const Dashboard = () => {
                                 </div>
                               </div>
                             </div>
-                            <span className={`text-sm font-bold ${themeClasses.textSecondary}`}>{probs.length} problems</span>
+                            <div className="flex items-center gap-3">
+                              {leetcodeConnected && (
+                                <span className={`text-sm font-bold px-3 py-1 rounded-lg ${solvedInTopic > 0 ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400' : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400'}`}>
+                                  {solvedInTopic}/{probs.length} Solved
+                                </span>
+                              )}
+                              <span className={`text-sm font-bold ${themeClasses.textSecondary}`}>{probs.length} problems</span>
+                            </div>
                           </div>
 
                           {/* Problem cards */}
                           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
-                            {probs.map((p, pi) => (
-                              <a key={pi} href={p.link} target="_blank" rel="noopener noreferrer"
-                                className={`${themeClasses.sectionBackground} border ${themeClasses.cardBorder} rounded-xl p-4 hover:shadow-md hover:border-blue-400 transition-all duration-200 group flex flex-col gap-2`}>
-                                <div className="flex items-center justify-between">
-                                  <span className={`text-xs font-bold ${themeClasses.textSecondary}`}>#{pi + 1}</span>
-                                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${DIFF_BADGE[p.diff]}`}>{p.diff}</span>
-                                </div>
-                                <p className={`text-sm font-semibold ${themeClasses.textPrimary} group-hover:text-blue-600 transition-colors leading-snug`}>{p.title}</p>
-                                <div className="flex items-center gap-1 text-xs text-blue-500 mt-auto font-medium">
-                                  <span>Solve on LeetCode</span>
-                                  <svg className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                                  </svg>
-                                </div>
-                              </a>
-                            ))}
+                            {probs.map((p, pi) => {
+                              const slug = extractLeetcodeSlug(p.link);
+                              const isSolved = leetcodeConnected && slug && leetcodeSolvedSlugs.has(slug);
+                              return (
+                                <a key={pi} href={p.link} target="_blank" rel="noopener noreferrer"
+                                  className={`${themeClasses.sectionBackground} border ${isSolved ? 'border-emerald-400 dark:border-emerald-600' : themeClasses.cardBorder} rounded-xl p-4 hover:shadow-md hover:border-blue-400 transition-all duration-200 group flex flex-col gap-2 ${isSolved ? 'ring-1 ring-emerald-200 dark:ring-emerald-800' : ''}`}>
+                                  <div className="flex items-center justify-between">
+                                    <span className={`text-xs font-bold ${themeClasses.textSecondary}`}>#{pi + 1}</span>
+                                    <div className="flex items-center gap-1.5">
+                                      {isSolved && <span className="text-emerald-500 text-xs font-bold">✓</span>}
+                                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${DIFF_BADGE[p.diff]}`}>{p.diff}</span>
+                                    </div>
+                                  </div>
+                                  <p className={`text-sm font-semibold ${themeClasses.textPrimary} group-hover:text-blue-600 transition-colors leading-snug`}>{p.title}</p>
+                                  <div className={`flex items-center gap-1 text-xs mt-auto font-medium ${isSolved ? 'text-emerald-500' : 'text-blue-500'}`}>
+                                    <span>{isSolved ? '✅ Solved' : 'Solve on LeetCode'}</span>
+                                    {!isSolved && (
+                                      <svg className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                      </svg>
+                                    )}
+                                  </div>
+                                </a>
+                              );
+                            })}
                           </div>
                         </div>
                       );
@@ -10071,6 +10254,7 @@ const Dashboard = () => {
 
                         {MATH_CATS.map((section, si) => {
                           const isCatOpen = !!openMathCats[si];
+                          const mathSolvedCount = leetcodeConnected ? section.problems.filter(p => { const s = extractLeetcodeSlug(p.link); return s && leetcodeSolvedSlugs.has(s); }).length : 0;
                           return (
                             <div key={si} className={`${section.bg} border ${section.border} rounded-xl overflow-hidden`}>
                               <button
@@ -10081,7 +10265,12 @@ const Dashboard = () => {
                                   <div className={`w-8 h-8 bg-gradient-to-br ${section.color} rounded-lg flex items-center justify-center text-xs font-bold text-white shadow-sm flex-shrink-0`}>{section.abbr}</div>
                                   <div className="text-left">
                                     <h4 className={`text-sm font-bold ${themeClasses.textPrimary}`}>{section.cat}</h4>
-                                    <span className={`text-xs ${themeClasses.textSecondary}`}>{section.problems.length} problems</span>
+                                    <span className={`text-xs ${themeClasses.textSecondary}`}>
+                                      {section.problems.length} problems
+                                      {leetcodeConnected && mathSolvedCount > 0 && (
+                                        <span className="text-emerald-600 dark:text-emerald-400 ml-1.5">· {mathSolvedCount} solved</span>
+                                      )}
+                                    </span>
                                   </div>
                                 </div>
                                 <div className={`w-6 h-6 rounded-full bg-gradient-to-br ${section.color} flex items-center justify-center flex-shrink-0 transition-transform duration-300 ${isCatOpen ? 'rotate-180' : ''}`}>
@@ -10093,22 +10282,31 @@ const Dashboard = () => {
                               {isCatOpen && (
                                 <div className="px-4 pb-4">
                                   <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2.5">
-                                    {section.problems.map((p, pi) => (
-                                      <a key={pi} href={p.link} target="_blank" rel="noopener noreferrer"
-                                        className={`${themeClasses.cardBackground} border ${themeClasses.cardBorder} rounded-xl p-3 hover:shadow-md hover:border-blue-400 dark:hover:border-blue-500 transition-all duration-200 group flex flex-col gap-1.5`}>
-                                        <div className="flex items-center justify-between">
-                                          <span className={`text-xs font-bold ${themeClasses.textSecondary}`}>#{p.n}</span>
-                                          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${DIFF_BADGE[p.diff]}`}>{p.diff}</span>
-                                        </div>
-                                        <p className={`text-sm font-semibold ${themeClasses.textPrimary} group-hover:text-blue-500 transition-colors leading-snug`}>{p.title}</p>
-                                        <div className="flex items-center gap-1 text-xs text-blue-500 font-medium mt-auto">
-                                          <span>Solve</span>
-                                          <svg className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                                          </svg>
-                                        </div>
-                                      </a>
-                                    ))}
+                                    {section.problems.map((p, pi) => {
+                                      const slug = extractLeetcodeSlug(p.link);
+                                      const isSolved = leetcodeConnected && slug && leetcodeSolvedSlugs.has(slug);
+                                      return (
+                                        <a key={pi} href={p.link} target="_blank" rel="noopener noreferrer"
+                                          className={`${themeClasses.cardBackground} border ${isSolved ? 'border-emerald-400 dark:border-emerald-600' : themeClasses.cardBorder} rounded-xl p-3 hover:shadow-md hover:border-blue-400 dark:hover:border-blue-500 transition-all duration-200 group flex flex-col gap-1.5 ${isSolved ? 'ring-1 ring-emerald-200 dark:ring-emerald-800' : ''}`}>
+                                          <div className="flex items-center justify-between">
+                                            <span className={`text-xs font-bold ${themeClasses.textSecondary}`}>#{p.n}</span>
+                                            <div className="flex items-center gap-1.5">
+                                              {isSolved && <span className="text-emerald-500 text-xs font-bold">✓</span>}
+                                              <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${DIFF_BADGE[p.diff]}`}>{p.diff}</span>
+                                            </div>
+                                          </div>
+                                          <p className={`text-sm font-semibold ${themeClasses.textPrimary} group-hover:text-blue-500 transition-colors leading-snug`}>{p.title}</p>
+                                          <div className={`flex items-center gap-1 text-xs font-medium mt-auto ${isSolved ? 'text-emerald-500' : 'text-blue-500'}`}>
+                                            <span>{isSolved ? '✅ Solved' : 'Solve'}</span>
+                                            {!isSolved && (
+                                              <svg className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                              </svg>
+                                            )}
+                                          </div>
+                                        </a>
+                                      );
+                                    })}
                                   </div>
                                 </div>
                               )}
