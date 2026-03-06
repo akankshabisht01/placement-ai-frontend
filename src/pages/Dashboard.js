@@ -3609,6 +3609,16 @@ const Dashboard = () => {
       icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
     },
     { 
+      id: 'dsa', 
+      label: 'DSA Practice', 
+      icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" /></svg>
+    },
+    { 
+      id: 'certifications', 
+      label: 'Certifications', 
+      icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" /></svg>
+    },
+    { 
       id: 'projects', 
       label: 'Project Submission', 
       icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-4l-2-2H5a2 2 0 00-2 2z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10v6m-3-3h6" /></svg>
@@ -3622,16 +3632,6 @@ const Dashboard = () => {
       id: 'progress', 
       label: 'Progress Tracking', 
       icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
-    },
-    { 
-      id: 'certifications', 
-      label: 'Certifications', 
-      icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" /></svg>
-    },
-    { 
-      id: 'dsa', 
-      label: 'DSA Practice', 
-      icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" /></svg>
     }
   ];
 
@@ -9331,23 +9331,6 @@ const Dashboard = () => {
               ) : (
               /* Show normal certifications content when roadmap exists */
               <>
-              {/* Header */}
-              <div className={`bg-white/80 dark:bg-[#1e1a2e]/80 backdrop-blur-sm rounded-2xl p-8 shadow-lg border ${themeClasses.cardBorder}/50 dark:border-pink-500/20`}>
-                <div className="flex items-center justify-between mb-6">
-                  <div>
-                    <h2 className="text-3xl font-bold text-amber-900 dark:text-white">Recommended Certifications</h2>
-                    <p className="text-amber-700 dark:text-gray-400 mt-2">
-                      Best Free and Paid Certifications for {linkedResume?.jobSelection?.jobRole ? formatJobRole(linkedResume.jobSelection.jobRole) : 'Your Selected Role'}
-                    </p>
-                  </div>
-                  <div className="w-20 h-20 bg-gradient-to-br from-amber-500 to-orange-600 rounded-3xl flex items-center justify-center shadow-lg">
-                    <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
-                    </svg>
-                  </div>
-                </div>
-              </div>
-
               {/* Certification Submission Section */}
               <div className={`bg-white/80 dark:bg-[#1e1a2e]/80 backdrop-blur-sm rounded-2xl p-8 shadow-lg border-2 border-emerald-300 dark:border-emerald-500/30`}>
                 <div className="flex items-center justify-between mb-6">
@@ -9516,7 +9499,19 @@ const Dashboard = () => {
               <div className={`bg-white/80 dark:bg-[#1e1a2e]/80 backdrop-blur-sm rounded-2xl p-8 shadow-lg border ${themeClasses.cardBorder}/50 dark:border-pink-500/20`}>
                 <div className="flex items-center justify-between mb-6">
                   <div>
-                    <h3 className="text-2xl font-bold text-amber-900 dark:text-white">Free Certifications</h3>
+                    <h3 className="text-2xl font-bold text-amber-900 dark:text-white">Recommended Certifications</h3>
+                    <p className="text-sm text-amber-600 dark:text-gray-400 mt-1">Best Free and Paid Certifications for {linkedResume?.jobSelection?.jobRole ? formatJobRole(linkedResume.jobSelection.jobRole) : 'Your Selected Role'}</p>
+                  </div>
+                  <div className="bg-amber-100 dark:bg-amber-900/30 px-4 py-2 rounded-full">
+                    <span className="text-amber-700 dark:text-amber-400 font-semibold text-sm">Recommended</span>
+                  </div>
+                </div>
+
+              {/* Free Certifications Sub-Section */}
+              <div className="mb-8">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h4 className="text-xl font-bold text-amber-900 dark:text-white">Free Certifications</h4>
                     <p className="text-sm text-amber-600 dark:text-gray-400 mt-1">Start learning without any cost</p>
                   </div>
                   <div className="bg-green-100 dark:bg-green-900/30 px-4 py-2 rounded-full">
@@ -9577,11 +9572,11 @@ const Dashboard = () => {
                 )}
               </div>
 
-              {/* Paid Certifications Section */}
-              <div className={`bg-white/80 dark:bg-[#1e1a2e]/80 backdrop-blur-sm rounded-2xl p-8 shadow-lg border ${themeClasses.cardBorder}/50 dark:border-pink-500/20`}>
-                <div className="flex items-center justify-between mb-6">
+              {/* Paid Certifications Sub-Section */}
+              <div>
+                <div className="flex items-center justify-between mb-4">
                   <div>
-                    <h3 className="text-2xl font-bold text-amber-900 dark:text-white">Paid Certifications</h3>
+                    <h4 className="text-xl font-bold text-amber-900 dark:text-white">Paid Certifications</h4>
                     <p className="text-sm text-amber-600 dark:text-gray-400 mt-1">Industry-recognized professional certifications</p>
                   </div>
                   <div className="bg-amber-100 dark:bg-amber-900/30 px-4 py-2 rounded-full">
@@ -9640,6 +9635,7 @@ const Dashboard = () => {
                     <p className="text-amber-700 dark:text-gray-400">No paid certifications available</p>
                   </div>
                 )}
+              </div>
               </div>
               </>
               )}
@@ -9878,7 +9874,7 @@ const Dashboard = () => {
                         </button>
                         {/* Dropdown for overflow topics */}
                         {dsaMoreOpen && (
-                          <div className={`absolute bottom-full left-0 right-0 mb-1 ${themeClasses.cardBackground} border ${themeClasses.cardBorder} rounded-xl shadow-xl overflow-hidden z-20`}>
+                          <div className={`absolute top-full left-0 right-0 mt-1 ${themeClasses.cardBackground} border ${themeClasses.cardBorder} rounded-xl shadow-xl overflow-hidden z-20`}>
                             <div className="p-2 space-y-1">
                               {moreNav.map(t => <NavBtn key={t.id} t={t} />)}
                             </div>
