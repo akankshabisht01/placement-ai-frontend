@@ -2467,9 +2467,6 @@ const Dashboard = () => {
             month: result.data.month || 1,
             testTitle: result.data.test_title || ''
           });
-<<<<<<< Updated upstream
-          console.log('âœ… Current week info fetched:', result.data);
-=======
           setAllWeeksCompleted(result.data.all_completed || false);
           console.log('✅ Current week info fetched:', result.data, 'All completed:', result.data.all_completed);
           
@@ -2479,7 +2476,6 @@ const Dashboard = () => {
             setCheckingTestGeneration(false);
             return;
           }
->>>>>>> Stashed changes
           
           // After fetching week info, check if test exists for this specific week
           await checkWeeklyTestGenerationForWeek(mobile, result.data.week, result.data.month);
