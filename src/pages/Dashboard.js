@@ -708,6 +708,11 @@ const Dashboard = () => {
   const [leetcodeLoading, setLeetcodeLoading] = useState(false);
   const [leetcodeError, setLeetcodeError] = useState(null);
   const [leetcodeConnected, setLeetcodeConnected] = useState(false);
+  // DSA Progress tracking
+  const [dsaProgress, setDsaProgress] = useState(new Set()); // slugs of solved problems
+  const [dsaCounts, setDsaCounts] = useState({ easy: 0, medium: 0, hard: 0, total: 0 });
+  const [dsaScoreValue, setDsaScoreValue] = useState(0);
+  const [dsaMarkingSlug, setDsaMarkingSlug] = useState(null); // currently toggling slug
   const [showProjects, setShowProjects] = useState(false);
   const [loadingWeeklyTestAnalysis, setLoadingWeeklyTestAnalysis] = useState(false);
   const [weeklyTestAnalysisError, setWeeklyTestAnalysisError] = useState(null);
@@ -1860,6 +1865,78 @@ const Dashboard = () => {
     setLeetcodeError(null);
   };
 
+  // ── DSA Progress Tracking ──────────────────────────────────
+  const fetchDsaProgress = async () => {
+    const mobile = getUserMobile();
+    if (!mobile) return;
+    try {
+      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
+      const res = await fetch(`${backendUrl}/api/dsa/progress/${encodeURIComponent(mobile)}`);
+      const data = await res.json();
+      if (data.success) {
+        setDsaProgress(new Set(data.solvedSlugs || []));
+        setDsaCounts(data.counts || { easy: 0, medium: 0, hard: 0, total: 0 });
+        setDsaScoreValue(data.dsaScore || 0);
+      }
+    } catch (e) {
+      console.error('Error fetching DSA progress:', e);
+    }
+  };
+
+  const handleDsaMarkSolved = async (slug, title, difficulty) => {
+    const mobile = getUserMobile();
+    if (!mobile || !slug) return;
+    setDsaMarkingSlug(slug);
+    try {
+      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
+      const res = await fetch(`${backendUrl}/api/dsa/mark-solved`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mobile, slug, title, difficulty })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setDsaProgress(prev => new Set([...prev, slug]));
+        setDsaCounts(data.counts || dsaCounts);
+        setDsaScoreValue(data.dsaScore || dsaScoreValue);
+      }
+    } catch (e) {
+      console.error('Error marking DSA problem solved:', e);
+    } finally {
+      setDsaMarkingSlug(null);
+    }
+  };
+
+  const handleDsaUnmarkSolved = async (slug) => {
+    const mobile = getUserMobile();
+    if (!mobile || !slug) return;
+    setDsaMarkingSlug(slug);
+    try {
+      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
+      const res = await fetch(`${backendUrl}/api/dsa/unmark-solved`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mobile, slug })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setDsaProgress(prev => { const next = new Set(prev); next.delete(slug); return next; });
+        setDsaCounts(data.counts || dsaCounts);
+        setDsaScoreValue(data.dsaScore || dsaScoreValue);
+      }
+    } catch (e) {
+      console.error('Error unmarking DSA problem:', e);
+    } finally {
+      setDsaMarkingSlug(null);
+    }
+  };
+
+  const syncLeetcodeToDsaProgress = async () => {
+    // Future: auto-sync LeetCode solved → dsa_progress backend
+    // Requires building slug→difficulty mapping from TOPIC_PROBLEMS & MATH_CATS
+    // For now, users can manually click "Mark Done" on each card
+  };
+
   // Resume Analysis Handler
   const handleResumeAnalysis = async () => {
     setIsAnalyzing(true);
@@ -2040,6 +2117,13 @@ const Dashboard = () => {
   useEffect(() => {
     if (activeSection === 'dsa' && !leetcodeConnected) {
       fetchLeetcodeUsername();
+    }
+  }, [activeSection]);
+
+  // Fetch DSA progress when DSA section is opened
+  useEffect(() => {
+    if (activeSection === 'dsa') {
+      fetchDsaProgress();
     }
   }, [activeSection]);
 
@@ -9762,11 +9846,7 @@ const Dashboard = () => {
               { id: 'heaps',         label: 'Heaps & Priority Queue',dot: 'bg-lime-600',    total: 24,  easy: 6,  medium: 10, hard: 8  },
               { id: 'backtracking',  label: 'Backtracking',          dot: 'bg-fuchsia-500', total: 26,  easy: 4,  medium: 12, hard: 10 },
             ];
-            const VISIBLE = 8;
-            const mainNav = DSA_NAV.slice(0, VISIBLE);
-            const moreNav = DSA_NAV.slice(VISIBLE);
             const activeTopic = DSA_NAV.find(t => t.id === dsaActiveTopic) || DSA_NAV[0];
-            const inMore = moreNav.some(t => t.id === dsaActiveTopic);
 
             const DIFF_BADGE = {
               Easy:   'bg-emerald-100 text-emerald-700',
@@ -9902,21 +9982,31 @@ const Dashboard = () => {
               { cat:'Number Conversions',abbr:'NC',color:'from-amber-500 to-yellow-500',bg:'bg-amber-50',border:'border-amber-200 dark:border-amber-800',problems:[{n:73,title:'Decimal to Binary',diff:'Easy',link:'https://www.geeksforgeeks.org/decimal-binary-number/'},{n:74,title:'Binary to Decimal',diff:'Easy',link:'https://www.geeksforgeeks.org/binary-to-decimal/'},{n:75,title:'Fahrenheit to Celsius',diff:'Easy',link:'https://www.geeksforgeeks.org/program-to-convert-temperature-from-degree-celsius-to-fahrenheit/'},{n:76,title:'String to Integer Without parseInt()',diff:'Easy',link:'https://www.geeksforgeeks.org/convert-a-string-to-an-integer-in-java/'},{n:77,title:'Sum of Digits in Base K',diff:'Medium',link:'https://www.geeksforgeeks.org/sum-of-digits-of-a-number-in-base-k/'}]},
             ];
 
-            // Count solved LeetCode problems for a given topic
+            // Extract a unique slug from any problem URL (LeetCode or GFG)
+            const getProblemSlug = (url) => {
+              if (!url) return null;
+              const lcSlug = extractLeetcodeSlug(url);
+              if (lcSlug) return lcSlug;
+              // For GFG: extract path segment e.g. "factorial" from geeksforgeeks.org/factorial/
+              const gfgMatch = url.match(/geeksforgeeks\.org\/([^/?#]+)/);
+              return gfgMatch ? `gfg-${gfgMatch[1]}` : null;
+            };
+
+            // Count solved problems for a given topic (from dsaProgress DB, not just LeetCode)
             const getTopicSolvedCount = (topicId) => {
-              if (!leetcodeConnected || leetcodeSolvedSlugs.size === 0) return 0;
+              if (dsaProgress.size === 0) return 0;
               const probs = TOPIC_PROBLEMS[topicId];
               if (!probs) return 0;
               return probs.filter(p => {
-                const slug = extractLeetcodeSlug(p.link);
-                return slug && leetcodeSolvedSlugs.has(slug);
+                const slug = getProblemSlug(p.link);
+                return slug && dsaProgress.has(slug);
               }).length;
             };
 
             const NavBtn = ({ t }) => {
               const isActive = dsaActiveTopic === t.id;
               const solvedCount = getTopicSolvedCount(t.id);
-              const hasSolved = leetcodeConnected && solvedCount > 0;
+              const hasSolved = solvedCount > 0;
               return (
                 <button
                   onClick={() => { setDsaActiveTopic(t.id); setDsaMoreOpen(false); }}
@@ -9954,7 +10044,34 @@ const Dashboard = () => {
                       <p className="text-blue-200 text-xs">Interview preparation — {activeTopic.label}</p>
                     </div>
                   </div>
-                  <div className="hidden sm:flex items-center gap-2">
+                  <div className="hidden sm:flex items-center gap-3">
+                    {(() => {
+                      const easyCount = Math.max(dsaCounts.easy, parseInt(leetcodeStats.Easy || leetcodeStats.easy || 0));
+                      const medCount = Math.max(dsaCounts.medium, parseInt(leetcodeStats.Medium || leetcodeStats.medium || 0));
+                      const hardCount = Math.max(dsaCounts.hard, parseInt(leetcodeStats.Hard || leetcodeStats.hard || 0));
+                      const totalCount = easyCount + medCount + hardCount;
+                      return (
+                        <div className="flex items-center gap-1.5 mr-1">
+                          <div className="bg-white/20 backdrop-blur-sm rounded-lg px-3 py-1.5 text-center min-w-[48px]">
+                            <div className="text-sm font-bold text-white">{totalCount}</div>
+                            <div className="text-xs text-blue-200">Solved</div>
+                          </div>
+                          <div className="bg-emerald-500/25 backdrop-blur-sm rounded-lg px-2.5 py-1.5 text-center min-w-[42px]">
+                            <div className="text-sm font-bold text-emerald-300">{easyCount}</div>
+                            <div className="text-[10px] text-emerald-200">Easy</div>
+                          </div>
+                          <div className="bg-yellow-500/25 backdrop-blur-sm rounded-lg px-2.5 py-1.5 text-center min-w-[42px]">
+                            <div className="text-sm font-bold text-yellow-300">{medCount}</div>
+                            <div className="text-[10px] text-yellow-200">Medium</div>
+                          </div>
+                          <div className="bg-red-500/25 backdrop-blur-sm rounded-lg px-2.5 py-1.5 text-center min-w-[42px]">
+                            <div className="text-sm font-bold text-red-300">{hardCount}</div>
+                            <div className="text-[10px] text-red-200">Hard</div>
+                          </div>
+                          <div className="w-px h-8 bg-white/20 mx-1"></div>
+                        </div>
+                      );
+                    })()}
                     {[['150+','Problems'],['11','Topics'],['3','Levels']].map(([v,l],i) => (
                       <div key={i} className="bg-white/15 backdrop-blur-sm rounded-lg px-3 py-1.5 text-center">
                         <div className="text-sm font-bold text-white">{v}</div>
@@ -9966,9 +10083,17 @@ const Dashboard = () => {
 
                 {/* ── LeetCode Connection Bar ──────────────────────── */}
                 <div className="bg-gradient-to-r from-blue-700/50 via-indigo-700/50 to-violet-700/50 px-6 py-2.5 flex items-center justify-between border-t border-white/10">
-                  <div className="flex items-center gap-2">
-                    <span className="text-orange-400 text-sm font-bold">LC</span>
-                    <span className="text-white/80 text-xs">LeetCode Integration</span>
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2">
+                      <span className="text-orange-400 text-sm font-bold">LC</span>
+                      <span className="text-white/80 text-xs">LeetCode Integration</span>
+                    </div>
+                    {dsaCounts.total > 0 && (
+                      <div className="flex items-center gap-2 pl-3 border-l border-white/20">
+                        <span className="text-emerald-400 text-xs font-bold">DSA Score: {dsaScoreValue.toFixed(1)}%</span>
+                        <span className="text-white/50 text-xs">({dsaCounts.easy}E · {dsaCounts.medium}M · {dsaCounts.hard}H)</span>
+                      </div>
+                    )}
                   </div>
                   {leetcodeConnected ? (
                     <div className="flex items-center gap-3">
@@ -10020,33 +10145,7 @@ const Dashboard = () => {
                       <p className={`text-xs font-bold uppercase tracking-widest ${themeClasses.textSecondary} px-1`}>Topics</p>
                     </div>
                     <div className="flex-1 overflow-y-auto px-3 py-3 space-y-1">
-                      {mainNav.map(t => <NavBtn key={t.id} t={t} />)}
-
-                      {/* ── More button ─────────────────────── */}
-                      <div className="relative">
-                        <button
-                          onClick={() => setDsaMoreOpen(p => !p)}
-                          className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-all duration-150
-                            ${inMore && !dsaMoreOpen ? 'bg-blue-600 text-white shadow-md' : themeClasses.sectionBackground + ' ' + themeClasses.textSecondary}`}
-                        >
-                          <span className="text-base leading-none">...</span>
-                          <span className={`text-sm font-medium flex-1 ${inMore && !dsaMoreOpen ? 'text-white' : themeClasses.textPrimary}`}>
-                            {inMore && !dsaMoreOpen ? activeTopic.label : `More (${moreNav.length})`}
-                          </span>
-                          <svg className={`w-4 h-4 transition-transform duration-200 ${dsaMoreOpen ? 'rotate-180' : ''} ${inMore && !dsaMoreOpen ? 'text-white' : themeClasses.textSecondary}`}
-                            fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                          </svg>
-                        </button>
-                        {/* Dropdown for overflow topics */}
-                        {dsaMoreOpen && (
-                          <div className={`absolute top-full left-0 right-0 mt-1 ${themeClasses.cardBackground} border ${themeClasses.cardBorder} rounded-xl shadow-xl overflow-hidden z-20`}>
-                            <div className="p-2 space-y-1">
-                              {moreNav.map(t => <NavBtn key={t.id} t={t} />)}
-                            </div>
-                          </div>
-                        )}
-                      </div>
+                      {DSA_NAV.map(t => <NavBtn key={t.id} t={t} />)}
                     </div>
 
                     {/* Platforms quick links */}
@@ -10175,7 +10274,7 @@ const Dashboard = () => {
                       const easyP  = probs.filter(p => p.diff === 'Easy');
                       const medP   = probs.filter(p => p.diff === 'Medium');
                       const hardP  = probs.filter(p => p.diff === 'Hard');
-                      const solvedInTopic = leetcodeConnected ? probs.filter(p => { const s = extractLeetcodeSlug(p.link); return s && leetcodeSolvedSlugs.has(s); }).length : 0;
+                      const solvedInTopic = probs.filter(p => { const s = getProblemSlug(p.link); return s && dsaProgress.has(s); }).length;
                       return (
                         <div className="space-y-6">
                           {/* Topic header */}
@@ -10192,11 +10291,9 @@ const Dashboard = () => {
                               </div>
                             </div>
                             <div className="flex items-center gap-3">
-                              {leetcodeConnected && (
-                                <span className={`text-sm font-bold px-3 py-1 rounded-lg ${solvedInTopic > 0 ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400' : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400'}`}>
-                                  {solvedInTopic}/{probs.length} Solved
-                                </span>
-                              )}
+                              <span className={`text-sm font-bold px-3 py-1 rounded-lg ${solvedInTopic > 0 ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400' : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400'}`}>
+                                {solvedInTopic}/{probs.length} Solved
+                              </span>
                               <span className={`text-sm font-bold ${themeClasses.textSecondary}`}>{probs.length} problems</span>
                             </div>
                           </div>
@@ -10204,11 +10301,12 @@ const Dashboard = () => {
                           {/* Problem cards */}
                           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
                             {probs.map((p, pi) => {
-                              const slug = extractLeetcodeSlug(p.link);
-                              const isSolved = leetcodeConnected && slug && leetcodeSolvedSlugs.has(slug);
+                              const slug = getProblemSlug(p.link);
+                              const isSolved = slug && dsaProgress.has(slug);
+                              const isMarking = dsaMarkingSlug === slug;
                               return (
-                                <a key={pi} href={p.link} target="_blank" rel="noopener noreferrer"
-                                  className={`${themeClasses.sectionBackground} border ${isSolved ? 'border-emerald-400 dark:border-emerald-600' : themeClasses.cardBorder} rounded-xl p-4 hover:shadow-md hover:border-blue-400 transition-all duration-200 group flex flex-col gap-2 ${isSolved ? 'ring-1 ring-emerald-200 dark:ring-emerald-800' : ''}`}>
+                                <div key={pi}
+                                  className={`${themeClasses.sectionBackground} border ${isSolved ? 'border-emerald-400 dark:border-emerald-600' : themeClasses.cardBorder} rounded-xl p-4 hover:shadow-md transition-all duration-200 group flex flex-col gap-2 ${isSolved ? 'ring-1 ring-emerald-200 dark:ring-emerald-800' : ''}`}>
                                   <div className="flex items-center justify-between">
                                     <span className={`text-xs font-bold ${themeClasses.textSecondary}`}>#{pi + 1}</span>
                                     <div className="flex items-center gap-1.5">
@@ -10216,16 +10314,22 @@ const Dashboard = () => {
                                       <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${DIFF_BADGE[p.diff]}`}>{p.diff}</span>
                                     </div>
                                   </div>
-                                  <p className={`text-sm font-semibold ${themeClasses.textPrimary} group-hover:text-blue-600 transition-colors leading-snug`}>{p.title}</p>
-                                  <div className={`flex items-center gap-1 text-xs mt-auto font-medium ${isSolved ? 'text-emerald-500' : 'text-blue-500'}`}>
-                                    <span>{isSolved ? '✅ Solved' : 'Solve on LeetCode'}</span>
-                                    {!isSolved && (
-                                      <svg className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                                      </svg>
+                                  <a href={p.link} target="_blank" rel="noopener noreferrer" className={`text-sm font-semibold ${themeClasses.textPrimary} hover:text-blue-600 transition-colors leading-snug`}>{p.title}</a>
+                                  <div className="flex items-center justify-between mt-auto">
+                                    <a href={p.link} target="_blank" rel="noopener noreferrer" className={`flex items-center gap-1 text-xs font-medium ${isSolved ? 'text-emerald-500' : 'text-blue-500'}`}>
+                                      <span>{isSolved ? '✅ Solved' : 'Solve →'}</span>
+                                    </a>
+                                    {slug && (
+                                      <button
+                                        disabled={isMarking}
+                                        onClick={() => isSolved ? handleDsaUnmarkSolved(slug) : handleDsaMarkSolved(slug, p.title, p.diff)}
+                                        className={`text-xs px-2.5 py-1 rounded-lg font-medium transition-all duration-200 ${isMarking ? 'opacity-50 cursor-wait' : 'cursor-pointer'} ${isSolved ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 hover:bg-red-100 dark:hover:bg-red-900/30 hover:text-red-600 dark:hover:text-red-400' : 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-800/40'}`}
+                                      >
+                                        {isMarking ? '...' : (isSolved ? '✓ Done' : 'Mark Done')}
+                                      </button>
                                     )}
                                   </div>
-                                </a>
+                                </div>
                               );
                             })}
                           </div>
@@ -10242,7 +10346,7 @@ const Dashboard = () => {
                             <span className="w-10 h-10 rounded-xl bg-yellow-500 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">Ma</span>
                             <div>
                               <h3 className={`text-xl font-bold ${themeClasses.textPrimary}`}>Mathematics</h3>
-                              <p className={`text-xs ${themeClasses.textSecondary} mt-0.5`}>77 curated problems · 12 categories · TCS NQT focused</p>
+                              <p className={`text-xs ${themeClasses.textSecondary} mt-0.5`}>77 curated problems · 12 categories</p>
                             </div>
                           </div>
                           <div className="flex gap-2">
@@ -10254,7 +10358,7 @@ const Dashboard = () => {
 
                         {MATH_CATS.map((section, si) => {
                           const isCatOpen = !!openMathCats[si];
-                          const mathSolvedCount = leetcodeConnected ? section.problems.filter(p => { const s = extractLeetcodeSlug(p.link); return s && leetcodeSolvedSlugs.has(s); }).length : 0;
+                          const mathSolvedCount = section.problems.filter(p => { const s = getProblemSlug(p.link); return s && dsaProgress.has(s); }).length;
                           return (
                             <div key={si} className={`${section.bg} border ${section.border} rounded-xl overflow-hidden`}>
                               <button
@@ -10267,7 +10371,7 @@ const Dashboard = () => {
                                     <h4 className={`text-sm font-bold ${themeClasses.textPrimary}`}>{section.cat}</h4>
                                     <span className={`text-xs ${themeClasses.textSecondary}`}>
                                       {section.problems.length} problems
-                                      {leetcodeConnected && mathSolvedCount > 0 && (
+                                      {mathSolvedCount > 0 && (
                                         <span className="text-emerald-600 dark:text-emerald-400 ml-1.5">· {mathSolvedCount} solved</span>
                                       )}
                                     </span>
@@ -10283,11 +10387,12 @@ const Dashboard = () => {
                                 <div className="px-4 pb-4">
                                   <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2.5">
                                     {section.problems.map((p, pi) => {
-                                      const slug = extractLeetcodeSlug(p.link);
-                                      const isSolved = leetcodeConnected && slug && leetcodeSolvedSlugs.has(slug);
+                                      const slug = getProblemSlug(p.link);
+                                      const isSolved = slug && dsaProgress.has(slug);
+                                      const isMarking = dsaMarkingSlug === slug;
                                       return (
-                                        <a key={pi} href={p.link} target="_blank" rel="noopener noreferrer"
-                                          className={`${themeClasses.cardBackground} border ${isSolved ? 'border-emerald-400 dark:border-emerald-600' : themeClasses.cardBorder} rounded-xl p-3 hover:shadow-md hover:border-blue-400 dark:hover:border-blue-500 transition-all duration-200 group flex flex-col gap-1.5 ${isSolved ? 'ring-1 ring-emerald-200 dark:ring-emerald-800' : ''}`}>
+                                        <div key={pi}
+                                          className={`${themeClasses.cardBackground} border ${isSolved ? 'border-emerald-400 dark:border-emerald-600' : themeClasses.cardBorder} rounded-xl p-3 hover:shadow-md transition-all duration-200 group flex flex-col gap-1.5 ${isSolved ? 'ring-1 ring-emerald-200 dark:ring-emerald-800' : ''}`}>
                                           <div className="flex items-center justify-between">
                                             <span className={`text-xs font-bold ${themeClasses.textSecondary}`}>#{p.n}</span>
                                             <div className="flex items-center gap-1.5">
@@ -10295,16 +10400,22 @@ const Dashboard = () => {
                                               <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${DIFF_BADGE[p.diff]}`}>{p.diff}</span>
                                             </div>
                                           </div>
-                                          <p className={`text-sm font-semibold ${themeClasses.textPrimary} group-hover:text-blue-500 transition-colors leading-snug`}>{p.title}</p>
-                                          <div className={`flex items-center gap-1 text-xs font-medium mt-auto ${isSolved ? 'text-emerald-500' : 'text-blue-500'}`}>
-                                            <span>{isSolved ? '✅ Solved' : 'Solve'}</span>
-                                            {!isSolved && (
-                                              <svg className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                                              </svg>
+                                          <a href={p.link} target="_blank" rel="noopener noreferrer" className={`text-sm font-semibold ${themeClasses.textPrimary} hover:text-blue-500 transition-colors leading-snug`}>{p.title}</a>
+                                          <div className="flex items-center justify-between mt-auto">
+                                            <a href={p.link} target="_blank" rel="noopener noreferrer" className={`flex items-center gap-1 text-xs font-medium ${isSolved ? 'text-emerald-500' : 'text-blue-500'}`}>
+                                              <span>{isSolved ? '✅ Solved' : 'Solve →'}</span>
+                                            </a>
+                                            {slug && (
+                                              <button
+                                                disabled={isMarking}
+                                                onClick={() => isSolved ? handleDsaUnmarkSolved(slug) : handleDsaMarkSolved(slug, p.title, p.diff)}
+                                                className={`text-xs px-2.5 py-1 rounded-lg font-medium transition-all duration-200 ${isMarking ? 'opacity-50 cursor-wait' : 'cursor-pointer'} ${isSolved ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 hover:bg-red-100 dark:hover:bg-red-900/30 hover:text-red-600 dark:hover:text-red-400' : 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-800/40'}`}
+                                              >
+                                                {isMarking ? '...' : (isSolved ? '✓ Done' : 'Mark Done')}
+                                              </button>
                                             )}
                                           </div>
-                                        </a>
+                                        </div>
                                       );
                                     })}
                                   </div>
