@@ -1413,6 +1413,7 @@ const Dashboard = () => {
   };
 
   // Read incoming query param 'section' to allow linking directly to a dashboard subsection
+  const initialSearchRef = useRef(location.search || window.location.search);
   useEffect(() => {
     try {
       const params = new URLSearchParams(location.search || window.location.search);
@@ -1438,10 +1439,12 @@ const Dashboard = () => {
         const target = mapping[s] || s;
         setActiveSection(target);
         
-        // Auto-expand Test Analysis when redirected to progress section
-        if (target === 'progress') {
+        // Auto-expand Test Analysis only on navigation (not initial page load/refresh)
+        const currentSearch = location.search || window.location.search;
+        if (target === 'progress' && currentSearch !== initialSearchRef.current) {
           fetchTestAnalysisData();
         }
+        initialSearchRef.current = currentSearch;
       }
     } catch (err) {
       // ignore
