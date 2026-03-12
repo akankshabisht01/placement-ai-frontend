@@ -6,7 +6,9 @@ import PredictionSection from '../components/PredictionSection';
 import ResumeLinker from '../components/ResumeLinker';
 import { User, ChevronDown, ChevronUp } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
+import { useAuth } from '../contexts/AuthContext';
 import { getThemeClasses } from '../utils/themeHelpers';
+import { checkGuestLimit, recordGuestUsage, SCORE_LIMIT } from '../utils/guestUsageLimit';
 
 // Add Data Analyst and update all role mappings with company-required skills
 const roleSkillsMap = {
@@ -241,6 +243,7 @@ const PredictionForm = () => {
   // Session storage key for this form
   const SESSION_STORAGE_KEY = 'predictionFormSession';
   const { theme } = useTheme();
+  const { isAuthenticated } = useAuth();
   const themeClasses = getThemeClasses(theme);
   
   // Always start at step 1
@@ -309,6 +312,8 @@ const PredictionForm = () => {
   const [incompleteFieldsWarning, setIncompleteFieldsWarning] = useState('');
   const [isPersonalResume, setIsPersonalResume] = useState(false); // Default unchecked
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [showLimitModal, setShowLimitModal] = useState(false);
+  const [limitRemaining, setLimitRemaining] = useState(SCORE_LIMIT);
   const [skillSectionsCollapsed, setSkillSectionsCollapsed] = useState({
     selected: true,
     unselected: true,
@@ -329,6 +334,15 @@ const PredictionForm = () => {
       }
     }
   }, []);
+
+  // Load remaining guest attempts on mount
+  useEffect(() => {
+    if (!isAuthenticated) {
+      checkGuestLimit('placement', API_BASE)
+        .then(({ remaining }) => setLimitRemaining(remaining))
+        .catch(() => {});
+    }
+  }, [API_BASE, isAuthenticated]);
   
   // Restore session on mount (do NOT clear sessionStorage on mount)
   useEffect(() => {
@@ -1099,6 +1113,16 @@ const PredictionForm = () => {
 
     if (currentStep !== 3) return;
 
+    // Guest usage limit check (skip for logged-in users)
+    if (!isAuthenticated) {
+      const { allowed, remaining } = await checkGuestLimit('placement', API_BASE);
+      setLimitRemaining(remaining);
+      if (!allowed) {
+        setShowLimitModal(true);
+        return;
+      }
+    }
+
     if (validateStep(currentStep)) {
       try {
         setSubmitting(true);
@@ -1183,6 +1207,12 @@ const PredictionForm = () => {
           };
           localStorage.setItem('linkedResumeData', JSON.stringify(linkedData));
           console.log('📊 Personal resume data saved to linkedResumeData for dashboard');
+        }
+        
+        // Record guest usage after successful prediction
+        if (!isAuthenticated) {
+          await recordGuestUsage('placement', API_BASE);
+          setLimitRemaining(prev => Math.max(0, prev - 1));
         }
         
         // Clear session storage after successful submission
@@ -2493,6 +2523,40 @@ const PredictionForm = () => {
   
   return (
     <div className={`max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12 ${themeClasses.pageBackground} transition-colors duration-300 relative`} style={{ minHeight: 'calc(100vh - 4rem)' }}>
+      {/* Guest Usage Limit Modal */}
+      {showLimitModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className={`${themeClasses.cardBackground} border-2 ${themeClasses.cardBorder} rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4 text-center`}>
+            <div className={`w-16 h-16 ${themeClasses.sectionBackground} rounded-full flex items-center justify-center mx-auto mb-4`}>
+              <svg className={`w-8 h-8 ${themeClasses.accent}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+              </svg>
+            </div>
+            <h3 className={`text-xl font-bold ${themeClasses.textPrimary} mb-2`}>Free Limit Reached</h3>
+            <p className={`${themeClasses.textSecondary} mb-2`}>
+              You've used all <span className="font-bold">{SCORE_LIMIT}</span> free Placement Score checks on this device.
+            </p>
+            <p className={`${themeClasses.textSecondary} mb-6 text-sm`}>
+              Register for a free account to get unlimited score checks and access your dashboard.
+            </p>
+            <div className="flex gap-3 justify-center">
+              <button
+                onClick={() => setShowLimitModal(false)}
+                className={`px-5 py-2.5 rounded-xl font-medium ${themeClasses.buttonSecondary} transition-all duration-200`}
+              >
+                Close
+              </button>
+              <button
+                onClick={() => navigate('/register')}
+                className={`px-5 py-2.5 rounded-xl font-medium ${themeClasses.buttonPrimary} ${themeClasses.buttonHover} transition-all duration-200`}
+              >
+                Register Now
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Textured Background Overlay */}
       <div className="fixed inset-0 pointer-events-none z-0">
           <svg className="w-full h-full opacity-[0.06] dark:opacity-[0.12]" xmlns="http://www.w3.org/2000/svg">
@@ -2541,6 +2605,23 @@ const PredictionForm = () => {
         <p className="text-xl text-gray-600 dark:text-tech-gray-300 max-w-3xl mx-auto">
           Fill in your details to get personalized placement insights
         </p>
+
+        {/* Guest attempts remaining banner */}
+        {!isAuthenticated && (
+          <div className={`mt-6 mx-auto max-w-md flex items-center gap-3 px-4 py-3 rounded-xl ${themeClasses.cardBackground} border ${themeClasses.cardBorder} shadow-sm`}>
+            <div className={`flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold text-white ${themeClasses.gradient}`}>
+              {limitRemaining}
+            </div>
+            <div className="flex-1 text-left">
+              <p className={`text-sm font-semibold ${themeClasses.textPrimary}`}>
+                {limitRemaining} free Placement Score {limitRemaining === 1 ? 'check' : 'checks'} remaining
+              </p>
+              <p className={`text-xs ${themeClasses.textSecondary}`}>
+                <span className={`cursor-pointer underline ${themeClasses.textAccent}`} onClick={() => navigate('/register')}>Register</span> for unlimited access
+              </p>
+            </div>
+          </div>
+        )}
       </div>
       
   <form onSubmit={(e) => e.preventDefault()} className="bg-white/95 dark:bg-[#1e1a2e]/95 backdrop-blur-sm rounded-xl shadow-lg dark:shadow-soft border dark:border-pink-500/20 p-8 relative z-10" style={{ position: 'static' }}>

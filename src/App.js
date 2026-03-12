@@ -20,6 +20,7 @@ import ATSScore from './pages/ATSScore';
 import Dashboard from './pages/Dashboard';
 import Chatbot from './pages/Chatbot';
 import Profile from './pages/Profile';
+import Settings from './pages/Settings';
 import About from './pages/About';
 import FAQ from './pages/FAQ';
 import Register from './pages/Register';
@@ -38,6 +39,17 @@ import Plans from './pages/Plans';
 import PaymentSuccess from './pages/PaymentSuccess';
 import AnuvaadAI from './pages/AnuvaadAI';
 import AIInterview from './pages/AIInterview';
+
+// Placement Cell Test System
+import PlacementCellLogin from './pages/PlacementCellLogin';
+import PlacementCellDashboard from './pages/PlacementCellDashboard';
+import PlacementTestPreview from './pages/PlacementTestPreview';
+import PlacementTestResults from './pages/PlacementTestResults';
+import StudentTestAccess from './pages/StudentTestAccess';
+import StudentTestPage from './pages/StudentTestPage';
+import StudentTestResult from './pages/StudentTestResult';
+import StudentProgressView from './pages/StudentProgressView';
+import StudentDashboard from './pages/StudentDashboard';
 
 // Protected Route Component
 import ProtectedRoute from './components/ProtectedRoute';
@@ -62,7 +74,7 @@ const AppLayout = () => {
   };
   
   // Hide navbar on test pages and interview (full-screen experience)
-  const hideNavbar = location.pathname === '/skills-test' || location.pathname === '/weekly-test' || location.pathname === '/monthly-test' || location.pathname === '/interview';
+  const hideNavbar = location.pathname === '/skills-test' || location.pathname === '/weekly-test' || location.pathname === '/monthly-test' || location.pathname === '/interview' || location.pathname.startsWith('/student-test');
   
   return (
     <div className={`${shellClass()} flex flex-col min-h-screen transition-colors duration-300`}>
@@ -84,9 +96,11 @@ const AppLayout = () => {
         <Route path="/test-results" element={<ProtectedRoute><TestResults /></ProtectedRoute>} />
         <Route path="/test-analysis" element={<ProtectedRoute><TestAnalysisReport /></ProtectedRoute>} />
         <Route path="/roadmap" element={<ProtectedRoute><Roadmap /></ProtectedRoute>} />
+        <Route path="/advanced-practice" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
         <Route path="/plans" element={<Plans />} />
         <Route path="/chatbot" element={<Chatbot />} />
         <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+        <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
         <Route path="/about" element={<About />} />
         <Route path="/faq" element={<FAQ />} />
         <Route path="/resume-profile-selection" element={<ResumeProfileSelection />} />
@@ -97,6 +111,18 @@ const AppLayout = () => {
         <Route path="/payment-success" element={<PaymentSuccess />} />
         <Route path="/anuvaad-ai" element={<AnuvaadAI />} />
         <Route path="/interview" element={<ProtectedRoute><AIInterview /></ProtectedRoute>} />
+        
+        {/* Placement Cell Test System */}
+        <Route path="/placement-cell/login" element={<PlacementCellLogin />} />
+        <Route path="/placement-cell/dashboard" element={<PlacementCellDashboard />} />
+        <Route path="/placement-cell/student-progress/:mobile" element={<StudentProgressView />} />
+        <Route path="/placement-cell/preview/:testId" element={<PlacementTestPreview />} />
+        <Route path="/placement-cell/results/:testId" element={<PlacementTestResults />} />
+        <Route path="/student-test" element={<StudentTestAccess />} />
+        <Route path="/student-test/take" element={<StudentTestPage />} />
+        <Route path="/student-test/submitted" element={<StudentTestResult />} />
+        <Route path="/student-test/result" element={<StudentTestResult />} />
+        <Route path="/student/dashboard" element={<StudentDashboard />} />
         
         <Route path="*" element={<NotFound />} />
       </Routes>

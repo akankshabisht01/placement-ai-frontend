@@ -318,6 +318,8 @@ const AIInterview = () => {
   // Setup form state
   const [setupName, setSetupName] = useState('');
   const [setupPosition, setSetupPosition] = useState('Software Developer');
+  const [lastInterview, setLastInterview] = useState(null);
+  const [historyLoading, setHistoryLoading] = useState(false);
 
   // Refs
   const recognitionRef = useRef(null);
@@ -344,14 +346,54 @@ const AIInterview = () => {
   // Load user data from localStorage
   useEffect(() => {
     try {
-      const linkedRaw = localStorage.getItem('linkedResumeData');
       const userRaw = localStorage.getItem('userData');
+      const linkedRaw = localStorage.getItem('linkedResumeData');
       const predRaw = localStorage.getItem('predictionFormData');
+      // Helper: convert snake_case/kebab-case role ids to readable Title Case
+      const formatRole = (r) => {
+        if (!r) return '';
+        const abbr = ['nlp', 'ml', 'ai', 'ui', 'ux', 'api', 'sql', 'aws', 'gcp', 'devops', 'qa', 'hr', 'ios', 'seo'];
+        return r.split(/[_\-\s]+/).map(w => abbr.includes(w.toLowerCase()) ? w.toUpperCase() : w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+      };
+
       let name = '';
-      if (linkedRaw) { const d = JSON.parse(linkedRaw); name = d.name || ''; }
-      if (!name && userRaw) { const d = JSON.parse(userRaw); name = d.name || ''; }
+      let role = '';
+      // Priority 1: linkedResumeData.jobSelection.jobRole (this is what the profile selects)
+      if (linkedRaw) {
+        const d = JSON.parse(linkedRaw);
+        name = d.name || '';
+        role = d.jobSelection?.jobRole || '';
+      }
+      // Priority 2: predictionFormData
+      if (!role && predRaw) { const d = JSON.parse(predRaw); role = d.jobRole || d.role || ''; }
+      // Priority 3: userData
+      if (userRaw) {
+        const d = JSON.parse(userRaw);
+        const full = [d.firstName, d.lastName].filter(Boolean).join(' ');
+        if (!name) name = full || d.name || '';
+        if (!role) role = d.role || '';
+      }
       if (!name && predRaw) { const d = JSON.parse(predRaw); name = d.name || ''; }
       if (name) setSetupName(name);
+      if (role) setSetupPosition(formatRole(role));
+
+      // Fetch last interview history once we have a phone number
+      const phone = (() => {
+        try {
+          if (linkedRaw) { const p = JSON.parse(linkedRaw); if (p.mobile || p.phoneNumber) return p.mobile || p.phoneNumber; }
+          if (userRaw) { const p = JSON.parse(userRaw); if (p.mobileNumber || p.mobile || p.phone) return p.mobileNumber || p.mobile || p.phone; }
+          if (predRaw) { const p = JSON.parse(predRaw); if (p.mobile || p.phoneNumber) return p.mobile || p.phoneNumber; }
+        } catch (e) {}
+        return '';
+      })();
+      if (phone) {
+        setHistoryLoading(true);
+        fetch(`${API_BASE_URL}/api/interview/history/${phone}`)
+          .then(r => r.json())
+          .then(d => { if (d.success && d.interviews?.length) setLastInterview(d.interviews[0]); })
+          .catch(() => {})
+          .finally(() => setHistoryLoading(false));
+      }
     } catch (e) { /* ignore */ }
   }, []);
 
@@ -739,7 +781,7 @@ const AIInterview = () => {
 
   // === Start Interview ===
   const startInterview = async () => {
-    if (!setupName.trim()) { setError('Please enter your name'); return; }
+    if (!setupName.trim()) { setError('Could not load your name. Please sign in again.'); return; }
     setIsProcessing(true); setError(null);
 
     // Setup camera
@@ -828,106 +870,327 @@ const AIInterview = () => {
 
   // ====== RENDER ======
 
+  // Score color helpers for setup screen
+  const getSetupScoreColor = (s) => s >= 80 ? '#10b981' : s >= 60 ? '#f59e0b' : s >= 40 ? '#f97316' : '#ef4444';
+  const getSetupScoreBg = (s) => s >= 80 ? 'rgba(16,185,129,0.12)' : s >= 60 ? 'rgba(245,158,11,0.12)' : s >= 40 ? 'rgba(249,115,22,0.12)' : 'rgba(239,68,68,0.12)';
+  const getSetupScoreLabel = (s) => s >= 80 ? 'Excellent' : s >= 60 ? 'Good' : s >= 40 ? 'Fair' : 'Needs Work';
+  const getDefaultTopics = (pos) => {
+    const m = {
+      'Software Developer': ['Data Structures & Algorithms', 'System Design Basics', 'OOP Principles', 'Database Fundamentals', 'REST APIs', 'Version Control (Git)'],
+      'Data Scientist': ['Statistics & Probability', 'Machine Learning Algorithms', 'Python & Pandas', 'Data Visualization', 'Feature Engineering', 'SQL & Databases'],
+      'Frontend Developer': ['JavaScript ES6+', 'React/Vue/Angular Frameworks', 'CSS & Responsive Design', 'Browser APIs & Performance', 'State Management', 'Accessibility'],
+      'Backend Developer': ['API Design & REST', 'Database Design', 'Authentication & Security', 'Server Architecture', 'Caching Strategies', 'Message Queues'],
+      'Full Stack Developer': ['Frontend Frameworks', 'Backend APIs', 'Database Design', 'DevOps Basics', 'System Design', 'Authentication & Security'],
+      'DevOps Engineer': ['CI/CD Pipelines', 'Docker & Kubernetes', 'Cloud Platforms (AWS/Azure)', 'Infrastructure as Code', 'Monitoring & Logging', 'Linux Administration'],
+      'Product Manager': ['Product Strategy', 'User Research & UX', 'Agile Methodology', 'Data-Driven Decisions', 'Stakeholder Management', 'Roadmap Planning'],
+    };
+    return m[pos] || m['Software Developer'];
+  };
+
   // Pre-interview setup screen
   if (!interviewStarted && !interviewEnded) {
+    const li = lastInterview;
+    const liScore = li?.feedback?.overall_score || 0;
+    const liScorecard = li?.feedback?.scorecard?.categories || [];
+    const liStrengths = li?.feedback?.strengths || [];
+    const liImprovements = li?.feedback?.areas_for_improvement || [];
+    const liTips = li?.feedback?.tips || [];
+    const liTopics = li?.feedback?.analysis?.topics_to_study?.length
+      ? li.feedback.analysis.topics_to_study
+      : li?.feedback?.analysis?.knowledge_assessment?.skill_gaps?.length
+        ? li.feedback.analysis.knowledge_assessment.skill_gaps
+        : getDefaultTopics(setupPosition);
+
+    // SVG circular progress ring for overall score
+    const ScoreRing = ({ score }) => {
+      const size = 80, stroke = 7, r = (size - stroke) / 2;
+      const circ = 2 * Math.PI * r;
+      const offset = circ - (score / 100) * circ;
+      return (
+        <svg width={size} height={size} style={{ transform: 'rotate(-90deg)', display: 'block' }}>
+          <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="rgba(128,128,128,0.15)" strokeWidth={stroke} />
+          <circle cx={size/2} cy={size/2} r={r} fill="none"
+            stroke={getSetupScoreColor(score)} strokeWidth={stroke}
+            strokeDasharray={circ} strokeDashoffset={offset}
+            strokeLinecap="round" />
+        </svg>
+      );
+    };
+
     return (
-      <div className={`min-h-screen ${themeClasses.pageBackground} py-8 px-4 transition-colors duration-300`}>
-        <div className="max-w-2xl mx-auto">
-          <div className={`${themeClasses.cardBackground} rounded-3xl shadow-2xl p-8 border ${themeClasses.cardBorder}`}>
-            {/* Header */}
-            <div className="text-center mb-8">
-              <div className={`mx-auto w-20 h-20 ${themeClasses.gradient} rounded-full flex items-center justify-center mb-4 shadow-lg`}>
-                <MessageCircle className={`w-10 h-10 ${themeClasses.textPrimary}`} />
+      <div className={`min-h-screen ${themeClasses.pageBackground} transition-colors duration-300`}>
+
+        {/* ── Top navigation bar ── */}
+        <div className={`${themeClasses.cardBackground} border-b ${themeClasses.cardBorder}`}>
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3.5 flex items-center justify-between gap-4">
+            {/* Brand */}
+            <div className="flex items-center gap-3">
+              <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${themeClasses.sectionBackground} border ${themeClasses.cardBorder}`}>
+                <MessageCircle size={17} className={themeClasses.textAccent} />
               </div>
-              <h1 className={`text-3xl font-bold ${themeClasses.textPrimary} mb-2`}>AI Mock Interview</h1>
-              <p className={`${themeClasses.textSecondary}`}>Practice with an AI interviewer and get instant feedback</p>
+              <div>
+                <h1 className={`text-sm font-bold tracking-tight ${themeClasses.textPrimary} leading-tight`}>AI Mock Interview</h1>
+                <p className={`text-xs ${themeClasses.textSecondary} leading-tight`}>Adaptive · AI-Powered · Real-time Analysis</p>
+              </div>
             </div>
 
-            {/* Form */}
-            <div className="space-y-6">
-              <div>
-                <label className={`block text-sm font-semibold ${themeClasses.textPrimary} mb-2`}>Your Name</label>
-                <input type="text" value={setupName} onChange={(e) => setSetupName(e.target.value)}
-                  className={`w-full px-4 py-3 rounded-xl border ${themeClasses.cardBorder} ${themeClasses.cardBackground} ${themeClasses.textPrimary} focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                  placeholder="Enter your name" />
-              </div>
-
-              <div>
-                <label className={`block text-sm font-semibold ${themeClasses.textPrimary} mb-2`}>Position</label>
-                <select value={setupPosition} onChange={(e) => setSetupPosition(e.target.value)}
-                  className={`w-full px-4 py-3 rounded-xl border ${themeClasses.cardBorder} ${themeClasses.cardBackground} ${themeClasses.textPrimary} focus:outline-none focus:ring-2 focus:ring-blue-500`}>
-                  <option value="Software Developer">Software Developer</option>
-                  <option value="Frontend Developer">Frontend Developer</option>
-                  <option value="Backend Developer">Backend Developer</option>
-                  <option value="Full Stack Developer">Full Stack Developer</option>
-                  <option value="Data Scientist">Data Scientist</option>
-                  <option value="Data Analyst">Data Analyst</option>
-                  <option value="Machine Learning Engineer">Machine Learning Engineer</option>
-                  <option value="DevOps Engineer">DevOps Engineer</option>
-                  <option value="Cloud Engineer">Cloud Engineer</option>
-                  <option value="Product Manager">Product Manager</option>
-                  <option value="UI/UX Designer">UI/UX Designer</option>
-                  <option value="Mobile Developer">Mobile Developer</option>
-                  <option value="QA Engineer">QA Engineer</option>
-                </select>
-              </div>
-
-              {/* Options */}
-              <div className="flex flex-wrap gap-4">
-                <button onClick={() => setAudioEnabled(!audioEnabled)}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-xl border transition-all ${audioEnabled ? 'bg-green-500/20 border-green-500/50 text-green-400' : `${themeClasses.cardBackground} ${themeClasses.cardBorder} ${themeClasses.textSecondary}`}`}>
-                  {audioEnabled ? <Volume2 size={18} /> : <VolumeX size={18} />}
-                  <span className="text-sm font-medium">{audioEnabled ? 'Audio On' : 'Audio Off'}</span>
-                </button>
-                <button onClick={() => setCameraEnabled(!cameraEnabled)}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-xl border transition-all ${cameraEnabled ? 'bg-blue-500/20 border-blue-500/50 text-blue-400' : `${themeClasses.cardBackground} ${themeClasses.cardBorder} ${themeClasses.textSecondary}`}`}>
-                  {cameraEnabled ? <Video size={18} /> : <VideoOff size={18} />}
-                  <span className="text-sm font-medium">{cameraEnabled ? 'Camera On' : 'Camera Off'}</span>
-                </button>
-              </div>
-
-              {/* Browser support check */}
-              {!useBrowserRecognition && (
-                <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-4">
-                  <div className="flex items-center gap-2 text-yellow-400">
-                    <AlertCircle size={18} />
-                    <span className="text-sm font-medium">Voice recognition not supported. Use Chrome or Edge for voice features. Text input will be available.</span>
-                  </div>
-                </div>
-              )}
-
-              {error && (
-                <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4">
-                  <div className="flex items-center gap-2 text-red-400">
-                    <AlertCircle size={18} />
-                    <span className="text-sm">{error}</span>
-                  </div>
-                </div>
-              )}
-
-              <button onClick={startInterview} disabled={isProcessing}
-                className={`w-full ${themeClasses.buttonPrimary} font-bold py-4 px-6 rounded-xl transition-all duration-200 flex items-center justify-center gap-3 text-lg shadow-lg hover:shadow-xl disabled:opacity-50`}>
-                {isProcessing ? (
-                  <><Loader2 className="w-6 h-6 animate-spin" /> Starting...</>
-                ) : (
-                  <><Play className="w-6 h-6" /> Start Interview</>
-                )}
+            {/* Audio / Camera toggles + user chip */}
+            <div className="flex items-center gap-2">
+              <button onClick={() => setAudioEnabled(!audioEnabled)} title={audioEnabled ? 'Disable audio' : 'Enable audio'}
+                className={`p-2 rounded-lg border transition-colors ${audioEnabled ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-400' : `${themeClasses.sectionBackground} ${themeClasses.cardBorder} ${themeClasses.textSecondary}`}`}>
+                {audioEnabled ? <Volume2 size={15} /> : <VolumeX size={15} />}
               </button>
+              <button onClick={() => setCameraEnabled(!cameraEnabled)} title={cameraEnabled ? 'Disable camera' : 'Enable camera'}
+                className={`p-2 rounded-lg border transition-colors ${cameraEnabled ? 'bg-sky-500/15 border-sky-500/40 text-sky-400' : `${themeClasses.sectionBackground} ${themeClasses.cardBorder} ${themeClasses.textSecondary}`}`}>
+                {cameraEnabled ? <Video size={15} /> : <VideoOff size={15} />}
+              </button>
+              <div className={`flex items-center gap-2.5 ml-1 pl-3 border-l ${themeClasses.cardBorder}`}>
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 ${themeClasses.sectionBackground} border ${themeClasses.cardBorder} ${themeClasses.textPrimary}`}>
+                  {setupName ? setupName.charAt(0).toUpperCase() : '?'}
+                </div>
+                <div className="hidden sm:block">
+                  <p className={`text-sm font-semibold leading-tight ${themeClasses.textPrimary}`}>{setupName || '—'}</p>
+                  <p className={`text-xs leading-tight ${themeClasses.textSecondary}`}>{setupPosition}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ── Main content ── */}
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+
+            {/* ── Column 1: Action panel ── */}
+            <div className="space-y-4">
+
+              {/* Start card */}
+              <div className={`${themeClasses.cardBackground} rounded-2xl border ${themeClasses.cardBorder} overflow-hidden`}>
+                <div className={`h-[3px] ${themeClasses.cardBorder} border-t`} />
+                <div className="p-6">
+                  <h2 className={`text-lg font-bold ${themeClasses.textPrimary} mb-1`}>Ready to practice?</h2>
+                  <p className={`text-sm ${themeClasses.textSecondary} mb-5`}>
+                    Mock interview for{' '}
+                    <span className={`font-semibold ${themeClasses.textPrimary}`}>{setupPosition}</span>
+                  </p>
+
+                  {!useBrowserRecognition && (
+                    <div className="flex items-start gap-2.5 rounded-xl p-3 mb-4 bg-amber-500/10 border border-amber-500/25">
+                      <AlertCircle size={13} className="text-amber-400 flex-shrink-0 mt-0.5" />
+                      <span className="text-xs text-amber-300 leading-snug">
+                        Voice recognition unavailable. Use Chrome or Edge for the full experience — text input will still work.
+                      </span>
+                    </div>
+                  )}
+                  {error && (
+                    <div className="flex items-start gap-2.5 rounded-xl p-3 mb-4 bg-red-500/10 border border-red-500/25">
+                      <AlertCircle size={13} className="text-red-400 flex-shrink-0 mt-0.5" />
+                      <span className="text-xs text-red-300 leading-snug">{error}</span>
+                    </div>
+                  )}
+
+                  <button onClick={startInterview} disabled={isProcessing}
+                    className={`w-full ${themeClasses.buttonPrimary} font-semibold py-3.5 px-5 rounded-xl transition-all duration-200 flex items-center justify-center gap-2.5 text-base disabled:opacity-50 disabled:cursor-not-allowed`}>
+                    {isProcessing
+                      ? <><Loader2 size={17} className="animate-spin" /> Starting session...</>
+                      : <><Play size={17} /> Begin Interview</>}
+                  </button>
+
+                  {/* Feature strip */}
+                  <div className={`mt-5 pt-4 border-t ${themeClasses.cardBorder} grid grid-cols-3 gap-1 text-center`}>
+                    {[
+                      { icon: <Mic size={13} />, label: 'Voice AI' },
+                      { icon: <Zap size={13} />, label: 'Adaptive' },
+                      { icon: <Award size={13} />, label: 'Scored' },
+                    ].map((s, i) => (
+                      <div key={i}>
+                        <div className={`flex justify-center mb-1 ${themeClasses.textAccent}`}>{s.icon}</div>
+                        <span className={`text-xs ${themeClasses.textSecondary}`}>{s.label}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Pre-session checklist */}
+              <div className={`${themeClasses.cardBackground} rounded-2xl border ${themeClasses.cardBorder} p-5`}>
+                <h3 className={`text-xs font-semibold uppercase tracking-widest ${themeClasses.textSecondary} mb-3`}>
+                  Session Checklist
+                </h3>
+                <ul className="space-y-2.5">
+                  {[
+                    { done: !!setupName,          text: 'Profile loaded' },
+                    { done: audioEnabled,          text: 'Audio enabled' },
+                    { done: cameraEnabled,         text: 'Camera enabled' },
+                    { done: useBrowserRecognition, text: 'Speech recognition ready' },
+                  ].map((item, i) => (
+                    <li key={i} className="flex items-center gap-2.5">
+                      <span className={`w-4.5 h-4.5 w-[18px] h-[18px] flex-shrink-0 rounded-full flex items-center justify-center text-[10px] font-bold border ${item.done ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-400' : `${themeClasses.sectionBackground} ${themeClasses.cardBorder} ${themeClasses.textSecondary}`}`}>
+                        {item.done ? '✓' : ''}
+                      </span>
+                      <span className={`text-xs ${item.done ? themeClasses.textPrimary : themeClasses.textSecondary}`}>{item.text}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             </div>
 
-            {/* Features */}
-            <div className="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-4">
-              {[
-                { icon: '🎤', title: 'Voice Powered', desc: 'Speak naturally with AI' },
-                { icon: '🧠', title: 'AI Questions', desc: 'Adaptive difficulty' },
-                { icon: '📊', title: 'Instant Feedback', desc: 'Detailed analysis' }
-              ].map((f, i) => (
-                <div key={i} className={`text-center p-4 rounded-xl ${themeClasses.sectionBackground} border ${themeClasses.cardBorder}`}>
-                  <div className="text-2xl mb-2">{f.icon}</div>
-                  <h3 className={`text-sm font-semibold ${themeClasses.textPrimary}`}>{f.title}</h3>
-                  <p className={`text-xs ${themeClasses.textSecondary}`}>{f.desc}</p>
+            {/* ── Columns 2-3: Scorecard + Tips/Topics ── */}
+            <div className="lg:col-span-2 space-y-5">
+
+              {/* Last interview report card */}
+              <div className={`${themeClasses.cardBackground} rounded-2xl border ${themeClasses.cardBorder}`}>
+                {/* Card header */}
+                <div className={`px-6 py-4 border-b ${themeClasses.cardBorder} flex items-center justify-between`}>
+                  <h3 className={`text-sm font-semibold ${themeClasses.textPrimary} flex items-center gap-2`}>
+                    <Award size={15} className="text-amber-400" />
+                    Last Interview Report
+                  </h3>
+                  {li?.started_at && (
+                    <span className={`text-xs px-2.5 py-1 rounded-full border ${themeClasses.cardBorder} ${themeClasses.textSecondary} ${themeClasses.sectionBackground}`}>
+                      {new Date(li.started_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                    </span>
+                  )}
                 </div>
-              ))}
+
+                <div className="p-6">
+                  {historyLoading ? (
+                    <div className={`flex items-center justify-center gap-3 py-10 ${themeClasses.textSecondary}`}>
+                      <Loader2 size={17} className="animate-spin" />
+                      <span className="text-sm">Loading history...</span>
+                    </div>
+                  ) : li?.feedback ? (
+                    <div className="space-y-5">
+
+                      {/* Score ring + meta */}
+                      <div className="flex items-center gap-5">
+                        <div className="relative flex-shrink-0">
+                          <ScoreRing score={liScore} />
+                          <div className="absolute inset-0 flex flex-col items-center justify-center">
+                            <span className="text-xl font-bold leading-none" style={{ color: getSetupScoreColor(liScore) }}>{liScore}</span>
+                            <span className="text-[10px] opacity-60 mt-0.5" style={{ color: getSetupScoreColor(liScore) }}>/100</span>
+                          </div>
+                        </div>
+                        <div>
+                          <span className="text-base font-bold" style={{ color: getSetupScoreColor(liScore) }}>{getSetupScoreLabel(liScore)}</span>
+                          <span className={`text-sm ml-2 ${themeClasses.textSecondary}`}>overall</span>
+                          <div className={`mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-xs ${themeClasses.textSecondary}`}>
+                            <span>{li.feedback.questions_answered || 0} questions</span>
+                            <span>·</span>
+                            <span>{li.feedback.duration_minutes || 0} min</span>
+                            <span>·</span>
+                            <span>{li.position || setupPosition}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Category progress bars */}
+                      {liScorecard.length > 0 && (
+                        <div className={`grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 rounded-xl ${themeClasses.sectionBackground} border ${themeClasses.cardBorder}`}>
+                          {liScorecard.map((cat, i) => (
+                            <div key={i}>
+                              <div className="flex items-center justify-between mb-1.5">
+                                <span className={`text-xs ${themeClasses.textSecondary}`}>{cat.icon} {cat.name}</span>
+                                <span className="text-xs font-semibold" style={{ color: getSetupScoreColor(cat.score) }}>{cat.score}</span>
+                              </div>
+                              <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(128,128,128,0.15)' }}>
+                                <div className="h-full rounded-full transition-all duration-700"
+                                  style={{ width: `${cat.score}%`, background: getSetupScoreColor(cat.score) }} />
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Strengths + To Improve */}
+                      {(liStrengths.length > 0 || liImprovements.length > 0) && (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+                          {liStrengths.length > 0 && (
+                            <div>
+                              <p className="text-[10px] font-semibold uppercase tracking-widest text-emerald-400 mb-2">Strengths</p>
+                              <ul className="space-y-1.5">
+                                {liStrengths.slice(0, 3).map((s, i) => (
+                                  <li key={i} className="flex items-start gap-2">
+                                    <span className="text-emerald-400 text-xs font-bold mt-0.5 flex-shrink-0">✓</span>
+                                    <span className={`text-xs ${themeClasses.textSecondary} leading-snug`}>{s}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                          {liImprovements.length > 0 && (
+                            <div>
+                              <p className="text-[10px] font-semibold uppercase tracking-widest text-amber-400 mb-2">To Improve</p>
+                              <ul className="space-y-1.5">
+                                {liImprovements.slice(0, 3).map((s, i) => (
+                                  <li key={i} className="flex items-start gap-2">
+                                    <span className="text-amber-400 text-xs font-bold mt-0.5 flex-shrink-0">↑</span>
+                                    <span className={`text-xs ${themeClasses.textSecondary} leading-snug`}>{s}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className={`flex flex-col items-center justify-center py-10 ${themeClasses.textSecondary}`}>
+                      <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-3 ${themeClasses.sectionBackground} border ${themeClasses.cardBorder}`}>
+                        <Award size={20} className="opacity-25" />
+                      </div>
+                      <p className="text-sm font-medium">No interviews yet</p>
+                      <p className={`text-xs opacity-50 mt-1 ${themeClasses.textSecondary}`}>Complete your first session to see your report here</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Tips + Key Topics */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+
+                {/* Interview Tips */}
+                <div className={`${themeClasses.cardBackground} rounded-2xl border ${themeClasses.cardBorder}`}>
+                  <div className={`px-5 py-3.5 border-b ${themeClasses.cardBorder} flex items-center gap-2`}>
+                    <BookOpen size={14} className="text-violet-400" />
+                    <h3 className={`text-sm font-semibold ${themeClasses.textPrimary}`}>Interview Tips</h3>
+                  </div>
+                  <ol className="px-5 py-4 space-y-3">
+                    {(liTips.length > 0 ? liTips : [
+                      'Use the STAR method for behavioural questions',
+                      'Be specific — use concrete examples from experience',
+                      'Think aloud to demonstrate your reasoning process',
+                      'Pause to collect your thoughts before answering',
+                      'Connect your skills directly to the role requirements',
+                      'Ask clarifying questions when the prompt is ambiguous',
+                    ]).slice(0, 6).map((tip, i) => (
+                      <li key={i} className="flex items-start gap-2.5">
+                        <span className="flex-shrink-0 w-5 h-5 rounded-md flex items-center justify-center text-xs font-bold"
+                          style={{ background: 'rgba(139,92,246,0.15)', color: '#a78bfa' }}>{i + 1}</span>
+                        <span className={`text-xs ${themeClasses.textSecondary} leading-relaxed`}>{tip}</span>
+                      </li>
+                    ))}
+                  </ol>
+                </div>
+
+                {/* Key Topics */}
+                <div className={`${themeClasses.cardBackground} rounded-2xl border ${themeClasses.cardBorder}`}>
+                  <div className={`px-5 py-3.5 border-b ${themeClasses.cardBorder} flex items-center gap-2`}>
+                    <TrendingUp size={14} className="text-sky-400" />
+                    <h3 className={`text-sm font-semibold ${themeClasses.textPrimary}`}>Key Topics</h3>
+                  </div>
+                  <div className="px-5 py-4 flex flex-wrap gap-2">
+                    {liTopics.slice(0, 9).map((topic, i) => (
+                      <span key={i}
+                        className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium border ${themeClasses.cardBorder} ${themeClasses.textSecondary} ${themeClasses.sectionBackground} hover:border-sky-500/40 transition-colors`}>
+                        <ChevronRight size={10} className="text-sky-400 flex-shrink-0" />
+                        {topic}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
             </div>
           </div>
         </div>

@@ -408,39 +408,59 @@ const SignIn = () => {
         }
       } else {
         // OTP-based sign in (already verified)
-        // Fetch full user data from backend
+        // Call otp-login endpoint to generate session token
         const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
-        const checkUserResponse = await fetch(`${backendUrl}/api/check-user`, {
+        const otpLoginResponse = await fetch(`${backendUrl}/api/auth/otp-login`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            emailOrUsername: userEmail
+            email: userEmail
           }),
         });
 
-        const checkResult = await checkUserResponse.json();
+        const otpLoginResult = await otpLoginResponse.json();
 
-        if (checkResult.success && checkResult.exists) {
+        if (otpLoginResult.success) {
           signInResult = {
             success: true,
-            user: checkResult.user
+            user: otpLoginResult.user
           };
         } else {
-          signInResult = {
-            success: true,
-            user: { email: userEmail }
-          };
+          // Fallback to check-user if otp-login fails (for backward compatibility)
+          const checkUserResponse = await fetch(`${backendUrl}/api/check-user`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              emailOrUsername: userEmail
+            }),
+          });
+
+          const checkResult = await checkUserResponse.json();
+
+          if (checkResult.success && checkResult.exists) {
+            signInResult = {
+              success: true,
+              user: checkResult.user
+            };
+          } else {
+            signInResult = {
+              success: true,
+              user: { email: userEmail }
+            };
+          }
         }
       }
 
-      // Store user data using AuthContext
+      // Store user data using AuthContext (with sessionToken for single session login)
       login({
         ...signInResult.user,
         signedIn: true,
         signInMethod: signInMethod
-      });
+      }, signInResult.user?.sessionVersion || 0, signInResult.user?.sessionToken || '');
       
       // Check if user has mobile number and try to auto-link resume
       const userMobile = signInResult.user?.mobile || signInResult.user?.phone || signInResult.user?.mobileNumber;

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../contexts/ThemeContext';
 import { getThemeClasses } from '../utils/themeHelpers';
+import { recordGuestUsage } from '../utils/guestUsageLimit';
 
 const ATSScore = () => {
   const navigate = useNavigate();
@@ -59,6 +60,9 @@ const ATSScore = () => {
       if (isPersonalResume) {
         localStorage.setItem('personalATSScore', JSON.stringify(result.data));
       }
+
+      // Record guest usage after successful ATS score calculation
+      await recordGuestUsage('ats', API_BASE);
       
       setAtsData(result.data);
     } catch (err) {

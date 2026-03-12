@@ -51,7 +51,8 @@ const Plans = () => {
         'ATS Score Check',
         'Basic Career Roadmap',
         'Limited Course Recommendations',
-        'Email Support'
+        'Email Support',
+        '✨ Advanced Practice (Limited Time)'
       ],
       limitations: [
         'No Weekly Tests',
@@ -91,15 +92,15 @@ const Plans = () => {
       description: 'For serious job seekers',
       features: [
         'Everything in Basic',
-        'Bi-Weekly Advanced Tests',
-        'AI-Powered Interview Prep',
-        'Mock Interview Sessions',
-        'Job Application Tracking',
+        '🚀 Advanced Practice Section',
+        '💻 450+ DSA Problems (LeetCode Patterns)',
+        '🎤 AI-Powered Mock Interviews',
+        '📊 DSA Progress Tracking',
+        'LeetCode Sync Integration',
         'Personalized Study Plans',
         'Certificate of Completion',
         'Dedicated Support Manager',
-        '1-on-1 Career Counseling',
-        'LinkedIn Profile Optimization'
+        '1-on-1 Career Counseling'
       ],
       limitations: [],
       buttonText: 'Get Premium',

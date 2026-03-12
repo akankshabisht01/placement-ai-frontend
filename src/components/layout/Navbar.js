@@ -1,20 +1,24 @@
 import React, { useState, useEffect, useRef } from 'react';
 import logo from './assets/logo.png';
-import { Link, NavLink, useLocation } from 'react-router-dom';
-import { Home, User, Target, BarChart3, Rocket, LayoutDashboard, Bot, Info, MessageCircle, Zap, Moon, Sun, MonitorSmartphone, FileCheck, UserCircle2, CreditCard, ChevronDown, CloudMoon, Cloud, Sparkles, Sunrise, Mic } from 'lucide-react';
+import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { Home, User, Target, BarChart3, Rocket, LayoutDashboard, Bot, Info, MessageCircle, Zap, Moon, Sun, MonitorSmartphone, FileCheck, UserCircle2, CreditCard, ChevronDown, CloudMoon, Cloud, Mic, Settings, LogOut, Building2 } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
 import { getThemeClasses } from '../../utils/themeHelpers';
 
 const Navbar = () => {
+  const navigate = useNavigate();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isDesktopThemeDropdownOpen, setIsDesktopThemeDropdownOpen] = useState(false);
   const [isMobileThemeDropdownOpen, setIsMobileThemeDropdownOpen] = useState(false);
+  const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [userProfile, setUserProfile] = useState({ name: '', image: null, isLoggedIn: false });
   const location = useLocation();
   const { theme, setThemeMode } = useTheme();
   const themeClasses = getThemeClasses(theme);
   const desktopThemeDropdownRef = useRef(null);
   const mobileThemeDropdownRef = useRef(null);
+  const profileDropdownRef = useRef(null);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -26,6 +30,46 @@ const Navbar = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  // Load user profile data
+  useEffect(() => {
+    const loadUserProfile = async () => {
+      try {
+        const userData = localStorage.getItem('userData');
+        if (userData) {
+          const parsed = JSON.parse(userData);
+          const email = parsed.email;
+          const name = parsed.name || parsed.fullName || email?.split('@')[0] || 'User';
+          
+          setUserProfile(prev => ({ ...prev, name, isLoggedIn: true }));
+          
+          // Try to fetch profile image from backend
+          if (email) {
+            try {
+              const response = await fetch(`http://localhost:5000/api/profile/${email}`);
+              if (response.ok) {
+                const data = await response.json();
+                if (data.profileImage) {
+                  setUserProfile(prev => ({ ...prev, image: data.profileImage }));
+                }
+                if (data.profile?.fullName) {
+                  setUserProfile(prev => ({ ...prev, name: data.profile.fullName }));
+                }
+              }
+            } catch (error) {
+              console.log('Could not fetch profile image');
+            }
+          }
+        } else {
+          setUserProfile({ name: '', image: null, isLoggedIn: false });
+        }
+      } catch (error) {
+        console.error('Error loading user profile:', error);
+      }
+    };
+    
+    loadUserProfile();
+  }, [location.pathname]); // Re-check when route changes
+
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -34,6 +78,9 @@ const Navbar = () => {
       }
       if (mobileThemeDropdownRef.current && !mobileThemeDropdownRef.current.contains(event.target)) {
         setIsMobileThemeDropdownOpen(false);
+      }
+      if (profileDropdownRef.current && !profileDropdownRef.current.contains(event.target)) {
+        setIsProfileDropdownOpen(false);
       }
     };
 
@@ -63,6 +110,18 @@ const Navbar = () => {
     setIsMobileThemeDropdownOpen(false);
   };
 
+  const toggleProfileDropdown = () => {
+    setIsProfileDropdownOpen(!isProfileDropdownOpen);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('userData');
+    localStorage.removeItem('userSettings');
+    setUserProfile({ name: '', image: null, isLoggedIn: false });
+    setIsProfileDropdownOpen(false);
+    navigate('/signin');
+  };
+
   // Get the appropriate icon based on theme
   const getThemeIcon = () => {
     const base = 'group-hover:scale-110 transition-transform';
@@ -74,10 +133,6 @@ const Navbar = () => {
       return <CloudMoon size={16} className={`${themeClasses.textPrimary} ${base}`} />;
     } else if (theme === 'aloof') {
       return <Cloud size={16} className={`${themeClasses.textPrimary} ${base}`} />;
-    } else if (theme === 'aurora') {
-      return <Sparkles size={16} className={`${themeClasses.textPrimary} ${base}`} />;
-    } else if (theme === 'solaris') {
-      return <Sunrise size={16} className={`${themeClasses.textPrimary} ${base}`} />;
     } else {
       return <MonitorSmartphone size={16} className={`${themeClasses.textPrimary} ${base}`} />;
     }
@@ -88,8 +143,6 @@ const Navbar = () => {
     if (theme === 'dark') return 'Neonpunk';
     if (theme === 'midnight') return 'Midnight';
     if (theme === 'aloof') return 'Aloof';
-    if (theme === 'aurora') return 'Aurora';
-    if (theme === 'solaris') return 'Solaris';
     return 'System Default';
   };
 
@@ -98,11 +151,16 @@ const Navbar = () => {
     { name: 'Predict', path: '/predict', icon: BarChart3 },
     { name: 'ATS', path: '/ats', icon: FileCheck },
     { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
-    { name: 'Interview', path: '/interview', icon: Mic },
     { name: 'Plans', path: '/plans', icon: CreditCard },
     { name: 'Domains', path: '/domains', icon: Target },
     { name: 'AI Chat', path: '/chatbot', icon: Bot },
+    { name: 'Placement Cell', path: '/placement-cell/login', icon: Building2 },
+  ];
+
+  // Items shown in profile dropdown
+  const profileMenuItems = [
     { name: 'Profile', path: '/profile', icon: UserCircle2 },
+    { name: 'Settings', path: '/settings', icon: Settings },
   ];
 
   const moreItems = [
@@ -226,28 +284,6 @@ const Navbar = () => {
                         <Cloud size={16} />
                         <span>Aloof</span>
                       </button>
-                      <button
-                        onClick={() => handleDesktopThemeChange('aurora')}
-                        className={`w-full flex items-center gap-3 px-4 py-3 text-left text-sm transition-all duration-200 ${
-                          theme === 'aurora'
-                            ? 'bg-gradient-to-r from-cyan-400 to-violet-400 text-white'
-                            : `${themeClasses.textPrimary} ${themeClasses.hover}`
-                        }`}
-                      >
-                        <Sparkles size={16} />
-                        <span>Aurora</span>
-                      </button>
-                      <button
-                        onClick={() => handleDesktopThemeChange('solaris')}
-                        className={`w-full flex items-center gap-3 px-4 py-3 text-left text-sm transition-all duration-200 ${
-                          theme === 'solaris'
-                            ? 'bg-[#ff7b3f] text-white'
-                            : `${themeClasses.textPrimary} ${themeClasses.hover}`
-                        }`}
-                      >
-                        <Sunrise size={16} />
-                        <span>Solaris</span>
-                      </button>
                     </div>
                   )}
                 </div>
@@ -279,6 +315,107 @@ const Navbar = () => {
                   </NavLink>
                 );
               })}
+              
+              {/* User Profile Avatar Dropdown */}
+              {userProfile.isLoggedIn ? (
+                <div className="relative ml-2" ref={profileDropdownRef}>
+                  <button
+                    onClick={toggleProfileDropdown}
+                    className={`flex items-center gap-2 rounded-full transition-all duration-200 hover:ring-2 hover:ring-orange-400 hover:ring-offset-2 ${
+                      scrolled ? 'p-0.5' : 'p-1'
+                    }`}
+                    aria-label="User menu"
+                    aria-expanded={isProfileDropdownOpen}
+                  >
+                    {userProfile.image ? (
+                      <img 
+                        src={userProfile.image} 
+                        alt={userProfile.name} 
+                        className={`rounded-full object-cover border-2 border-orange-400 ${
+                          scrolled ? 'w-7 h-7' : 'w-8 h-8'
+                        }`}
+                      />
+                    ) : (
+                      <div className={`rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center text-white font-semibold ${
+                        scrolled ? 'w-7 h-7 text-xs' : 'w-8 h-8 text-sm'
+                      }`}>
+                        {userProfile.name?.charAt(0)?.toUpperCase() || 'U'}
+                      </div>
+                    )}
+                    <ChevronDown size={scrolled ? 12 : 14} className={`${themeClasses.textSecondary} transition-transform duration-200 ${isProfileDropdownOpen ? 'rotate-180' : ''}`} />
+                  </button>
+                  
+                  {/* Profile Dropdown Menu */}
+                  {isProfileDropdownOpen && (
+                    <div className={`absolute right-0 mt-2 w-56 ${themeClasses.cardBackground} rounded-xl shadow-lg border ${themeClasses.border} overflow-hidden z-50`}>
+                      {/* User Info Header */}
+                      <div className={`px-4 py-3 border-b ${themeClasses.border}`}>
+                        <div className="flex items-center gap-3">
+                          {userProfile.image ? (
+                            <img 
+                              src={userProfile.image} 
+                              alt={userProfile.name} 
+                              className="w-10 h-10 rounded-full object-cover border-2 border-orange-400"
+                            />
+                          ) : (
+                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center text-white font-semibold">
+                              {userProfile.name?.charAt(0)?.toUpperCase() || 'U'}
+                            </div>
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <p className={`font-semibold truncate ${themeClasses.textPrimary}`}>{userProfile.name}</p>
+                            <p className={`text-xs truncate ${themeClasses.textSecondary}`}>View your profile</p>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* Menu Items */}
+                      <div className="py-1">
+                        {profileMenuItems.map((item) => {
+                          const Icon = item.icon;
+                          return (
+                            <NavLink
+                              key={item.path}
+                              to={item.path}
+                              onClick={() => setIsProfileDropdownOpen(false)}
+                              className={({ isActive }) =>
+                                `w-full flex items-center gap-3 px-4 py-2.5 text-left text-sm transition-all duration-200 ${
+                                  isActive
+                                    ? 'bg-orange-500/10 text-orange-500'
+                                    : `${themeClasses.textPrimary} ${themeClasses.hover}`
+                                }`
+                              }
+                            >
+                              <Icon size={16} />
+                              <span>{item.name}</span>
+                            </NavLink>
+                          );
+                        })}
+                      </div>
+                      
+                      {/* Logout */}
+                      <div className={`border-t ${themeClasses.border} py-1`}>
+                        <button
+                          onClick={handleLogout}
+                          className={`w-full flex items-center gap-3 px-4 py-2.5 text-left text-sm transition-all duration-200 text-red-500 hover:bg-red-500/10`}
+                        >
+                          <LogOut size={16} />
+                          <span>Logout</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <NavLink
+                  to="/auth-selection"
+                  className={`rounded-lg transition-all duration-200 ${themeClasses.buttonPrimary} ${
+                    scrolled ? 'px-3 py-1.5 text-xs' : 'px-4 py-2 text-sm'
+                  } font-medium ml-2`}
+                >
+                  Login
+                </NavLink>
+              )}
             </div>
 
             {/* Mobile menu button */}
@@ -344,31 +481,30 @@ const Navbar = () => {
                       <Cloud size={16} />
                       <span>Aloof</span>
                     </button>
-                    <button
-                      onClick={() => handleMobileThemeChange('aurora')}
-                      className={`w-full flex items-center gap-3 px-4 py-3 text-left text-sm transition-all duration-200 ${
-                        theme === 'aurora'
-                          ? 'bg-[#7cf8e4] text-white'
-                          : `${themeClasses.textPrimary} ${themeClasses.hover}`
-                      }`}
-                    >
-                      <Sparkles size={16} />
-                      <span>Aurora</span>
-                    </button>
-                    <button
-                      onClick={() => handleMobileThemeChange('solaris')}
-                      className={`w-full flex items-center gap-3 px-4 py-3 text-left text-sm transition-all duration-200 ${
-                        theme === 'solaris'
-                          ? 'bg-[#ff7b3f] text-white'
-                          : `${themeClasses.textPrimary} ${themeClasses.hover}`
-                      }`}
-                    >
-                      <Sunrise size={16} />
-                      <span>Solaris</span>
-                    </button>
                   </div>
                 )}
               </div>
+              
+              {/* Mobile User Avatar Indicator */}
+              {userProfile.isLoggedIn && (
+                <div className="flex items-center">
+                  {userProfile.image ? (
+                    <img 
+                      src={userProfile.image} 
+                      alt={userProfile.name} 
+                      className={`rounded-full object-cover border-2 border-orange-400 ${
+                        scrolled ? 'w-7 h-7' : 'w-8 h-8'
+                      }`}
+                    />
+                  ) : (
+                    <div className={`rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center text-white font-semibold ${
+                      scrolled ? 'w-7 h-7 text-xs' : 'w-8 h-8 text-sm'
+                    }`}>
+                      {userProfile.name?.charAt(0)?.toUpperCase() || 'U'}
+                    </div>
+                  )}
+                </div>
+              )}
               
               <button
                 onClick={toggleMenu}
@@ -393,7 +529,28 @@ const Navbar = () => {
           isMenuOpen ? 'max-h-screen opacity-100' : 'max-h-0 opacity-0'
         }`}>
                   <div className={`px-4 pt-2 pb-6 space-y-2 ${themeClasses.pageBackground} border-t ${themeClasses.border}`}>
-            {[...navItems, ...moreItems].map((item, index) => {
+            {/* Mobile User Profile Header */}
+            {userProfile.isLoggedIn && (
+              <div className={`flex items-center gap-3 px-4 py-3 mb-2 rounded-xl ${themeClasses.cardBackground} border ${themeClasses.border}`}>
+                {userProfile.image ? (
+                  <img 
+                    src={userProfile.image} 
+                    alt={userProfile.name} 
+                    className="w-12 h-12 rounded-full object-cover border-2 border-orange-400"
+                  />
+                ) : (
+                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center text-white font-bold text-lg">
+                    {userProfile.name?.charAt(0)?.toUpperCase() || 'U'}
+                  </div>
+                )}
+                <div className="flex-1 min-w-0">
+                  <p className={`font-semibold truncate ${themeClasses.textPrimary}`}>{userProfile.name}</p>
+                  <p className={`text-sm truncate ${themeClasses.textSecondary}`}>Manage your account</p>
+                </div>
+              </div>
+            )}
+            
+            {[...navItems, ...moreItems, ...(userProfile.isLoggedIn ? profileMenuItems : [])].map((item, index) => {
               const Icon = item.icon;
               return (
                 <NavLink
@@ -418,6 +575,23 @@ const Navbar = () => {
                 </NavLink>
               );
             })}
+            
+            {/* Mobile Logout Button */}
+            {userProfile.isLoggedIn && (
+              <button
+                onClick={() => {
+                  setIsMenuOpen(false);
+                  handleLogout();
+                }}
+                className={`w-full block px-4 py-3 text-base font-medium rounded-xl transition-all duration-200 text-red-500 hover:bg-red-500/10 ${isMenuOpen ? 'slide-in' : ''}`}
+                style={{ animationDelay: `${([...navItems, ...moreItems, ...profileMenuItems].length) * 30}ms` }}
+              >
+                <div className="flex items-center space-x-3">
+                  <LogOut className="w-5 h-5" />
+                  <span>Logout</span>
+                </div>
+              </button>
+            )}
           </div>
         </div>
       </nav>

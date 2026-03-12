@@ -611,7 +611,9 @@ const Dashboard = () => {
           'dsa': 'dsa',
           'data-structures': 'dsa',
           'algorithms': 'dsa',
-          'dsa-practice': 'dsa'
+          'dsa-practice': 'dsa',
+          'advanced': 'advanced',
+          'advanced-practice': 'advanced'
         };
         return mapping[s] || s;
       }
@@ -630,6 +632,38 @@ const Dashboard = () => {
   
   // State to trigger re-render when localStorage changes (skills updated from WeeklyTest)
   const [localStorageUpdateTrigger, setLocalStorageUpdateTrigger] = useState(0);
+  
+  // Helper function to get user mobile - defined early so useEffect hooks can use it
+  const getUserMobile = () => {
+    const linkedData = localStorage.getItem('linkedResumeData');
+    const userData = localStorage.getItem('userData');
+    const predictionData = localStorage.getItem('predictionFormData');
+
+    if (linkedData) {
+      const parsed = JSON.parse(linkedData);
+      return parsed.mobile || parsed.phoneNumber;
+    }
+    if (userData) {
+      const parsed = JSON.parse(userData);
+      return parsed.mobile || parsed.phoneNumber;
+    }
+    if (predictionData) {
+      const parsed = JSON.parse(predictionData);
+      return parsed.mobile || parsed.phoneNumber;
+    }
+    return null;
+  };
+  
+  // Career progress from API (based on roadmap test completion)
+  const [careerProgressApi, setCareerProgressApi] = useState({ progress: 0, loading: true });
+  
+  // Weekly progress from API (skills mastered, courses completed, projects completed)
+  const [weeklyProgress, setWeeklyProgress] = useState({
+    skillsMastered: { percentage: 0, completed: 0, total: 0 },
+    coursesCompleted: { percentage: 0, completed: 0, total: 0 },
+    projectsCompleted: { percentage: 0, completed: 0, total: 0 },
+    loading: true
+  });
   
   // Skills Test states
   const [isGeneratingTest, setIsGeneratingTest] = useState(false);
@@ -1434,7 +1468,9 @@ const Dashboard = () => {
           'ai-interview': 'interview',
           'dsa': 'dsa',
           'data-structures': 'dsa',
-          'algorithms': 'dsa'
+          'algorithms': 'dsa',
+          'advanced': 'advanced',
+          'advanced-practice': 'advanced'
         };
         const target = mapping[s] || s;
         setActiveSection(target);
@@ -1604,14 +1640,13 @@ const Dashboard = () => {
   }, []);
 
   // Get personalized data including ATS breakdown and career progress
-  const { name, placementScore, atsScore, atsBreakdown, missingSkills, linkedResume, careerProgress } = useMemo(() => {
+  const { name, placementScore, atsScore, atsBreakdown, missingSkills, linkedResume } = useMemo(() => {
     let n = 'Student';
     let ps = 35; // placement score
     let ats = 'N/A'; // actual ATS score - will be fetched separately
     let atsDetails = null; // ATS score breakdown
     let m = 3;
     let linkedResumeData = null;
-    let careerProgressPercentage = 0;
     
     try {
       // Check for linked resume data first
@@ -1643,27 +1678,6 @@ const Dashboard = () => {
         if (Array.isArray(ms)) m = ms.length;
       }
       
-      // Calculate career progress based on completed milestones
-      if (linkedResumeData) {
-        let completedMilestones = 0;
-        const totalMilestones = 5;
-        
-        // Profile complete
-        if (linkedResumeData.name && linkedResumeData.email) completedMilestones++;
-        // Skills selected
-        if (linkedResumeData.jobSelection?.selectedSkills?.length > 0) completedMilestones++;
-        // Resume uploaded
-        if (linkedResumeData.parsedResume) completedMilestones++;
-        // ATS analyzed (check personal score first, then fallback)
-        const personalAtsCheck = localStorage.getItem('personalATSScore');
-        const atsCheck = personalAtsCheck || localStorage.getItem('atsAnalysisResult');
-        if (atsCheck) completedMilestones++;
-        // Placement predicted
-        if (apiRaw) completedMilestones++;
-        
-        careerProgressPercentage = Math.round((completedMilestones / totalMilestones) * 100);
-      }
-      
       // Check for personal ATS score (only user's own resume, not other analyzed resumes)
       // Priority: personalATSScore > atsAnalysisResult (for backward compatibility)
       const personalAtsRaw = localStorage.getItem('personalATSScore');
@@ -1692,7 +1706,98 @@ const Dashboard = () => {
         }
       }
     } catch {}
-    return { name: n, placementScore: ps, atsScore: ats, atsBreakdown: atsDetails, missingSkills: m, linkedResume: linkedResumeData, careerProgress: careerProgressPercentage };
+    return { name: n, placementScore: ps, atsScore: ats, atsBreakdown: atsDetails, missingSkills: m, linkedResume: linkedResumeData };
+  }, [localStorageUpdateTrigger]);
+
+  // Fetch career progress from API (based on roadmap test completion)
+  useEffect(() => {
+    const fetchCareerProgress = async () => {
+      const mobile = getUserMobile();
+      if (!mobile) {
+        setCareerProgressApi({ progress: 0, loading: false });
+        return;
+      }
+      
+      try {
+        const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
+        const response = await fetch(`${backendUrl}/api/user/career-progress/${encodeURIComponent(mobile)}`);
+        const data = await response.json();
+        
+        if (data.success) {
+          setCareerProgressApi({
+            progress: Math.round(data.progress),
+            totalMonths: data.totalMonths,
+            completedWeeks: data.completedWeeks,
+            totalWeeks: data.totalWeeks,
+            completedMonthlyTests: data.completedMonthlyTests,
+            totalMonthlyTests: data.totalMonthlyTests,
+            completedTests: data.completedTests,
+            totalTests: data.totalTests,
+            loading: false
+          });
+        } else {
+          setCareerProgressApi({ progress: 0, loading: false, message: data.message });
+        }
+      } catch (error) {
+        console.error('Error fetching career progress:', error);
+        setCareerProgressApi({ progress: 0, loading: false });
+      }
+    };
+    
+    fetchCareerProgress();
+  }, [localStorageUpdateTrigger]); // Refetch when tests are completed
+
+  // Fetch weekly progress from API (skills mastered, courses completed, projects completed)
+  useEffect(() => {
+    const fetchWeeklyProgress = async () => {
+      const mobile = getUserMobile();
+      console.log('[Weekly Progress] Mobile from getUserMobile:', mobile);
+      if (!mobile) {
+        console.log('[Weekly Progress] No mobile found, skipping fetch');
+        setWeeklyProgress(prev => ({ ...prev, loading: false }));
+        return;
+      }
+      
+      try {
+        const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
+        console.log('[Weekly Progress] Fetching from:', `${backendUrl}/api/user/weekly-progress/${encodeURIComponent(mobile)}`);
+        const response = await fetch(`${backendUrl}/api/user/weekly-progress/${encodeURIComponent(mobile)}`);
+        const data = await response.json();
+        console.log('[Weekly Progress] API Response:', data);
+        
+        if (data.success) {
+          setWeeklyProgress({
+            skillsMastered: data.skillsMastered,
+            coursesCompleted: data.coursesCompleted,
+            projectsCompleted: data.projectsCompleted,
+            loading: false
+          });
+        } else {
+          setWeeklyProgress(prev => ({ ...prev, loading: false }));
+        }
+      } catch (error) {
+        console.error('Error fetching weekly progress:', error);
+        setWeeklyProgress(prev => ({ ...prev, loading: false }));
+      }
+    };
+    
+    fetchWeeklyProgress();
+  }, [localStorageUpdateTrigger]); // Refetch when tests are completed
+
+  // Derive careerProgress for backward compatibility with rest of component
+  const careerProgress = careerProgressApi.progress;
+
+  // Determine if the user's branch includes DSA in curriculum (CSE/IT only)
+  const isDsaBranch = useMemo(() => {
+    try {
+      const domainId = localStorage.getItem('selectedDomainId') || '';
+      const formRaw = localStorage.getItem('predictionFormData');
+      const formDomain = formRaw ? (JSON.parse(formRaw).selectedDomainId || '') : '';
+      const domain = (domainId || formDomain).toLowerCase();
+      return domain.includes('cse') || domain.includes('computer') || domain.includes('_it') || domain.includes('information_technology') || domain === '';
+    } catch {
+      return true; // Default to showing DSA if we can't determine branch
+    }
   }, [localStorageUpdateTrigger]);
 
   // Calculate job-role-relevant skills that user possesses (for "Skills & Expertise" section)
@@ -1756,27 +1861,6 @@ const Dashboard = () => {
     localStorage.removeItem('resumeChoice');
     // Navigate to home
     navigate('/');
-  };
-
-  // Helper function to get user's mobile number from localStorage
-  const getUserMobile = () => {
-    const linkedData = localStorage.getItem('linkedResumeData');
-    const userData = localStorage.getItem('userData');
-    const predictionData = localStorage.getItem('predictionFormData');
-
-    if (linkedData) {
-      const parsed = JSON.parse(linkedData);
-      return parsed.mobile || parsed.phoneNumber;
-    }
-    if (userData) {
-      const parsed = JSON.parse(userData);
-      return parsed.mobile || parsed.phoneNumber;
-    }
-    if (predictionData) {
-      const parsed = JSON.parse(predictionData);
-      return parsed.mobile || parsed.phoneNumber;
-    }
-    return null;
   };
 
   // ── LeetCode Integration ──────────────────────────────────
@@ -2127,6 +2211,36 @@ const Dashboard = () => {
   useEffect(() => {
     if (activeSection === 'dsa') {
       fetchDsaProgress();
+    }
+  }, [activeSection]);
+
+  // Sync progress tracking data when Progress section is opened
+  useEffect(() => {
+    if (activeSection === 'progress') {
+      const syncProgressTracking = async () => {
+        const mobile = getUserMobile();
+        if (!mobile) return;
+        
+        try {
+          const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
+          console.log('[Progress Tracking] Syncing data for mobile:', mobile);
+          
+          // Call sync endpoint (fire and forget - don't block UI)
+          fetch(`${backendUrl}/api/sync-progress-tracking/${encodeURIComponent(mobile)}`, {
+            method: 'POST'
+          }).then(response => {
+            if (response.ok) {
+              console.log('[Progress Tracking] Sync completed successfully');
+            }
+          }).catch(err => {
+            console.warn('[Progress Tracking] Sync failed (non-blocking):', err);
+          });
+        } catch (err) {
+          console.warn('[Progress Tracking] Sync error (non-blocking):', err);
+        }
+      };
+      
+      syncProgressTracking();
     }
   }, [activeSection]);
 
@@ -3800,11 +3914,6 @@ const Dashboard = () => {
       icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
     },
     { 
-      id: 'dsa', 
-      label: 'DSA Practice', 
-      icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" /></svg>
-    },
-    { 
       id: 'certifications', 
       label: 'Certifications', 
       icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" /></svg>
@@ -3815,14 +3924,14 @@ const Dashboard = () => {
       icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-4l-2-2H5a2 2 0 00-2 2z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10v6m-3-3h6" /></svg>
     },
     { 
-      id: 'interview', 
-      label: 'AI Interview', 
-      icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" /></svg>
-    },
-    { 
       id: 'progress', 
       label: 'Progress Tracking', 
       icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
+    },
+    { 
+      id: 'advanced', 
+      label: 'Advanced Practice', 
+      icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
     }
   ];
 
@@ -3994,18 +4103,6 @@ const Dashboard = () => {
                 <p className={themeClasses.textSecondary}>{skillTestCompleted ? "Let's continue your placement journey" : "Let's start your placement journey"}</p>
               </div>
             </div>
-            
-            <div className="flex items-center space-x-4">
-              <button 
-                onClick={handleLogout}
-                className={`flex items-center space-x-2 px-4 py-2 ${themeClasses.textSecondary} ${themeClasses.hover} rounded-lg transition-all duration-200 backdrop-blur-sm`}
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                </svg>
-                <span>Sign Out</span>
-              </button>
-            </div>
           </div>
         </div>
       </div>
@@ -4089,20 +4186,27 @@ const Dashboard = () => {
                 </button>
               </div>
               <nav className="flex flex-col space-y-1.5" role="navigation" aria-label="Main navigation">
-                {navItems.map((item, index) => (
+                {navItems.filter(item => item.id !== 'dsa' || isDsaBranch).map((item, index) => {
+                  const isDsaLocked = item.id === 'dsa' && !roadmapExists;
+                  return (
                   <button
                     key={item.id}
                     onClick={() => {
-                      setActiveSection(item.id);
+                      if (isDsaLocked) return;
+                      navigate(`/dashboard?section=${item.id}`);
                       setIsMobileSidebarOpen(false); // Close mobile sidebar on selection
                     }}
                     style={{ transitionDelay: `${index * 25}ms` }}
+                    title={isDsaLocked ? 'Generate your Career Roadmap first to unlock DSA Practice' : ''}
                     className={`relative flex items-center space-x-3 px-3.5 py-3 rounded-2xl font-medium text-sm w-full text-left overflow-hidden group transition-all duration-300 ease-out ${
-                      activeSection === item.id
+                      isDsaLocked
+                        ? 'opacity-50 cursor-not-allowed'
+                        : activeSection === item.id
                         ? `${themeClasses.textPrimary} shadow-lg scale-[1.02]`
                         : `${themeClasses.textSecondary} ${themeClasses.hover} hover:scale-[1.01]`
                     }`}
                     aria-current={activeSection === item.id ? 'page' : undefined}
+                    aria-disabled={isDsaLocked}
                   >
                     {/* Animated background */}
                     <span 
@@ -4134,9 +4238,17 @@ const Dashboard = () => {
                         {item.id === 'weeklytest' && 'Weekly tests'}
                         {item.id === 'interview' && 'Mock interviews'}
                         {item.id === 'progress' && 'Track growth'}
+                        {isDsaLocked && 'Unlock after roadmap'}
                       </span>
                     </div>
-                    {/* Right arrow indicator */}
+                    {/* Right arrow indicator or lock icon */}
+                    {isDsaLocked ? (
+                      <span className="relative z-10">
+                        <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                        </svg>
+                      </span>
+                    ) : (
                     <span 
                       className={`relative z-10 transition-all duration-500 ${
                         activeSection === item.id 
@@ -4148,8 +4260,10 @@ const Dashboard = () => {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                       </svg>
                     </span>
+                    )}
                   </button>
-                ))}
+                );
+                })}
               </nav>
               
               {/* User Profile Section - Dark Mode Style */}
@@ -4201,15 +4315,6 @@ const Dashboard = () => {
                     </div>
                   </div>
                 </div>
-                
-                <div className="mt-6 relative z-10">
-                  <Link 
-                    to="/feedback" 
-                    className={`inline-flex items-center px-6 py-3 ${themeClasses.buttonSecondary} backdrop-blur-sm ${themeClasses.textPrimary} font-semibold rounded-xl transition-all duration-200 border ${themeClasses.cardBorder} shadow-md hover:shadow-lg`}
-                  >
-                    Give Feedback
-                  </Link>
-                </div>
               </div>
 
               {/* Stats Grid */}
@@ -4232,18 +4337,15 @@ const Dashboard = () => {
                   )}
                 </div>
 
-                {/* Career Path Progress */}
+                {/* Skill Journey */}
                 <div className={`group ${themeClasses.cardBackground} backdrop-blur-sm rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border ${themeClasses.cardBorder}`}>
                   <div className="mb-4">
-                    <h3 className={`text-lg font-semibold ${themeClasses.textPrimary}`}>Career Path Progress</h3>
+                    <h3 className={`text-lg font-semibold ${themeClasses.textPrimary}`}>Skill Journey</h3>
                   </div>
                   <div className="flex items-baseline">
                     <span className={`text-4xl font-bold ${themeClasses.accent}`}>{careerProgress}%</span>
                   </div>
-                  <p className={`${themeClasses.textSecondary} text-sm mt-2`}>Profile completion milestones</p>
-                  <Link to="/profile" className={`text-xs ${themeClasses.accent} underline mt-2 inline-block font-medium ${themeClasses.hover}`}>
-                    Complete Profile ?
-                  </Link>
+                  <p className={`${themeClasses.textSecondary} text-sm mt-2`}>Roadmap test completion</p>
                 </div>
 
                 {/* Placement Readiness */}
@@ -4296,72 +4398,46 @@ const Dashboard = () => {
                 <div className={`${themeClasses.cardBackground} backdrop-blur-sm rounded-2xl p-6 shadow-lg border ${themeClasses.cardBorder}`}>
                   <h3 className={`text-xl font-semibold ${themeClasses.textPrimary} mb-6`}>Weekly Progress</h3>
                   
-                  <div className="space-y-6">
-                    <div>
-                      <div className="flex justify-between items-center mb-2">
-                        <span className={`${themeClasses.textPrimary} font-medium`}>Skills mastered</span>
-                        <span className={`${themeClasses.accent} font-semibold`}>28%</span>
+                  {weeklyProgress.loading ? (
+                    <div className="flex items-center justify-center py-8">
+                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-amber-500"></div>
+                    </div>
+                  ) : (
+                    <div className="space-y-6">
+                      <div>
+                        <div className="flex justify-between items-center mb-2">
+                          <span className={`${themeClasses.textPrimary} font-medium`}>Skills mastered</span>
+                          <span className={`${themeClasses.accent} font-semibold`}>{weeklyProgress.skillsMastered?.percentage || 0}%</span>
+                        </div>
+                        <div className={`w-full ${themeClasses.sectionBackground} rounded-full h-3 overflow-hidden`}>
+                          <div className={`${themeClasses.gradient} h-3 rounded-full shadow-sm transition-all duration-500`} style={{width: `${weeklyProgress.skillsMastered?.percentage || 0}%`}}></div>
+                        </div>
+                        <p className={`${themeClasses.textSecondary} text-xs mt-1`}>{weeklyProgress.skillsMastered?.completed || 0}/{weeklyProgress.skillsMastered?.total || 0} skills</p>
                       </div>
-                      <div className={`w-full ${themeClasses.sectionBackground} rounded-full h-3 overflow-hidden`}>
-                        <div className={`${themeClasses.gradient} h-3 rounded-full shadow-sm`} style={{width: '28%'}}></div>
+                      
+                      <div>
+                        <div className="flex justify-between items-center mb-2">
+                          <span className={`${themeClasses.textPrimary} font-medium`}>Courses completed</span>
+                          <span className="text-green-600 dark:text-green-400 font-semibold">{weeklyProgress.coursesCompleted?.percentage || 0}%</span>
+                        </div>
+                        <div className="w-full bg-green-100 dark:bg-[#352d45] rounded-full h-3 overflow-hidden">
+                          <div className="bg-gradient-to-r from-green-500 to-emerald-500 h-3 rounded-full shadow-sm transition-all duration-500" style={{width: `${weeklyProgress.coursesCompleted?.percentage || 0}%`}}></div>
+                        </div>
+                        <p className={`${themeClasses.textSecondary} text-xs mt-1`}>{weeklyProgress.coursesCompleted?.completed || 0}/{weeklyProgress.coursesCompleted?.total || 0} weeks</p>
+                      </div>
+                      
+                      <div>
+                        <div className="flex justify-between items-center mb-2">
+                          <span className={`${themeClasses.textPrimary} font-medium`}>Projects completed</span>
+                          <span className={`${themeClasses.accent} font-semibold`}>{weeklyProgress.projectsCompleted?.percentage || 0}%</span>
+                        </div>
+                        <div className={`w-full ${themeClasses.sectionBackground} rounded-full h-3 overflow-hidden`}>
+                          <div className="bg-gradient-to-r from-orange-500 to-yellow-500 h-3 rounded-full shadow-sm transition-all duration-500" style={{width: `${weeklyProgress.projectsCompleted?.percentage || 0}%`}}></div>
+                        </div>
+                        <p className={`${themeClasses.textSecondary} text-xs mt-1`}>{weeklyProgress.projectsCompleted?.completed || 0}/{weeklyProgress.projectsCompleted?.total || 0} projects</p>
                       </div>
                     </div>
-                    
-                    <div>
-                      <div className="flex justify-between items-center mb-2">
-                        <span className={`${themeClasses.textPrimary} font-medium`}>Courses completed</span>
-                        <span className="text-green-600 dark:text-green-400 font-semibold">30%</span>
-                      </div>
-                      <div className="w-full bg-green-100 dark:bg-[#352d45] rounded-full h-3 overflow-hidden">
-                        <div className="bg-gradient-to-r from-green-500 to-emerald-500 h-3 rounded-full shadow-sm" style={{width: '30%'}}></div>
-                      </div>
-                    </div>
-                    
-                    <div>
-                      <div className="flex justify-between items-center mb-2">
-                        <span className={`${themeClasses.textPrimary} font-medium`}>Projects completed</span>
-                        <span className={`${themeClasses.accent} font-semibold`}>45%</span>
-                      </div>
-                      <div className={`w-full ${themeClasses.sectionBackground} rounded-full h-3 overflow-hidden`}>
-                        <div className="bg-gradient-to-r from-orange-500 to-yellow-500 h-3 rounded-full shadow-sm" style={{width: '45%'}}></div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Test Analysis Report Button */}
-                  <div className={`mt-6 pt-6 border-t ${themeClasses.cardBorder}`}>
-                    <button
-                      onClick={() => {
-                        const mobile = (() => {
-                          const linkedData = localStorage.getItem('linkedResumeData');
-                          const userData = localStorage.getItem('userData');
-                          if (linkedData) {
-                            const parsed = JSON.parse(linkedData);
-                            return parsed.mobile || parsed.phoneNumber;
-                          }
-                          if (userData) {
-                            const parsed = JSON.parse(userData);
-                            return parsed.mobile || parsed.phoneNumber;
-                          }
-                          return null;
-                        })();
-
-                        if (!mobile) {
-                          alert('Mobile number not found. Please ensure your profile is complete.');
-                          return;
-                        }
-
-                        navigate('/test-analysis');
-                      }}
-                      className={`w-full inline-flex items-center justify-center gap-3 px-6 py-3 rounded-xl ${themeClasses.buttonPrimary} shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 ease-out focus:outline-none focus:ring-4 focus:ring-amber-300`}
-                      title="View your Test Analysis Report from quiz_analysis"
-                    >
-                      <svg className={`w-5 h-5 ${themeClasses.textPrimary}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m2 0a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v3a2 2 0 002 2h12zM7 16v1a2 2 0 002 2h6a2 2 0 002-2v-1" />
-                      </svg>
-                      <span>Test Analysis Report</span>
-                    </button>
-                  </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -7703,6 +7779,175 @@ const Dashboard = () => {
             </div>
           )}
 
+          {/* Advanced Practice Section */}
+          {activeSection === 'advanced' && (
+            <div className="space-y-6">
+              {/* Advanced Practice Header */}
+              <div className={`${themeClasses.cardBackground} rounded-2xl p-6 border ${themeClasses.cardBorder} shadow-sm`}>
+                <div className="flex items-center gap-4">
+                  <div className={`w-14 h-14 bg-gradient-to-br from-amber-500 to-orange-500 rounded-xl flex items-center justify-center shadow-lg`}>
+                    <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h2 className={`text-2xl font-bold ${themeClasses.textPrimary}`}>Advanced Practice</h2>
+                    <p className={`text-sm ${themeClasses.textSecondary}`}>Level up with DSA mastery and AI-powered interview practice</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Features Grid */}
+              <div className="grid md:grid-cols-2 gap-6">
+                {/* DSA Practice Card */}
+                <div 
+                  onClick={() => navigate('/dashboard?section=dsa')}
+                  className={`${themeClasses.cardBackground} rounded-2xl p-6 border ${themeClasses.cardBorder} shadow-sm cursor-pointer hover:shadow-lg hover:scale-[1.02] transition-all duration-300 group`}
+                >
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center shadow-lg">
+                        <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                        </svg>
+                      </div>
+                      <div>
+                        <h3 className={`text-xl font-bold ${themeClasses.textPrimary}`}>DSA Practice</h3>
+                        <p className={`text-sm ${themeClasses.textSecondary}`}>Data Structures & Algorithms</p>
+                      </div>
+                    </div>
+                    <svg className={`w-5 h-5 ${themeClasses.textSecondary} group-hover:translate-x-1 transition-transform`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </div>
+                  
+                  <p className={`${themeClasses.textSecondary} mb-4`}>
+                    Master coding interviews with curated problems from LeetCode patterns
+                  </p>
+                  
+                  {/* Stats */}
+                  <div className="grid grid-cols-3 gap-3 mb-4">
+                    <div className="bg-blue-500/10 rounded-lg p-3 text-center">
+                      <div className="text-lg font-bold text-blue-500">450+</div>
+                      <div className={`text-xs ${themeClasses.textSecondary}`}>Problems</div>
+                    </div>
+                    <div className="bg-blue-500/10 rounded-lg p-3 text-center">
+                      <div className="text-lg font-bold text-blue-500">15</div>
+                      <div className={`text-xs ${themeClasses.textSecondary}`}>Topics</div>
+                    </div>
+                    <div className="bg-blue-500/10 rounded-lg p-3 text-center">
+                      <div className="text-lg font-bold text-blue-500">3</div>
+                      <div className={`text-xs ${themeClasses.textSecondary}`}>Levels</div>
+                    </div>
+                  </div>
+
+                  {/* Highlights */}
+                  <div className="space-y-2">
+                    {['Curated problem sets by topic', 'LeetCode sync integration', 'Progress tracking & analytics'].map((item, idx) => (
+                      <div key={idx} className="flex items-center gap-2">
+                        <svg className="w-4 h-4 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                        <span className={`text-sm ${themeClasses.textSecondary}`}>{item}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  <button className="w-full mt-4 py-3 px-4 rounded-xl font-medium bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center gap-2">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                    Start DSA Practice
+                  </button>
+                </div>
+
+                {/* AI Interview Card */}
+                <div 
+                  onClick={() => navigate('/dashboard?section=interview')}
+                  className={`${themeClasses.cardBackground} rounded-2xl p-6 border ${themeClasses.cardBorder} shadow-sm cursor-pointer hover:shadow-lg hover:scale-[1.02] transition-all duration-300 group`}
+                >
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center shadow-lg">
+                        <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                        </svg>
+                      </div>
+                      <div>
+                        <h3 className={`text-xl font-bold ${themeClasses.textPrimary}`}>AI Interview</h3>
+                        <p className={`text-sm ${themeClasses.textSecondary}`}>Mock Interview Preparation</p>
+                      </div>
+                    </div>
+                    <svg className={`w-5 h-5 ${themeClasses.textSecondary} group-hover:translate-x-1 transition-transform`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </div>
+                  
+                  <p className={`${themeClasses.textSecondary} mb-4`}>
+                    Practice with AI-powered mock interviews and get instant feedback
+                  </p>
+                  
+                  {/* Stats */}
+                  <div className="grid grid-cols-3 gap-3 mb-4">
+                    <div className="bg-purple-500/10 rounded-lg p-3 text-center">
+                      <div className="text-lg font-bold text-purple-500">200+</div>
+                      <div className={`text-xs ${themeClasses.textSecondary}`}>Questions</div>
+                    </div>
+                    <div className="bg-purple-500/10 rounded-lg p-3 text-center">
+                      <div className="text-lg font-bold text-purple-500">AI</div>
+                      <div className={`text-xs ${themeClasses.textSecondary}`}>Powered</div>
+                    </div>
+                    <div className="bg-purple-500/10 rounded-lg p-3 text-center">
+                      <div className="text-lg font-bold text-purple-500">5+</div>
+                      <div className={`text-xs ${themeClasses.textSecondary}`}>Metrics</div>
+                    </div>
+                  </div>
+
+                  {/* Highlights */}
+                  <div className="space-y-2">
+                    {['3D AI avatar interviewer', 'Voice-based interactions', 'Detailed performance analysis'].map((item, idx) => (
+                      <div key={idx} className="flex items-center gap-2">
+                        <svg className="w-4 h-4 text-purple-500" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                        <span className={`text-sm ${themeClasses.textSecondary}`}>{item}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  <button className="w-full mt-4 py-3 px-4 rounded-xl font-medium bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center gap-2">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Start Mock Interview
+                  </button>
+                </div>
+              </div>
+
+              {/* Benefits Section */}
+              <div className={`${themeClasses.cardBackground} rounded-2xl p-6 border ${themeClasses.cardBorder} shadow-sm`}>
+                <h3 className={`text-lg font-bold ${themeClasses.textPrimary} mb-4 text-center`}>Why Advanced Practice?</h3>
+                <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {[
+                    { icon: '🧠', title: 'AI-Powered', desc: 'Smart algorithms adapt to your level' },
+                    { icon: '🎯', title: 'Interview Focused', desc: 'Questions from real interviews' },
+                    { icon: '📊', title: 'Track Progress', desc: 'Detailed analytics & insights' },
+                    { icon: '🏆', title: 'Get Placed', desc: 'Join successful candidates' }
+                  ].map((benefit, idx) => (
+                    <div key={idx} className="text-center p-4">
+                      <div className="w-12 h-12 mx-auto mb-3 bg-gradient-to-br from-amber-500/20 to-orange-500/20 rounded-xl flex items-center justify-center">
+                        <span className="text-2xl">{benefit.icon}</span>
+                      </div>
+                      <h4 className={`font-semibold ${themeClasses.textPrimary} mb-1`}>{benefit.title}</h4>
+                      <p className={`text-xs ${themeClasses.textSecondary}`}>{benefit.desc}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
           {activeSection === 'interview' && (
             <div className="space-y-6">
               {/* Interview Section Header */}
@@ -7924,7 +8169,12 @@ const Dashboard = () => {
                             <h4 className={`text-lg font-semibold ${themeClasses.textPrimary} mb-4`}>Score Breakdown</h4>
                             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                               {Object.entries(placementPredictionData.componentScores)
-                                .filter(([key]) => ['academicScore', 'skillScore', 'projectScore', 'dsaScore', 'experienceScore', 'certificationScore', 'achievementScore'].includes(key))
+                                .filter(([key]) => {
+                                  const validKeys = ['academicScore', 'skillScore', 'projectScore', 'dsaScore', 'experienceScore', 'certificationScore', 'achievementScore'];
+                                  if (!validKeys.includes(key)) return false;
+                                  if (key === 'dsaScore' && !isDsaBranch) return false;
+                                  return true;
+                                })
                                 .map(([key, value]) => {
                                 const displayValue = value || 0;
                                 
@@ -9833,8 +10083,26 @@ const Dashboard = () => {
             </div>
           )}
 
-          {/* DSA Practice Section */}
-          {activeSection === 'dsa' && (() => {
+          {/* DSA Practice Section - Locked State */}
+          {activeSection === 'dsa' && !roadmapExists && (
+            <div className={`${themeClasses.cardBackground} rounded-2xl p-12 border ${themeClasses.cardBorder} text-center`}>
+              <svg className="w-16 h-16 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              </svg>
+              <h3 className={`text-xl font-bold ${themeClasses.textPrimary} mb-2`}>DSA Practice Locked</h3>
+              <p className={`${themeClasses.textSecondary} mb-6`}>
+                Generate your Career Roadmap first to unlock DSA Practice.
+              </p>
+              <button
+                onClick={() => setActiveSection('roadmap')}
+                className={`px-6 py-3 rounded-xl ${themeClasses.gradient} text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105`}
+              >
+                Go to Career Roadmap
+              </button>
+            </div>
+          )}
+          {/* DSA Practice Section - Unlocked */}
+          {activeSection === 'dsa' && roadmapExists && (() => {
             const DSA_NAV = [
               { id: 'overview',      label: 'Overview',              dot: 'bg-blue-500',    total: null },
               { id: 'math',          label: 'Mathematics',           dot: 'bg-yellow-500',  total: 77,  easy: 52, medium: 24, hard: 1  },

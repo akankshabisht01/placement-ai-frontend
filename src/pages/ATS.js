@@ -4,10 +4,11 @@ import { Upload, FileText, CheckCircle, AlertCircle, TrendingUp, Target, Award, 
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { getThemeClasses } from '../utils/themeHelpers';
+import { checkGuestLimit, recordGuestUsage, SCORE_LIMIT } from '../utils/guestUsageLimit';
 
 const ATS = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { isAuthenticated } = useAuth();
   const { theme } = useTheme();
   const themeClasses = getThemeClasses(theme);
   const [file, setFile] = useState(null);
@@ -17,8 +18,10 @@ const ATS = () => {
   const [existingResume, setExistingResume] = useState(null);
   const [parseProgress, setParseProgress] = useState(0);
   const [jobDescription, setJobDescription] = useState('');
-  const isLoggedIn = user && user.signedIn;
+  const isLoggedIn = isAuthenticated;
   const [isPersonalResume, setIsPersonalResume] = useState(false);
+  const [showLimitModal, setShowLimitModal] = useState(false);
+  const [limitRemaining, setLimitRemaining] = useState(SCORE_LIMIT);
 
   // Check if resume already exists from prediction page
   useEffect(() => {
@@ -39,6 +42,16 @@ const ATS = () => {
       setIsPersonalResume(true);
     }
   }, [isLoggedIn]);
+
+  // Load remaining guest attempts on mount
+  useEffect(() => {
+    if (!localStorage.getItem('userData')) {
+      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
+      checkGuestLimit('ats', backendUrl)
+        .then(({ remaining }) => setLimitRemaining(remaining))
+        .catch(() => {});
+    }
+  }, []);
 
   const handleDrag = (e) => {
     e.preventDefault();
@@ -75,6 +88,17 @@ const ATS = () => {
   };
 
   const handleSubmit = async () => {
+    // Guest usage limit check (skip for logged-in users)
+    if (!isLoggedIn) {
+      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
+      const { allowed, remaining } = await checkGuestLimit('ats', backendUrl);
+      setLimitRemaining(remaining);
+      if (!allowed) {
+        setShowLimitModal(true);
+        return;
+      }
+    }
+
     // If existing resume is available, go directly to ATS score
     if (existingResume && !file) {
       // Store job description if provided
@@ -191,6 +215,40 @@ const ATS = () => {
 
   return (
     <div className={`min-h-screen ${themeClasses.pageBackground} py-12 px-4 sm:px-6 lg:px-8 relative`}>
+      {/* Guest Usage Limit Modal */}
+      {showLimitModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className={`${themeClasses.cardBackground} border-2 ${themeClasses.cardBorder} rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4 text-center`}>
+            <div className={`w-16 h-16 ${themeClasses.sectionBackground} rounded-full flex items-center justify-center mx-auto mb-4`}>
+              <svg className={`w-8 h-8 ${themeClasses.accent}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+              </svg>
+            </div>
+            <h3 className={`text-xl font-bold ${themeClasses.textPrimary} mb-2`}>Free Limit Reached</h3>
+            <p className={`${themeClasses.textSecondary} mb-2`}>
+              You've used all <span className="font-bold">{SCORE_LIMIT}</span> free ATS Score checks on this device.
+            </p>
+            <p className={`${themeClasses.textSecondary} mb-6 text-sm`}>
+              Register for a free account to get unlimited score checks and access your dashboard.
+            </p>
+            <div className="flex gap-3 justify-center">
+              <button
+                onClick={() => setShowLimitModal(false)}
+                className={`px-5 py-2.5 rounded-xl font-medium ${themeClasses.buttonSecondary} transition-all duration-200`}
+              >
+                Close
+              </button>
+              <button
+                onClick={() => navigate('/register')}
+                className={`px-5 py-2.5 rounded-xl font-medium ${themeClasses.buttonPrimary} ${themeClasses.buttonHover} transition-all duration-200`}
+              >
+                Register Now
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="max-w-7xl mx-auto">
         {/* Header Section */}
         <div className="text-center mb-12">
@@ -203,6 +261,23 @@ const ATS = () => {
           <p className={`text-lg ${themeClasses.textSecondary} max-w-2xl mx-auto`}>
             Optimize your resume for Applicant Tracking Systems and increase your chances of landing interviews
           </p>
+
+          {/* Guest attempts remaining banner */}
+          {!isLoggedIn && (
+            <div className={`mt-6 mx-auto max-w-md flex items-center gap-3 px-4 py-3 rounded-xl ${themeClasses.cardBackground} border ${themeClasses.cardBorder} shadow-sm`}>
+              <div className={`flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold text-white ${themeClasses.gradient}`}>
+                {limitRemaining}
+              </div>
+              <div className="flex-1 text-left">
+                <p className={`text-sm font-semibold ${themeClasses.textPrimary}`}>
+                  {limitRemaining} free ATS Score {limitRemaining === 1 ? 'check' : 'checks'} remaining
+                </p>
+                <p className={`text-xs ${themeClasses.textSecondary}`}>
+                  <span className={`cursor-pointer underline ${themeClasses.textAccent}`} onClick={() => navigate('/register')}>Register</span> for unlimited access
+                </p>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Main Content Grid */}
