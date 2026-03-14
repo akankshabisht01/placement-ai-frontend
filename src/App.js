@@ -49,6 +49,8 @@ import StudentTestAccess from './pages/StudentTestAccess';
 import StudentTestPage from './pages/StudentTestPage';
 import StudentTestResult from './pages/StudentTestResult';
 import StudentProgressView from './pages/StudentProgressView';
+import StudentTestTypeDetails from './pages/StudentTestTypeDetails';
+import AttemptDetailsView from './pages/AttemptDetailsView';
 import StudentDashboard from './pages/StudentDashboard';
 
 // Protected Route Component
@@ -116,6 +118,8 @@ const AppLayout = () => {
         <Route path="/placement-cell/login" element={<PlacementCellLogin />} />
         <Route path="/placement-cell/dashboard" element={<PlacementCellDashboard />} />
         <Route path="/placement-cell/student-progress/:mobile" element={<StudentProgressView />} />
+        <Route path="/placement-cell/student-tests/:mobile" element={<StudentTestTypeDetails />} />
+        <Route path="/placement-cell/attempt-details/:attemptId" element={<AttemptDetailsView />} />
         <Route path="/placement-cell/preview/:testId" element={<PlacementTestPreview />} />
         <Route path="/placement-cell/results/:testId" element={<PlacementTestResults />} />
         <Route path="/student-test" element={<StudentTestAccess />} />

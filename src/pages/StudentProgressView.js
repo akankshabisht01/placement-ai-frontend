@@ -89,7 +89,7 @@ const StudentProgressView = () => {
     );
   }
 
-  const { student, stats, weeklyTests, monthlyTests, topicStrengths, placementPrediction } = progressData || {};
+  const { student, stats, weeklyTests, monthlyTests, topicStrengths, placementPrediction, placementCellTests } = progressData || {};
 
   const getLevelColor = (level) => {
     switch (level?.toLowerCase()) {
@@ -236,6 +236,39 @@ const StudentProgressView = () => {
                   </div>
                 </div>
               )}
+            </div>
+          </div>
+        )}
+
+        {/* Placement Test Type Activity */}
+        {placementCellTests && placementCellTests.some(t => t.attempted) && (
+          <div className="mb-8">
+            <div className="mb-4">
+              <h3 className={`text-lg font-semibold ${themeClasses.textPrimary}`}>Placement Test Type Activity</h3>
+              <p className={`text-sm ${themeClasses.textSecondary}`}>Check whether this student attempted each test type</p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {placementCellTests.filter(t => t.attempted).map((test, index) => (
+                <div
+                  key={index}
+                  className={`${themeClasses.cardBackground} rounded-xl shadow-sm border ${themeClasses.border} p-5 ${test.attempted ? 'cursor-pointer hover:shadow-md transition' : ''}`}
+                  onClick={() => test.attempted && navigate(`/placement-cell/student-tests/${encodeURIComponent(mobile)}?type=${encodeURIComponent(test.testType)}`)}
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className={`font-semibold ${themeClasses.textPrimary}`}>{test.testType}</h4>
+                    <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${test.attempted ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                      {test.attempted ? 'Attempted' : 'Not Attempted'}
+                    </span>
+                  </div>
+                  {test.attempted ? (
+                    <p className={`text-sm ${themeClasses.textSecondary}`}>
+                      Attempts: <span className={`font-medium ${themeClasses.textPrimary}`}>{test.attempts}</span>
+                    </p>
+                  ) : (
+                    <p className={`text-sm ${themeClasses.textSecondary} italic`}>No attempts recorded yet</p>
+                  )}
+                </div>
+              ))}
             </div>
           </div>
         )}

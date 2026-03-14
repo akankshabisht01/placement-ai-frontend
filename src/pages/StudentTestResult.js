@@ -12,6 +12,9 @@ const StudentTestResult = () => {
   const [formData, setFormData] = useState({ testCode: '', rollNumber: '' });
   const [error, setError] = useState('');
   const [studentProfile, setStudentProfile] = useState(null);
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const [detailsLoading, setDetailsLoading] = useState(false);
+  const [detailsData, setDetailsData] = useState(null);
 
   useEffect(() => {
     // Check if student is logged in
@@ -24,14 +27,78 @@ const StudentTestResult = () => {
       // Check if there's a result from submission
       const submittedResult = sessionStorage.getItem('testResult');
       if (submittedResult) {
-        setResult(JSON.parse(submittedResult));
-        setLoading(false);
+        const parsedResult = JSON.parse(submittedResult);
+        // Revalidate visibility from server to avoid stale score leakage
+        if (parsedResult?.testCode && parsedResult?.rollNumber) {
+          fetch(`${API_BASE_URL}/api/placement-test/student/result`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              testCode: parsedResult.testCode,
+              rollNumber: parsedResult.rollNumber
+            })
+          })
+            .then(async (resp) => {
+              const data = await resp.json();
+              if (data.success) {
+                setResult({
+                  ...data.result,
+                  testCode: data.result.testCode || parsedResult.testCode
+                });
+              } else if (resp.status === 403) {
+                setResult({
+                  ...parsedResult,
+                  resultHidden: true,
+                  resultsVisible: false
+                });
+              } else {
+                setResult(parsedResult);
+              }
+            })
+            .catch(() => setResult(parsedResult))
+            .finally(() => setLoading(false));
+        } else {
+          setResult(parsedResult);
+          setLoading(false);
+        }
       } else {
         setCheckMode(true);
         setLoading(false);
       }
     }
   }, []);
+
+  const handleViewDetailedResult = async () => {
+    if (!result?.testCode || !result?.rollNumber) {
+      setError('Detailed result is not available for this attempt');
+      return;
+    }
+
+    setDetailsLoading(true);
+    setError('');
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/placement-test/student/result-details`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          testCode: result.testCode,
+          rollNumber: result.rollNumber
+        })
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        setDetailsData(data);
+        setDetailsOpen(true);
+      } else {
+        setError(data.message || 'Unable to load detailed result');
+      }
+    } catch (err) {
+      setError('Network error while loading detailed result');
+    } finally {
+      setDetailsLoading(false);
+    }
+  };
 
   const fetchAllResults = async (profile) => {
     try {
@@ -62,6 +129,11 @@ const StudentTestResult = () => {
   };
 
   const viewResultDetails = (testResult) => {
+    if (testResult.resultsVisible === false) {
+      setError('Results for this test have not been released yet.');
+      return;
+    }
+
     setResult({
       name: testResult.name,
       rollNumber: testResult.rollNumber,
@@ -189,7 +261,11 @@ const StudentTestResult = () => {
                 <div
                   key={test.id}
                   onClick={() => viewResultDetails(test)}
-                  className="bg-white rounded-xl shadow-lg p-5 cursor-pointer hover:shadow-xl transition transform hover:-translate-y-1"
+                  className={`bg-white rounded-xl shadow-lg p-5 transition transform ${
+                    test.resultsVisible === false
+                      ? 'cursor-not-allowed opacity-90'
+                      : 'cursor-pointer hover:shadow-xl hover:-translate-y-1'
+                  }`}
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
@@ -211,14 +287,25 @@ const StudentTestResult = () => {
                       </p>
                     </div>
                     <div className="text-right">
-                      <div className={`text-2xl font-bold ${getScoreColor(test.percentage)}`}>
-                        {test.percentage}%
-                      </div>
-                      <p className="text-sm text-gray-500">{test.score}/{test.totalMarks}</p>
+                      {test.resultsVisible === false ? (
+                        <>
+                          <div className="text-lg font-semibold text-amber-600">Pending</div>
+                          <p className="text-sm text-gray-500">Result not released</p>
+                        </>
+                      ) : (
+                        <>
+                          <div className={`text-2xl font-bold ${getScoreColor(test.percentage)}`}>
+                            {test.percentage}%
+                          </div>
+                          <p className="text-sm text-gray-500">{test.score}/{test.totalMarks}</p>
+                        </>
+                      )}
                     </div>
-                    <svg className="w-5 h-5 text-gray-400 ml-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
+                    {test.resultsVisible !== false && (
+                      <svg className="w-5 h-5 text-gray-400 ml-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    )}
                   </div>
                 </div>
               ))}
@@ -231,7 +318,12 @@ const StudentTestResult = () => {
               <p className="text-sm">
                 Total Tests: <span className="font-bold">{allResults.length}</span> • 
                 Average Score: <span className="font-bold">
-                  {Math.round(allResults.reduce((sum, t) => sum + t.percentage, 0) / allResults.length)}%
+                  {(() => {
+                    const visibleResults = allResults.filter(t => t.resultsVisible !== false);
+                    if (visibleResults.length === 0) return 'N/A';
+                    const avg = Math.round(visibleResults.reduce((sum, t) => sum + (t.percentage || 0), 0) / visibleResults.length);
+                    return `${avg}%`;
+                  })()}
                 </span>
               </p>
             </div>
@@ -316,6 +408,71 @@ const StudentTestResult = () => {
   }
 
   // Show Result
+  if (result?.resultHidden || result?.resultsVisible === false) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-amber-800 via-orange-800 to-yellow-700 py-8 px-4">
+        <div className="max-w-2xl mx-auto">
+          <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
+            <div className="bg-gradient-to-r from-amber-500 to-orange-500 px-6 py-8 text-center text-white">
+              <p className="text-amber-100 text-sm uppercase tracking-wider mb-2">Test Submitted</p>
+              <h1 className="text-3xl font-bold mb-1">{result.name}</h1>
+              <p className="text-amber-100">{result.rollNumber}</p>
+            </div>
+
+            <div className="px-6 py-10 text-center">
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-6 mb-6">
+                <h2 className="text-xl font-semibold text-amber-800 mb-2">Result Not Released Yet</h2>
+                <p className="text-amber-700">
+                  Your test is submitted successfully. The placement cell has currently hidden results.
+                  You will be able to view your score once they make results visible.
+                </p>
+              </div>
+
+              {result.testType && (
+                <div className="text-gray-600 text-sm">
+                  <p>Test: {result.testType}</p>
+                  {result.testCode && <p>Code: {result.testCode}</p>}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="mt-6 flex flex-col sm:flex-row gap-4 justify-center">
+            {studentProfile ? (
+              <>
+                <button
+                  onClick={() => {
+                    setResult(null);
+                    setListMode(true);
+                  }}
+                  className="px-8 py-3 bg-white text-gray-700 rounded-xl font-semibold hover:bg-gray-100 transition"
+                >
+                  Back to All Results
+                </button>
+                <button
+                  onClick={() => navigate('/student/dashboard')}
+                  className="px-8 py-3 bg-white text-gray-700 rounded-xl font-semibold hover:bg-gray-100 transition"
+                >
+                  Dashboard
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={() => {
+                  sessionStorage.removeItem('testResult');
+                  navigate('/');
+                }}
+                className="px-8 py-3 bg-white text-gray-700 rounded-xl font-semibold hover:bg-gray-100 transition"
+              >
+                Back to Home
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-800 via-teal-800 to-blue-800 py-8 px-4">
       <div className="max-w-2xl mx-auto">
@@ -458,7 +615,83 @@ const StudentTestResult = () => {
           >
             Print Result
           </button>
+          {!result?.resultHidden && result?.resultsVisible !== false && (
+            <button
+              onClick={handleViewDetailedResult}
+              disabled={detailsLoading}
+              className="px-8 py-3 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-700 transition disabled:opacity-50"
+            >
+              {detailsLoading ? 'Loading...' : 'View Detailed Result'}
+            </button>
+          )}
         </div>
+
+        {error && (
+          <div className="mt-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-center">
+            {error}
+          </div>
+        )}
+
+        {/* Detailed Result Modal */}
+        {detailsOpen && detailsData?.questions && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden shadow-2xl">
+              <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+                <h3 className="text-xl font-bold text-gray-800">Detailed Result</h3>
+                <button
+                  onClick={() => setDetailsOpen(false)}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              <div className="p-6 overflow-y-auto max-h-[calc(90vh-80px)] space-y-4">
+                {detailsData.questions.map((q, idx) => (
+                  <div key={q.questionNumber || idx} className="border border-gray-200 rounded-xl p-4">
+                    <div className="flex justify-between items-start mb-3">
+                      <h4 className="font-semibold text-gray-800">
+                        Q{q.questionNumber}. {q.questionText}
+                      </h4>
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        q.isCorrect ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                      }`}>
+                        {q.isCorrect ? 'Correct' : 'Incorrect'}
+                      </span>
+                    </div>
+
+                    <div className="space-y-2 mb-3">
+                      {q.options.map((opt, optIdx) => {
+                        const isCorrectOpt = optIdx === q.correctOption;
+                        const isStudentOpt = optIdx === q.studentAnswer;
+                        return (
+                          <div
+                            key={optIdx}
+                            className={`p-2 rounded-lg border ${
+                              isCorrectOpt
+                                ? 'bg-green-50 border-green-300'
+                                : isStudentOpt
+                                  ? 'bg-red-50 border-red-300'
+                                  : 'bg-gray-50 border-gray-200'
+                            }`}
+                          >
+                            <span className="font-medium mr-2">{String.fromCharCode(65 + optIdx)}.</span>
+                            {opt}
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    <div className="text-sm text-gray-600">
+                      Marks: {q.marksObtained}/{q.marks}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

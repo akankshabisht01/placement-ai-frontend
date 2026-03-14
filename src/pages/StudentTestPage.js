@@ -130,6 +130,7 @@ const StudentTestPage = () => {
         // Store result and navigate
         sessionStorage.setItem('testResult', JSON.stringify({
           ...data.result,
+          resultHidden: !!data.resultHidden,
           name: testData.studentTest.name,
           rollNumber: testData.studentTest.rollNumber,
           testCode: testData.studentTest.testCode,
