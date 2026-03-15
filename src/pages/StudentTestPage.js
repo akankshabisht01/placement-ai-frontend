@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import API_BASE_URL from '../config/api';
 
@@ -17,16 +17,16 @@ const StudentTestPage = () => {
       navigate('/student-test');
       return;
     }
-    
+
     const data = JSON.parse(sessionData);
     setTestData(data);
     setTimeLeft(data.test.durationMinutes * 60);
-    
+
     // Load any saved answers
     if (data.studentTest.answers) {
       setAnswers(data.studentTest.answers);
     }
-    
+
     // Prevent back navigation
     window.history.pushState(null, '', window.location.href);
     window.onpopstate = () => {
@@ -38,82 +38,12 @@ const StudentTestPage = () => {
     };
   }, [navigate]);
 
-  // Timer
-  useEffect(() => {
-    if (timeLeft <= 0) return;
-    
-    const timer = setInterval(() => {
-      setTimeLeft(prev => {
-        if (prev <= 1) {
-          clearInterval(timer);
-          handleSubmit(true);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-    
-    return () => clearInterval(timer);
-  }, [timeLeft]);
-
-  // Sync time with server periodically
-  useEffect(() => {
-    if (!testData) return;
-    
-    const syncTime = async () => {
-      try {
-        const response = await fetch(`${API_BASE_URL}/api/placement-test/student/check-time`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ sessionToken: testData.studentTest.sessionToken })
-        });
-        const data = await response.json();
-        if (data.success && data.remainingSeconds !== undefined) {
-          setTimeLeft(data.remainingSeconds);
-          if (data.expired) {
-            handleSubmit(true);
-          }
-        }
-      } catch (err) {
-        console.error('Time sync error:', err);
-      }
-    };
-    
-    const interval = setInterval(syncTime, 30000); // Sync every 30 seconds
-    return () => clearInterval(interval);
-  }, [testData]);
-
-  const saveAnswer = async (questionNumber, option) => {
-    if (!testData) return;
-    
-    try {
-      await fetch(`${API_BASE_URL}/api/placement-test/student/save-answer`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          sessionToken: testData.studentTest.sessionToken,
-          questionNumber,
-          selectedOption: option
-        })
-      });
-    } catch (err) {
-      console.error('Save answer error:', err);
-    }
-  };
-
-  const handleAnswerSelect = (option) => {
-    const questionNum = testData.test.questions[currentQuestion].questionNumber;
-    const newAnswers = { ...answers, [questionNum]: option };
-    setAnswers(newAnswers);
-    saveAnswer(questionNum, option);
-  };
-
   const handleSubmit = useCallback(async (isAutoSubmit = false) => {
     if (submitting) return;
-    
+
     setSubmitting(true);
     setShowSubmitDialog(false);
-    
+
     try {
       const response = await fetch(`${API_BASE_URL}/api/placement-test/student/submit`, {
         method: 'POST',
@@ -123,9 +53,9 @@ const StudentTestPage = () => {
           answers
         })
       });
-      
+
       const data = await response.json();
-      
+
       if (data.success) {
         // Store result and navigate
         sessionStorage.setItem('testResult', JSON.stringify({
@@ -147,6 +77,115 @@ const StudentTestPage = () => {
       setSubmitting(false);
     }
   }, [answers, testData, submitting, navigate]);
+
+  // Timer — runs once, uses functional state update so no stale closure
+  useEffect(() => {
+    if (timeLeft <= 0) return;
+
+    const timer = setInterval(() => {
+      setTimeLeft(prev => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Auto-submit when time expires
+  useEffect(() => {
+    if (timeLeft === 0 && testData && !submitting) {
+      handleSubmit(true);
+    }
+  }, [timeLeft, testData, submitting, handleSubmit]);
+
+  // Sync time with server periodically (with jitter to prevent thundering herd)
+  useEffect(() => {
+    if (!testData) return;
+
+    const syncTime = async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/placement-test/student/check-time`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sessionToken: testData.studentTest.sessionToken })
+        });
+        const data = await response.json();
+        if (data.success && data.remainingSeconds !== undefined) {
+          setTimeLeft(data.remainingSeconds);
+          if (data.expired) {
+            handleSubmit(true);
+          }
+        }
+      } catch (err) {
+        console.error('Time sync error:', err);
+      }
+    };
+
+    // Use random jitter (25-35s) to spread load across students
+    let timeoutId;
+    const scheduleNext = () => {
+      const jitter = 25000 + Math.random() * 10000;
+      timeoutId = setTimeout(() => {
+        syncTime();
+        scheduleNext();
+      }, jitter);
+    };
+    scheduleNext();
+
+    return () => clearTimeout(timeoutId);
+  }, [testData, handleSubmit]);
+
+  // Debounced save-answer to prevent server flooding from rapid clicks
+  const saveTimerRef = useRef(null);
+  const pendingSaveRef = useRef(null);
+
+  const saveAnswer = useCallback((questionNumber, option) => {
+    if (!testData) return;
+
+    pendingSaveRef.current = { questionNumber, option };
+
+    if (saveTimerRef.current) {
+      clearTimeout(saveTimerRef.current);
+    }
+
+    saveTimerRef.current = setTimeout(async () => {
+      const pending = pendingSaveRef.current;
+      if (!pending) return;
+      pendingSaveRef.current = null;
+
+      try {
+        await fetch(`${API_BASE_URL}/api/placement-test/student/save-answer`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sessionToken: testData.studentTest.sessionToken,
+            questionNumber: pending.questionNumber,
+            selectedOption: pending.option
+          })
+        });
+      } catch (err) {
+        console.error('Save answer error:', err);
+      }
+    }, 500);
+  }, [testData]);
+
+  // Cleanup debounce timer on unmount
+  useEffect(() => {
+    return () => {
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    };
+  }, []);
+
+  const handleAnswerSelect = (option) => {
+    const questionNum = testData.test.questions[currentQuestion].questionNumber;
+    const newAnswers = { ...answers, [questionNum]: option };
+    setAnswers(newAnswers);
+    saveAnswer(questionNum, option);
+  };
 
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);

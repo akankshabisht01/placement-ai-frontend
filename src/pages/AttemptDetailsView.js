@@ -72,7 +72,7 @@ const AttemptDetailsView = () => {
   const correctCount = studentData?.correctCount || 0;
   const totalQuestions = studentData?.totalQuestions || 0;
   const wrongCount = totalQuestions - correctCount;
-  const unanswered = questions.filter(q => !q.studentAnswer).length;
+  const unanswered = questions.filter(q => q.studentAnswer === null || q.studentAnswer === undefined).length;
 
   return (
     <div className={`min-h-screen pt-16 ${themeClasses.pageBackground}`}>
