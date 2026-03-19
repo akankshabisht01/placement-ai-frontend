@@ -21,7 +21,7 @@ const Footer = () => {
           {/* Column 1 - Logo and info */}
           <div className="col-span-1 md:col-span-1">
             <div className="flex items-center">
-              <span className={`text-2xl font-bold ${themeClasses.gradient} bg-clip-text text-transparent`}>PlacementAI</span>
+              <span className={`text-2xl font-bold ${themeClasses.gradient} bg-clip-text text-transparent`}>Skill Boon</span>
             </div>
             <p className={`mt-2 text-sm ${themeClasses.textSecondary}`}>
               Predict your career path with our AI-powered placement prediction system.
@@ -139,7 +139,7 @@ const Footer = () => {
         
         <div className={`mt-8 border-t ${themeClasses.border} pt-8 flex flex-col md:flex-row justify-between items-center`}>
           <p className={`text-base ${themeClasses.textSecondary}`}>
-            &copy; {currentYear} PlacementAI. All rights reserved.
+            &copy; {currentYear} Skill Boon. All rights reserved.
           </p>
           <p className={`text-sm ${themeClasses.accent} mt-4 md:mt-0`}>
             Made with ❤️ for Students

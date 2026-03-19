@@ -83,7 +83,7 @@ const PaymentSuccess = () => {
       // Create detailed receipt content
       const receiptContent = `
 ${'='.repeat(70)}
-                    PLACEMENT AI - PAYMENT RECEIPT
+            SKILL BOON - PAYMENT RECEIPT
 ${'='.repeat(70)}
 
 Receipt Number: ${receipt.receipt_number}

@@ -266,7 +266,7 @@ const Plans = () => {
         key: orderData.key_id, // Key ID from backend
         amount: orderData.amount.toString(), // Amount in paise as string
         currency: orderData.currency,
-        name: 'Placement AI',
+        name: 'Skill Boon',
         description: `${plan.name} Plan Subscription`,
         image: '', // Add your logo URL here if needed
         order_id: orderData.order_id, // Order ID from backend

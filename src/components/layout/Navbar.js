@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import logo from './assets/logo.png';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { Home, User, Target, BarChart3, Rocket, LayoutDashboard, Bot, Info, MessageCircle, Zap, Moon, Sun, MonitorSmartphone, FileCheck, UserCircle2, CreditCard, ChevronDown, CloudMoon, Cloud, Mic, Settings, LogOut, Building2 } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -192,36 +191,28 @@ const Navbar = () => {
         className={`fixed w-full top-0 transition-all duration-300 ${
           scrolled 
             ? `${themeClasses.cardBackground} backdrop-blur-lg shadow-soft ${theme !== 'aloof' ? `border-b ${themeClasses.border}` : ''}` 
-            : `${themeClasses.cardBackground} shadow-soft ${theme !== 'aloof' ? 'border-b border-transparent' : ''}`
+            : `${themeClasses.cardBackground} backdrop-blur-lg shadow-soft ${theme !== 'aloof' ? 'border-b border-transparent' : ''}`
         }`}
         style={{ zIndex: 9999, pointerEvents: 'auto' }}
       >
         <div className="w-full mx-auto px-3 sm:px-4 lg:px-6 pointer-events-auto">
-          <div className={`flex justify-between items-center transition-all duration-300 ${scrolled ? 'h-12' : 'h-16'}`}>
+          <div className={`flex justify-between items-center transition-all duration-300 ${scrolled ? 'h-16' : 'h-20'}`}>
             <div className="flex items-center min-w-0 flex-shrink-0">
               <div className="flex items-center group">
-                <div className="relative">
-                  <img 
-                    className={`mr-2 transition-all duration-300 group-hover:scale-110 group-hover:rotate-12 ${
-                      scrolled ? 'h-6 w-6 sm:h-7 sm:w-7' : 'h-8 w-8 sm:h-10 sm:w-10'
+                <Link to="/" className="flex items-center flex-shrink-0 transition-all duration-300">
+                  <img
+                    className={`w-auto object-contain transition-all duration-300 group-hover:scale-105 ${
+                      scrolled ? 'h-16 sm:h-[4.5rem]' : 'h-[4.5rem] sm:h-20'
                     }`}
-                    src={logo} 
-                    alt="PlacementAI Logo" 
+                    src="/Finallogo.png"
+                    alt="Skill Boon Logo"
                   />
-                  <div className={`absolute -inset-1 ${themeClasses.gradient} rounded-full opacity-0 group-hover:opacity-20 blur-sm transition-opacity duration-300`}></div>
-                </div>
-                <Link to="/" className="flex items-center gap-1.5 group">
-                  <span className={`font-bold ${theme === 'aloof' ? themeClasses.textPrimary : themeClasses.gradientText} transition-all duration-300 whitespace-nowrap ${
-                    scrolled ? 'text-base sm:text-lg lg:text-xl' : 'text-lg sm:text-xl lg:text-2xl'
-                  }`}>
-                    PAG<span className="hidden sm:inline">.ai</span>
-                  </span>
-                  <div className={`${themeClasses.gradient} text-white font-semibold rounded shadow-md whitespace-nowrap transition-all duration-300 ${
-                    scrolled ? 'px-1 py-0.5 text-[9px]' : 'px-1.5 py-0.5 text-[10px]'
-                  }`}>
-                    PRO
-                  </div>
                 </Link>
+                <div className={`${themeClasses.gradient} text-white font-semibold rounded shadow-md whitespace-nowrap transition-all duration-300 ml-2 ${
+                  scrolled ? 'px-1 py-0.5 text-[9px]' : 'px-1.5 py-0.5 text-[10px]'
+                }`}>
+                  PRO
+                </div>
                 
                 {/* Theme Dropdown Button (Desktop only) */}
                 <div className="relative ml-3 hidden lg:flex" ref={desktopThemeDropdownRef}>
